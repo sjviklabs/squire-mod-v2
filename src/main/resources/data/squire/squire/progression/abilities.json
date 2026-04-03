@@ -1,0 +1,32 @@
+[
+  {
+    "id": "COMBAT",
+    "unlock_tier": "apprentice",
+    "description": "Engage hostile mobs with melee weapons."
+  },
+  {
+    "id": "SHIELD_BLOCK",
+    "unlock_tier": "apprentice",
+    "description": "Block incoming melee damage with a shield."
+  },
+  {
+    "id": "RANGED_COMBAT",
+    "unlock_tier": "squire",
+    "description": "Switch to bow for distant targets."
+  },
+  {
+    "id": "LIFESTEAL",
+    "unlock_tier": "knight",
+    "description": "Recover a small amount of HP on each kill."
+  },
+  {
+    "id": "MOUNTING",
+    "unlock_tier": "knight",
+    "description": "Mount and ride a horse, following the player."
+  },
+  {
+    "id": "UNDYING",
+    "unlock_tier": "champion",
+    "description": "Survive lethal damage once per life, rising at 1 HP."
+  }
+]
