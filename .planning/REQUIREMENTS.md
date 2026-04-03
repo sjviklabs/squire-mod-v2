@@ -40,10 +40,10 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Progression
 
-- [ ] **PRG-01**: 5-tier progression system: Servant (0-4), Apprentice (5-9), Squire (10-19), Knight (20-29), Champion (30)
+- [x] **PRG-01**: 5-tier progression system: Servant (0-4), Apprentice (5-9), Squire (10-19), Knight (20-29), Champion (30)
 - [ ] **PRG-02**: Squire earns XP from kills, mining, and work tasks
-- [ ] **PRG-03**: Tier thresholds and XP curves defined in JSON datapacks
-- [ ] **PRG-04**: 6 unlockable abilities tied to progression tiers
+- [x] **PRG-03**: Tier thresholds and XP curves defined in JSON datapacks
+- [x] **PRG-04**: 6 unlockable abilities tied to progression tiers
 - [ ] **PRG-05**: Tier gates unlock behaviors (e.g., combat at Apprentice, ranged at Squire, mounting at Knight)
 - [ ] **PRG-06**: Champion tier grants "undying" revival ability
 
@@ -196,10 +196,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | CMB-08      | Phase 4 | Pending     |
 | CMB-09      | Phase 4 | Pending     |
 | CMB-10      | Phase 4 | Pending     |
-| PRG-01      | Phase 4 | Pending     |
+| PRG-01      | Phase 4 | Complete |
 | PRG-02      | Phase 4 | Pending     |
-| PRG-03      | Phase 4 | Pending     |
-| PRG-04      | Phase 4 | Pending     |
+| PRG-03      | Phase 4 | Complete |
+| PRG-04      | Phase 4 | Complete |
 | PRG-05      | Phase 4 | Pending     |
 | PRG-06      | Phase 4 | Pending     |
 | GUI-01      | Phase 5 | Pending     |
