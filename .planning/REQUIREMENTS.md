@@ -90,8 +90,8 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 - [x] **RND-01**: Geckolib-based entity model with animations
 - [x] **RND-02**: Male/female skin variants (slim/wide)
-- [ ] **RND-03**: Custom naming via name tag or command
-- [ ] **RND-04**: Personality chat lines (idle, combat, level-up, new tier)
+- [x] **RND-03**: Custom naming via name tag or command
+- [x] **RND-04**: Personality chat lines (idle, combat, level-up, new tier)
 - [x] **RND-05**: Backpack visual layer that reflects inventory tier
 - [x] **RND-06**: Tiered armor texture rendering
 
@@ -181,8 +181,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | ARC-08      | Phase 2 | Complete |
 | RND-01      | Phase 3 | Complete |
 | RND-02      | Phase 3 | Complete |
-| RND-03      | Phase 3 | Pending     |
-| RND-04      | Phase 3 | Pending     |
+| RND-03      | Phase 3 | Complete |
+| RND-04      | Phase 3 | Complete |
 | RND-05      | Phase 3 | Complete |
 | RND-06      | Phase 3 | Complete |
 | INV-04      | Phase 3 | Complete |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-03-PLAN.md — SquireArmorLayer, SquireBackpackLayer, 4-piece armor item set registered
-last_updated: "2026-04-03T15:43:32.596Z"
+stopped_at: Completed 03-04-PLAN.md — name tag support, ChatHandler stub, Phase 3 complete
+last_updated: "2026-04-03T15:53:52.318Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 33
-  completed_plans: 12
+  completed_plans: 13
   percent: 0
 ---
 
@@ -64,6 +64,7 @@ _Updated after each plan completion_
 | Phase 03-rendering P01 | 20 | 2 tasks | 5 files |
 | Phase 03-rendering P02 | 6 | 2 tasks | 13 files |
 | Phase 03-rendering P03 | 19 | 2 tasks | 5 files |
+| Phase 03-rendering P04 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,8 @@ Recent decisions affecting current work:
 - [Phase 03-rendering]: Bone naming contract frozen after 03-02: head/body/right_arm/left_arm/right_leg/left_leg/right_foot/left_foot/backpack_small/backpack_large — 03-03 builds against these exact strings
 - [Phase 03-rendering]: getVanillaArmorBuffer override instead of getArmorTexture — getArmorTexture absent in Geckolib 4.8.4; buffer intercept is the correct texture injection hook
 - [Phase 03-rendering]: ArmorItem constructor takes Holder<ArmorMaterial> not ArmorMaterial in NeoForge 1.21.1 — ArmorMaterials.IRON is Holder type
+- [Phase 03-rendering]: ChatHandler placed in entity/ package (not client/) — server-side send, no client imports
+- [Phase 03-rendering]: Oculus validation deferred — user will test in ATM10; Phase 4 start gates on explicit pass confirmation
 
 ### Research Flags (for planning phases)
 
@@ -118,6 +121,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T15:43:32.593Z
-Stopped at: Completed 03-03-PLAN.md — SquireArmorLayer, SquireBackpackLayer, 4-piece armor item set registered
+Last session: 2026-04-03T15:53:52.315Z
+Stopped at: Completed 03-04-PLAN.md — name tag support, ChatHandler stub, Phase 3 complete
 Resume file: None
