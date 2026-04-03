@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 04-02-PLAN.md — SquireEquipmentHelper IItemHandler port, SquireHalberdItem, SquireShieldItem
-last_updated: "2026-04-03T20:42:40.396Z"
+stopped_at: Completed 05-02-PLAN.md — SquireKeybinds, SquireRadialScreen, SquireClientEvents
+last_updated: "2026-04-03T22:57:22.876Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 33
-  completed_plans: 18
+  completed_plans: 19
   percent: 0
 ---
 
@@ -70,6 +70,7 @@ _Updated after each plan completion_
 | Phase 04-combat-progression P01 | 20 | 2 tasks | 3 files |
 | Phase 04-combat-progression P04 | 20 | 2 tasks | 2 files |
 | Phase 04-combat-progression P02 | 15 | 2 tasks | 5 files |
+| Phase 05-ui-controls P02 | 13 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,10 @@ Recent decisions affecting current work:
 - [Phase 04-combat-progression]: undyingCooldown not persisted to NBT — resets on squire respawn by design
 - [Phase 04-combat-progression]: halberdHitCount instance field on CombatHandler (not static, not item NBT) — squires don't swap weapons mid-tick
 - [Phase 04-combat-progression]: ENTITY_INTERACTION_RANGE used for halberd +1.0 reach in NeoForge 1.21.1 (NeoForgeMod.ENTITY_REACH does not exist)
+- [Phase 05-ui-controls]: Inner static class pattern for dual bus subscriptions in SquireClientEvents
+- [Phase 05-ui-controls]: 4-wedge radial layout for Phase 5 only — expands in later phases
+- [Phase 05-ui-controls]: confirmed boolean in SquireRadialScreen prevents double packet send on close
+- [Phase 05-ui-controls]: blockInteractionRange() over getBlockReach() — correct 1.21.1 LocalPlayer API
 
 ### Research Flags (for planning phases)
 
@@ -136,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T20:26:23.095Z
-Stopped at: Completed 04-02-PLAN.md — SquireEquipmentHelper IItemHandler port, SquireHalberdItem, SquireShieldItem
+Last session: 2026-04-03T22:57:22.873Z
+Stopped at: Completed 05-02-PLAN.md — SquireKeybinds, SquireRadialScreen, SquireClientEvents
 Resume file: None

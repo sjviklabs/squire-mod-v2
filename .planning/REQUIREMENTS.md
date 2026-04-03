@@ -82,7 +82,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### UI & Controls
 
-- [ ] **GUI-01**: Radial menu (R key) for stance switching and commands
+- [x] **GUI-01**: Radial menu (R key) for stance switching and commands
 - [ ] **GUI-02**: /squire commands for info, mine, place, and other operations
 - [ ] **GUI-03**: Inventory screen with equipment slots and backpack view
 
@@ -202,7 +202,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | PRG-04      | Phase 4 | Complete |
 | PRG-05      | Phase 4 | Complete |
 | PRG-06      | Phase 4 | Complete |
-| GUI-01      | Phase 5 | Pending     |
+| GUI-01      | Phase 5 | Complete |
 | GUI-02      | Phase 5 | Pending     |
 | GUI-03      | Phase 5 | Pending     |
 | INV-03      | Phase 5 | Pending     |
