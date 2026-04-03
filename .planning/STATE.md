@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-01-PLAN.md — GeoEntity on SquireEntity, SquireModel/SquireRenderer/SquireClientEvents created; Geckolib 4.8.4 API deviations documented
-last_updated: "2026-04-03T15:10:19.921Z"
+stopped_at: Completed 03-02-PLAN.md — geo.json models, animation JSON, and placeholder textures authored; bone naming contract frozen for 03-03
+last_updated: "2026-04-03T15:20:35.172Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 33
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -62,6 +62,7 @@ _Updated after each plan completion_
 | Phase 02-brain-fsm-follow P03 | 20 | 2 tasks | 2 files |
 | Phase 02-brain-fsm-follow P04 | 16 | 2 tasks | 5 files |
 | Phase 03-rendering P01 | 20 | 2 tasks | 5 files |
+| Phase 03-rendering P02 | 6 | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,8 @@ Recent decisions affecting current work:
 - [Phase 02-brain-fsm-follow]: eatHealthThreshold absent from SquireConfig — used hardcoded 0.75f in SurvivalHandler; deferred to Phase 4 when eating gets full animation treatment
 - [Phase 02-brain-fsm-follow]: EATING per-tick returns IDLE immediately, machine re-evaluates to FOLLOWING_OWNER — avoids storing previous-state in SurvivalHandler
 - [Phase 03-rendering]: GeoEntityModel absent in Geckolib 4.8.4 — base class is GeoModel<T>; LoopType is Animation.LoopType (nested); getTextureResource not getTextureLocation on GeoModel
+- [Phase 03-rendering]: format_version 1.21.0 for geo.json, 1.8.0 for animation.json — different Bedrock format versions, must not be swapped
+- [Phase 03-rendering]: Bone naming contract frozen after 03-02: head/body/right_arm/left_arm/right_leg/left_leg/right_foot/left_foot/backpack_small/backpack_large — 03-03 builds against these exact strings
 
 ### Research Flags (for planning phases)
 
@@ -112,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T15:10:19.918Z
-Stopped at: Completed 03-01-PLAN.md — GeoEntity on SquireEntity, SquireModel/SquireRenderer/SquireClientEvents created; Geckolib 4.8.4 API deviations documented
+Last session: 2026-04-03T15:20:35.169Z
+Stopped at: Completed 03-02-PLAN.md — geo.json models, animation JSON, and placeholder textures authored; bone naming contract frozen for 03-03
 Resume file: None

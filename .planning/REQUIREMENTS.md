@@ -52,7 +52,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **INV-01**: Squire has tiered inventory (9 slots at Servant, expanding to 36 at Champion)
 - [x] **INV-02**: Inventory implemented via IItemHandler capability (not SimpleContainer)
 - [ ] **INV-03**: Squire picks up nearby items (with junk filtering)
-- [ ] **INV-04**: Custom 4-piece armor set with tiered textures (visual changes per tier)
+- [x] **INV-04**: Custom 4-piece armor set with tiered textures (visual changes per tier)
 - [ ] **INV-05**: Curios/Accessories integration for equipment slots (soft dependency)
 - [x] **INV-06**: Inventory accessible via GUI screen
 
@@ -92,8 +92,8 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **RND-02**: Male/female skin variants (slim/wide)
 - [ ] **RND-03**: Custom naming via name tag or command
 - [ ] **RND-04**: Personality chat lines (idle, combat, level-up, new tier)
-- [ ] **RND-05**: Backpack visual layer that reflects inventory tier
-- [ ] **RND-06**: Tiered armor texture rendering
+- [x] **RND-05**: Backpack visual layer that reflects inventory tier
+- [x] **RND-06**: Tiered armor texture rendering
 
 ### Mod Compatibility
 
@@ -183,9 +183,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | RND-02      | Phase 3 | Complete |
 | RND-03      | Phase 3 | Pending     |
 | RND-04      | Phase 3 | Pending     |
-| RND-05      | Phase 3 | Pending     |
-| RND-06      | Phase 3 | Pending     |
-| INV-04      | Phase 3 | Pending     |
+| RND-05      | Phase 3 | Complete |
+| RND-06      | Phase 3 | Complete |
+| INV-04      | Phase 3 | Complete |
 | CMB-01      | Phase 4 | Pending     |
 | CMB-02      | Phase 4 | Pending     |
 | CMB-03      | Phase 4 | Pending     |
