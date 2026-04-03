@@ -10,11 +10,11 @@ import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.fml.common.EventBusSubscriber.Bus;
-import net.neoforged.neoforge.client.event.InputEvent;
 
 /**
  * Client-only event handler for Squire client setup, keybind registration,
@@ -49,13 +49,11 @@ public class SquireClientEvents {
         }
 
         @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event) {
-            // TODO(05-01): Register SquireScreen once Plan 05-01 is complete.
-            // Uncomment the line below after SquireScreen is created:
-            //   MenuScreens.register(SquireRegistry.SQUIRE_MENU.get(), SquireScreen::new);
-            //
-            // SquireScreen.register() is defined in Plan 05-01. This handler is wired
-            // and ready — just needs the SquireScreen class to exist.
+        public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
+            // Register the squire inventory screen against its menu type.
+            // RegisterMenuScreensEvent is the NeoForge 1.21.1 replacement for
+            // MenuScreens.register() which has private access in vanilla.
+            SquireScreen.register(event);
         }
     }
 
