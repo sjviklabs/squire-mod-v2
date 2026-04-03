@@ -340,6 +340,18 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         // Phase 6: ForceChunkManager.forceChunk((ServerLevel)this.level(), this.chunkPosition(), this, true);
     }
 
+    /**
+     * Called by ProgressionHandler when the squire advances to a new tier.
+     * In NeoForge 21.1, entity capability providers (lambdas registered via registerCapabilities)
+     * are resolved fresh on each query and are not cached — no true invalidation is required.
+     * SquireItemHandler.getSlots() already gates tier-based slot access dynamically.
+     * This method exists as a documented hook for future capability caching if NeoForge adds it.
+     */
+    public void invalidateCapabilities() {
+        // No-op: entity capability providers in NeoForge 21.1 are not cached per-entity.
+        // SquireItemHandler slots are gated by getTier() dynamically — no invalidation needed.
+    }
+
     // ================================================================
     // Name display (RND-03)
     // ================================================================
