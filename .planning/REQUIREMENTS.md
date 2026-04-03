@@ -33,7 +33,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [ ] **CMB-04**: Squire auto-equips best available armor from inventory
 - [ ] **CMB-05**: Squire uses shield to block incoming damage
 - [ ] **CMB-06**: Squire flees at low HP (configurable threshold)
-- [ ] **CMB-07**: Combat tactics are data-driven via entity tags (not hardcoded mob checks)
+- [x] **CMB-07**: Combat tactics are data-driven via entity tags (not hardcoded mob checks)
 - [ ] **CMB-08**: Halberd weapon with 360 sweep AoE every 3rd hit
 - [ ] **CMB-09**: Custom shield item (336 durability)
 - [ ] **CMB-10**: Guard mode (stand ground and fight, don't follow)
@@ -192,7 +192,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | CMB-04      | Phase 4 | Pending     |
 | CMB-05      | Phase 4 | Pending     |
 | CMB-06      | Phase 4 | Pending     |
-| CMB-07      | Phase 4 | Pending     |
+| CMB-07      | Phase 4 | Complete |
 | CMB-08      | Phase 4 | Pending     |
 | CMB-09      | Phase 4 | Pending     |
 | CMB-10      | Phase 4 | Pending     |

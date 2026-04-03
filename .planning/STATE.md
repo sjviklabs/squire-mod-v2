@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-04-PLAN.md — name tag support, ChatHandler stub, Phase 3 complete
-last_updated: "2026-04-03T18:48:03.611Z"
+stopped_at: Completed 04-03-PLAN.md — SquireTagKeys + 5 entity_type tag JSON files
+last_updated: "2026-04-03T18:57:59.806Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 33
-  completed_plans: 13
+  completed_plans: 15
   percent: 0
 ---
 
@@ -65,6 +65,8 @@ _Updated after each plan completion_
 | Phase 03-rendering P02 | 6 | 2 tasks | 13 files |
 | Phase 03-rendering P03 | 19 | 2 tasks | 5 files |
 | Phase 03-rendering P04 | 8 | 2 tasks | 2 files |
+| Phase 04-combat-progression P03 | 8 | 2 tasks | 6 files |
+| Phase 04-combat-progression P05 | 12 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -104,6 +106,10 @@ Recent decisions affecting current work:
 - [Phase 03-rendering]: ArmorItem constructor takes Holder<ArmorMaterial> not ArmorMaterial in NeoForge 1.21.1 — ArmorMaterials.IRON is Holder type
 - [Phase 03-rendering]: ChatHandler placed in entity/ package (not client/) — server-side send, no client imports
 - [Phase 03-rendering]: Oculus validation deferred — user will test in ATM10; Phase 4 start gates on explicit pass confirmation
+- [Phase 04-combat-progression]: TagKey.create() with Registries.ENTITY_TYPE used instead of EntityTypeTags.create() — package-internal helper; does not resolve cleanly in NeoForge 21.1 with Parchment mappings
+- [Phase 04-combat-progression]: TagKey constants are safe as static fields; .is() calls deferred exclusively to CombatHandler.selectTactic() at runtime after server start
+- [Phase 04-combat-progression]: AddReloadListenerEvent (not AddServerReloadListenersEvent) is the correct NeoForge 21.1.221 event; Bus.GAME deprecated — used NeoForge.EVENT_BUS.addListener() inline in constructor
+- [Phase 04-combat-progression]: abilities.json is a root-level JSON array; ProgressionDataLoader dispatches by filename stem ('abilities' vs tier name) to handle the mixed schema
 
 ### Research Flags (for planning phases)
 
@@ -121,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T15:53:52.315Z
-Stopped at: Completed 03-04-PLAN.md — name tag support, ChatHandler stub, Phase 3 complete
+Last session: 2026-04-03T18:57:35.489Z
+Stopped at: Completed 04-03-PLAN.md — SquireTagKeys + 5 entity_type tag JSON files
 Resume file: None
