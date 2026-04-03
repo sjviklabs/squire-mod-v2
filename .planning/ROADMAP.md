@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 4. squire-common.toml generates on first run with 50+ entries, all defaults satisfy their own validators (no correction loop in startup log)
 5. Builtin datapack embeds correctly — progression JSON is present and does not revert to defaults after world reload
 
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
 
@@ -60,14 +60,14 @@ Plans:
 4. Handler-to-handler events work — a handler can notify other handlers of state changes without coupling to them directly
 5. All network payloads use StreamCodec (ARC-08); no raw FriendlyByteBuf serialization in any handler
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
-- [ ] 02-01: TickRateStateMachine — SquireAIState enum, AITransition, per-transition tick rates, priority routing
-- [ ] 02-02: SquireBrainEventBus — internal event bus, handler registration, event dispatch, handler-per-behavior skeleton
-- [ ] 02-03: FollowHandler — no-teleport navigation, sprint/walk speed scaling, stuck detection and recovery, water traversal
-- [ ] 02-04: SurvivalHandler + sit/stay — eating/healing at appropriate FSM priority, NAV-04 sit/stay toggle, StreamCodec payloads
+- [ ] 02-01-PLAN.md — FSM engine: SquireAIState (27 states), AITransition record, TickRateStateMachine port, SquireEntity helper methods
+- [ ] 02-02-PLAN.md — Event bus: SquireEvent enum, SquireBrainEventBus, SquireBrain real container with SITTING transitions
+- [ ] 02-03-PLAN.md — FollowHandler: no-teleport navigation, sprint/walk scaling, stuck detection + jump recovery, FOLLOWING_OWNER transitions
+- [ ] 02-04-PLAN.md — SurvivalHandler + sit/stay + StreamCodec: eating via IItemHandler.extractItem(), CMD_STAY/FOLLOW payloads, payload registration
 
 ### Phase 3: Rendering
 
@@ -207,8 +207,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase                          | Plans Complete | Status      | Completed |
 | ------------------------------ | -------------- | ----------- | --------- |
-| 1. Core Entity Foundation      | 3/5 | In Progress|  |
-| 2. Brain, FSM, and Follow      | 0/4            | Not started | -         |
+| 1. Core Entity Foundation      | 3/5            | In Progress | -         |
+| 2. Brain, FSM, and Follow      | 0/4            | Planned     | -         |
 | 3. Rendering                   | 0/4            | Not started | -         |
 | 4. Combat and Progression      | 0/5            | Not started | -         |
 | 5. UI and Controls             | 0/4            | Not started | -         |
