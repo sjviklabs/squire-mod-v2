@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: "Completed 02-01-PLAN.md — FSM foundation: SquireAIState (27 states), AITransition, TickRateStateMachine, SquireActivityLog, SquireEntity helpers"
-last_updated: "2026-04-03T14:06:50.687Z"
+stopped_at: Completed 02-03-PLAN.md — FollowHandler (no-teleport), FOLLOWING_OWNER transitions in SquireBrain
+last_updated: "2026-04-03T14:20:28.937Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 33
-  completed_plans: 6
+  completed_plans: 8
   percent: 0
 ---
 
@@ -58,6 +58,8 @@ _Updated after each plan completion_
 | Phase 01-core-entity-foundation P03 | 27 | 2 tasks | 4 files |
 | Phase 01-core-entity-foundation P05 | 18 | 2 tasks | 5 files |
 | Phase 02-brain-fsm-follow P01 | 15 | 2 tasks | 5 files |
+| Phase 02-brain-fsm-follow P02 | 12 | 2 tasks | 3 files |
+| Phase 02-brain-fsm-follow P03 | 20 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -84,6 +86,10 @@ Recent decisions affecting current work:
 - [Phase 01-core-entity-foundation]: SquireData CODEC test uses JsonOps.INSTANCE headlessly — DFU is pure Java, no NeoForge bootstrap needed
 - [Phase 02-brain-fsm-follow]: HurtByTargetGoal used instead of OwnerHurtByTargetGoal — TamableAnimal goal incompatible with PathfinderMob; owner-hurt retaliation deferred to FSM combat transitions
 - [Phase 02-brain-fsm-follow]: SquireActivityLog ported to brain package now — TickRateStateMachine.tick() references it; null-safe lazy init via getActivityLog()
+- [Phase 02-brain-fsm-follow]: Pose.SITTING/STANDING used instead of setInSittingPose — PathfinderMob has no setInSittingPose (TamableAnimal only)
+- [Phase 02-brain-fsm-follow]: SquireBrainEventBus is instance-scoped plain Java EnumMap, not NeoForge IEventBus — no global bus leakage
+- [Phase 02-brain-fsm-follow]: pathRecalcInterval absent from SquireConfig — followTickRate is the correct field for path recalc throttle
+- [Phase 02-brain-fsm-follow]: Stop transition priority 30 / tick priority 31 — stop check wins on same-tick shouldStop firing to prevent extra follow tick
 
 ### Research Flags (for planning phases)
 
@@ -101,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T14:06:50.684Z
-Stopped at: Completed 02-01-PLAN.md — FSM foundation: SquireAIState (27 states), AITransition, TickRateStateMachine, SquireActivityLog, SquireEntity helpers
+Last session: 2026-04-03T14:20:28.934Z
+Stopped at: Completed 02-03-PLAN.md — FollowHandler (no-teleport), FOLLOWING_OWNER transitions in SquireBrain
 Resume file: None

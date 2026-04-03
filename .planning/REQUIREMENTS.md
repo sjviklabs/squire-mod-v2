@@ -104,8 +104,8 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 ### Architecture
 
 - [x] **ARC-01**: Custom tick-rate state machine (FSM) replacing vanilla GoalSelector
-- [ ] **ARC-02**: Handler-per-behavior pattern (one handler class per behavior)
-- [ ] **ARC-03**: Internal event bus so handlers react to each other's state changes
+- [x] **ARC-02**: Handler-per-behavior pattern (one handler class per behavior)
+- [x] **ARC-03**: Internal event bus so handlers react to each other's state changes
 - [ ] **ARC-04**: SquireEntity (lifecycle/NBT) split from SquireBrain (AI/FSM)
 - [x] **ARC-05**: Single SquireRegistry for all NeoForge registrations
 - [x] **ARC-06**: 50+ config values in squire-common.toml (no hardcoded gameplay numbers)
@@ -176,8 +176,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | NAV-04      | Phase 2 | Pending     |
 | NAV-05      | Phase 2 | Complete |
 | ARC-01      | Phase 2 | Complete |
-| ARC-02      | Phase 2 | Pending     |
-| ARC-03      | Phase 2 | Pending     |
+| ARC-02      | Phase 2 | Complete |
+| ARC-03      | Phase 2 | Complete |
 | ARC-08      | Phase 2 | Pending     |
 | RND-01      | Phase 3 | Pending     |
 | RND-02      | Phase 3 | Pending     |
