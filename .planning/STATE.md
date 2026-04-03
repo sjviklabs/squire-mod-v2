@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 04-05-PLAN.md — ProgressionDataLoader, TierDefinition, AbilityDefinition, abilities.json
-last_updated: "2026-04-03T18:58:06.514Z"
+stopped_at: Completed 04-01-PLAN.md — CombatHandler, DangerHandler, SquireEntity swing duration fix
+last_updated: "2026-04-03T19:57:51.129Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 33
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -67,6 +67,7 @@ _Updated after each plan completion_
 | Phase 03-rendering P04 | 8 | 2 tasks | 2 files |
 | Phase 04-combat-progression P03 | 8 | 2 tasks | 6 files |
 | Phase 04-combat-progression P05 | 12 | 2 tasks | 5 files |
+| Phase 04-combat-progression P01 | 20 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,8 @@ Recent decisions affecting current work:
 - [Phase 04-combat-progression]: TagKey constants are safe as static fields; .is() calls deferred exclusively to CombatHandler.selectTactic() at runtime after server start
 - [Phase 04-combat-progression]: AddReloadListenerEvent (not AddServerReloadListenersEvent) is the correct NeoForge 21.1.221 event; Bus.GAME deprecated — used NeoForge.EVENT_BUS.addListener() inline in constructor
 - [Phase 04-combat-progression]: abilities.json is a root-level JSON array; ProgressionDataLoader dispatches by filename stem ('abilities' vs tier name) to handle the mixed schema
+- [Phase 04-combat-progression]: Item instanceof checks (BowItem, ShieldItem) retained in CombatHandler for equipment reads — zero mob entity instanceof checks present (the real CMB-07 intent)
+- [Phase 04-combat-progression]: DangerHandler is a thin collaborator: detect explosive threat via Creeper.getSwellDir(), delegate startFlee() to CombatHandler — no flee state stored in DangerHandler
 
 ### Research Flags (for planning phases)
 
@@ -127,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T18:58:06.511Z
-Stopped at: Completed 04-05-PLAN.md — ProgressionDataLoader, TierDefinition, AbilityDefinition, abilities.json
+Last session: 2026-04-03T19:57:51.127Z
+Stopped at: Completed 04-01-PLAN.md — CombatHandler, DangerHandler, SquireEntity swing duration fix
 Resume file: None
