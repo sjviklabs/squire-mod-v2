@@ -9,13 +9,13 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Entity Foundation
 
-- [ ] **ENT-01**: Player can summon a squire using the Crest item
-- [ ] **ENT-02**: Player can recall (despawn) the squire using the Crest item
-- [ ] **ENT-03**: Squire persists across server restarts via NBT serialization
-- [ ] **ENT-04**: Squire identity (name, XP, level, appearance) persists via player data attachment, surviving crest loss and death
-- [ ] **ENT-05**: Squire extends PathfinderMob with custom owner system (not TamableAnimal)
-- [ ] **ENT-06**: One squire per player (enforced)
-- [ ] **ENT-07**: Squire drops equipped gear on death but retains XP/tier via player attachment
+- [x] **ENT-01**: Player can summon a squire using the Crest item
+- [x] **ENT-02**: Player can recall (despawn) the squire using the Crest item
+- [x] **ENT-03**: Squire persists across server restarts via NBT serialization
+- [x] **ENT-04**: Squire identity (name, XP, level, appearance) persists via player data attachment, surviving crest loss and death
+- [x] **ENT-05**: Squire extends PathfinderMob with custom owner system (not TamableAnimal)
+- [x] **ENT-06**: One squire per player (enforced)
+- [x] **ENT-07**: Squire drops equipped gear on death but retains XP/tier via player attachment
 
 ### Follow & Navigation
 
@@ -153,13 +153,13 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase   | Status      |
 | ----------- | ------- | ----------- |
-| ENT-01      | Phase 1 | Pending     |
-| ENT-02      | Phase 1 | Pending     |
-| ENT-03      | Phase 1 | Pending     |
-| ENT-04      | Phase 1 | Pending     |
-| ENT-05      | Phase 1 | Pending     |
-| ENT-06      | Phase 1 | Pending     |
-| ENT-07      | Phase 1 | Pending     |
+| ENT-01      | Phase 1 | Complete |
+| ENT-02      | Phase 1 | Complete |
+| ENT-03      | Phase 1 | Complete |
+| ENT-04      | Phase 1 | Complete |
+| ENT-05      | Phase 1 | Complete |
+| ENT-06      | Phase 1 | Complete |
+| ENT-07      | Phase 1 | Complete |
 | INV-01      | Phase 1 | Pending     |
 | INV-02      | Phase 1 | Pending     |
 | INV-06      | Phase 1 | Pending     |

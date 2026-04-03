@@ -207,7 +207,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase                          | Plans Complete | Status      | Completed |
 | ------------------------------ | -------------- | ----------- | --------- |
-| 1. Core Entity Foundation      | 1/5 | In Progress|  |
+| 1. Core Entity Foundation      | 2/5 | In Progress|  |
 | 2. Brain, FSM, and Follow      | 0/4            | Not started | -         |
 | 3. Rendering                   | 0/4            | Not started | -         |
 | 4. Combat and Progression      | 0/5            | Not started | -         |
