@@ -5,6 +5,8 @@ import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
 import com.sjviklabs.squire.item.SquireArmorItem;
 import com.sjviklabs.squire.item.SquireCrestItem;
+import com.sjviklabs.squire.item.SquireHalberdItem;
+import com.sjviklabs.squire.item.SquireShieldItem;
 import com.sjviklabs.squire.network.SquireCommandPayload;
 import com.sjviklabs.squire.network.SquireModePayload;
 import net.minecraft.core.registries.Registries;
@@ -89,6 +91,12 @@ public final class SquireRegistry {
             ITEMS.register("squire_boots",
                 () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.BOOTS,
                     new Item.Properties().stacksTo(1)));
+
+    public static final DeferredHolder<Item, SquireHalberdItem> HALBERD =
+            ITEMS.register("squire_halberd", SquireHalberdItem::new);
+
+    public static final DeferredHolder<Item, SquireShieldItem> SHIELD =
+            ITEMS.register("squire_shield", SquireShieldItem::new);
 
     // ---- Attachment Types ----
 
