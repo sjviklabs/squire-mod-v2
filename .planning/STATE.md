@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-03-PLAN.md — FollowHandler (no-teleport), FOLLOWING_OWNER transitions in SquireBrain
-last_updated: "2026-04-03T14:20:28.937Z"
+stopped_at: Completed 02-04-PLAN.md — SurvivalHandler (IItemHandler.extractItem), StreamCodec payloads, EATING transitions in SquireBrain; Phase 2 all 9 success criteria met
+last_updated: "2026-04-03T14:42:46.075Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 33
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -60,6 +60,7 @@ _Updated after each plan completion_
 | Phase 02-brain-fsm-follow P01 | 15 | 2 tasks | 5 files |
 | Phase 02-brain-fsm-follow P02 | 12 | 2 tasks | 3 files |
 | Phase 02-brain-fsm-follow P03 | 20 | 2 tasks | 2 files |
+| Phase 02-brain-fsm-follow P04 | 16 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,8 @@ Recent decisions affecting current work:
 - [Phase 02-brain-fsm-follow]: SquireBrainEventBus is instance-scoped plain Java EnumMap, not NeoForge IEventBus — no global bus leakage
 - [Phase 02-brain-fsm-follow]: pathRecalcInterval absent from SquireConfig — followTickRate is the correct field for path recalc throttle
 - [Phase 02-brain-fsm-follow]: Stop transition priority 30 / tick priority 31 — stop check wins on same-tick shouldStop firing to prevent extra follow tick
+- [Phase 02-brain-fsm-follow]: eatHealthThreshold absent from SquireConfig — used hardcoded 0.75f in SurvivalHandler; deferred to Phase 4 when eating gets full animation treatment
+- [Phase 02-brain-fsm-follow]: EATING per-tick returns IDLE immediately, machine re-evaluates to FOLLOWING_OWNER — avoids storing previous-state in SurvivalHandler
 
 ### Research Flags (for planning phases)
 
@@ -107,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T14:20:28.934Z
-Stopped at: Completed 02-03-PLAN.md — FollowHandler (no-teleport), FOLLOWING_OWNER transitions in SquireBrain
+Last session: 2026-04-03T14:42:46.072Z
+Stopped at: Completed 02-04-PLAN.md — SurvivalHandler (IItemHandler.extractItem), StreamCodec payloads, EATING transitions in SquireBrain; Phase 2 all 9 success criteria met
 Resume file: None

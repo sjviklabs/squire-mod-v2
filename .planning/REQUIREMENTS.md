@@ -22,7 +22,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **NAV-01**: Squire follows the player without ever teleporting
 - [x] **NAV-02**: Squire sprints to catch up when player is far
 - [x] **NAV-03**: Squire swims through water to follow
-- [ ] **NAV-04**: Squire can sit/stay on command (toggle)
+- [x] **NAV-04**: Squire can sit/stay on command (toggle)
 - [x] **NAV-05**: Squire navigates caves, hills, and structures via pathfinding
 
 ### Combat
@@ -110,7 +110,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **ARC-05**: Single SquireRegistry for all NeoForge registrations
 - [x] **ARC-06**: 50+ config values in squire-common.toml (no hardcoded gameplay numbers)
 - [x] **ARC-07**: Builtin datapack for entity tags and JSON data (not world-level)
-- [ ] **ARC-08**: Network payloads via StreamCodec (not manual FriendlyByteBuf)
+- [x] **ARC-08**: Network payloads via StreamCodec (not manual FriendlyByteBuf)
 - [x] **ARC-09**: Chunk loading during area clear operations
 
 ### Testing
@@ -173,12 +173,12 @@ Deferred to future release. Tracked but not in current roadmap.
 | NAV-01      | Phase 2 | Complete |
 | NAV-02      | Phase 2 | Complete |
 | NAV-03      | Phase 2 | Complete |
-| NAV-04      | Phase 2 | Pending     |
+| NAV-04      | Phase 2 | Complete |
 | NAV-05      | Phase 2 | Complete |
 | ARC-01      | Phase 2 | Complete |
 | ARC-02      | Phase 2 | Complete |
 | ARC-03      | Phase 2 | Complete |
-| ARC-08      | Phase 2 | Pending     |
+| ARC-08      | Phase 2 | Complete |
 | RND-01      | Phase 3 | Pending     |
 | RND-02      | Phase 3 | Pending     |
 | RND-03      | Phase 3 | Pending     |
