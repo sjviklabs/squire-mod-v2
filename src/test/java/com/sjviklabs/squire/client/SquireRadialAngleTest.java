@@ -1,6 +1,5 @@
 package com.sjviklabs.squire.client;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,10 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *   Wedge 1 — Stay      (right)
  *   Wedge 2 — Guard     (bottom)
  *   Wedge 3 — Inventory (left)
- *
- * @Disabled is removed in Task 2 once SquireRadialScreen.computeWedge() exists.
  */
-@Disabled("SquireRadialScreen.computeWedge() does not exist yet — RED state")
 class SquireRadialAngleTest {
 
     /**
