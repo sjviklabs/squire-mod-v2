@@ -49,7 +49,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Phase 2-3: Geckolib (declared now, used Phase 3)
-    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.8.3"
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.8.4"
 
     // Phase 8: Curios soft-dep (declared now, used Phase 8)
     compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1:api"

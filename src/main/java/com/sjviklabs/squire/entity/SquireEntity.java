@@ -5,6 +5,15 @@ import com.sjviklabs.squire.brain.SquireActivityLog;
 import com.sjviklabs.squire.brain.SquireBrain;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
 import net.minecraft.nbt.CompoundTag;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.Animation;
+import software.bernie.geckolib.animation.PlayState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -50,7 +59,7 @@ import java.util.UUID;
  * - SQUIRE_LEVEL Int     0-30
  * - SLIM_MODEL   Boolean false=wide arms (Steve), true=slim arms (Alex)
  */
-public class SquireEntity extends PathfinderMob {
+public class SquireEntity extends PathfinderMob implements GeoEntity {
 
     // ---- SynchedEntityData keys (MUST pass SquireEntity.class — not any superclass) ----
     private static final EntityDataAccessor<Byte> SQUIRE_MODE =
@@ -63,6 +72,19 @@ public class SquireEntity extends PathfinderMob {
     public static final byte MODE_FOLLOW = 0;
     public static final byte MODE_SIT    = 1;
     public static final byte MODE_GUARD  = 2;
+
+    // ---- Geckolib animation references ----
+    private static final RawAnimation IDLE_ANIM =
+            RawAnimation.begin().thenLoop("animation.squire.idle");
+    private static final RawAnimation WALK_ANIM =
+            RawAnimation.begin().thenLoop("animation.squire.walk");
+    private static final RawAnimation SPRINT_ANIM =
+            RawAnimation.begin().thenLoop("animation.squire.sprint");
+    private static final RawAnimation ATTACK_ANIM =
+            RawAnimation.begin().then("animation.squire.attack", Animation.LoopType.PLAY_ONCE);
+
+    // ---- Geckolib instance cache (MUST be private final, initialized at declaration) ----
+    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
 
     // ---- Owner tracking (UUID-based, no TamableAnimal dependency) ----
     @Nullable
@@ -461,5 +483,32 @@ public class SquireEntity extends PathfinderMob {
     @Override
     protected SoundEvent getDeathSound() {
         return SoundEvents.PLAYER_DEATH;
+    }
+
+    // ================================================================
+    // GeoEntity — Geckolib animation interface
+    // ================================================================
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "locomotion", 5, this::locomotionController));
+        controllers.add(new AnimationController<>(this, "combat", 3, this::combatController));
+    }
+
+    private <E extends SquireEntity> PlayState locomotionController(AnimationState<E> state) {
+        if (state.isMoving()) {
+            return state.setAndContinue(this.isSprinting() ? SPRINT_ANIM : WALK_ANIM);
+        }
+        return state.setAndContinue(IDLE_ANIM);
+    }
+
+    private <E extends SquireEntity> PlayState combatController(AnimationState<E> state) {
+        // Triggered animations managed via triggerAnim() from CombatHandler (Phase 4)
+        return PlayState.STOP;
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.geoCache;
     }
 }
