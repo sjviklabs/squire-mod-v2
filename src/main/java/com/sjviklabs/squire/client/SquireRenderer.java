@@ -6,6 +6,8 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.network.chat.Component;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
+import com.sjviklabs.squire.client.SquireArmorLayer;
+import com.sjviklabs.squire.client.SquireBackpackLayer;
 
 /**
  * Geckolib entity renderer for the squire.
@@ -23,7 +25,8 @@ public class SquireRenderer extends GeoEntityRenderer<SquireEntity> {
 
     public SquireRenderer(EntityRendererProvider.Context context) {
         super(context, new SquireModel());
-        // Render layers added in 03-03 (SquireArmorLayer, SquireBackpackLayer)
+        addRenderLayer(new SquireArmorLayer(this));
+        addRenderLayer(new SquireBackpackLayer(this));
     }
 
     @Override
