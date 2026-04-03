@@ -107,7 +107,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [ ] **ARC-02**: Handler-per-behavior pattern (one handler class per behavior)
 - [ ] **ARC-03**: Internal event bus so handlers react to each other's state changes
 - [ ] **ARC-04**: SquireEntity (lifecycle/NBT) split from SquireBrain (AI/FSM)
-- [ ] **ARC-05**: Single SquireRegistry for all NeoForge registrations
+- [x] **ARC-05**: Single SquireRegistry for all NeoForge registrations
 - [ ] **ARC-06**: 50+ config values in squire-common.toml (no hardcoded gameplay numbers)
 - [ ] **ARC-07**: Builtin datapack for entity tags and JSON data (not world-level)
 - [ ] **ARC-08**: Network payloads via StreamCodec (not manual FriendlyByteBuf)
@@ -164,7 +164,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | INV-02      | Phase 1 | Pending     |
 | INV-06      | Phase 1 | Pending     |
 | ARC-04      | Phase 1 | Pending     |
-| ARC-05      | Phase 1 | Pending     |
+| ARC-05      | Phase 1 | Complete |
 | ARC-06      | Phase 1 | Pending     |
 | ARC-07      | Phase 1 | Pending     |
 | ARC-09      | Phase 1 | Pending     |

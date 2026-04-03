@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-04-03T05:40:54.794Z"
+stopped_at: Completed 01-01-PLAN.md — mod scaffold, SquireRegistry hub, build green
+last_updated: "2026-04-03T06:54:10.991Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 5
+  completed_plans: 1
   percent: 0
 ---
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 _Updated after each plan completion_
+| Phase 01-core-entity-foundation P01 | 24 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - Foundation: Geckolib 4.8.3 for rendering — only production-ready option; 4.7.6 is confirmed safe fallback if 4.8.3 Maven coords don't resolve
 - Foundation: Builtin datapack embed from day one — NeoForge 1.21.1 issue #857 (datapack desync) is EOL/won't fix; must embed, not retrofit
 - Foundation: Per-entry JSON files for progression data — enables surgical operator overrides without replacing whole file
+- [Phase 01-01]: Modrinth Maven URL is api.modrinth.com/maven — maven.modrinth.com DNS does not resolve in lab environment
+- [Phase 01-01]: MineColonies 1.21.1 compileOnly dep commented out — ldtteam Jfrog repo has no 1.21.1 artifact; coordinates need Phase 8 research
 
 ### Research Flags (for planning phases)
 
@@ -81,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T05:40:54.792Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-core-entity-foundation/01-CONTEXT.md
+Last session: 2026-04-03T06:54:10.989Z
+Stopped at: Completed 01-01-PLAN.md — mod scaffold, SquireRegistry hub, build green
+Resume file: None
