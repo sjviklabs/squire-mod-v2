@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-04-PLAN.md — SquireConfig 53-entry TOML and 5 progression JSON datapack files
-last_updated: "2026-04-03T07:18:04.586Z"
+stopped_at: Completed 01-03-PLAN.md — SquireItemHandler IItemHandler capability and SquireMenu stub
+last_updated: "2026-04-03T07:51:20.952Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 0
-  total_plans: 5
-  completed_plans: 3
+  total_plans: 10
+  completed_plans: 4
   percent: 0
 ---
 
@@ -55,6 +55,7 @@ _Updated after each plan completion_
 | Phase 01-core-entity-foundation P01 | 24 | 2 tasks | 10 files |
 | Phase 01-core-entity-foundation P02 | 15 | 2 tasks | 6 files |
 | Phase 01-core-entity-foundation P04 | 18 | 2 tasks | 7 files |
+| Phase 01-core-entity-foundation P03 | 27 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [Phase 01-core-entity-foundation]: itemHandler declared as Object in SquireEntity to avoid forward-reference compile error — Plan 01-03 casts and initializes
 - [Phase 01-core-entity-foundation]: ModContainer constructor injection for registerConfig — ModLoadingContext.get() removed that overload in NeoForge 21.1; container parameter is the correct pattern
 - [Phase 01-core-entity-foundation]: squire_tier.json filename avoids namespace collision with modid — tier field inside remains 'squire' for SquireTier enum matching
+- [Phase 01-core-entity-foundation]: ItemStackHandler at max capacity (42) — getSlots() gates tier access, avoids resize on tier-up
+- [Phase 01-core-entity-foundation]: IMenuTypeExtension.create() over new MenuType() — required for RegistryFriendlyByteBuf extra data (entity ID) in NeoForge 21.1.221
+- [Phase 01-core-entity-foundation]: onContentsChanged no-op on PathfinderMob — entity NBT auto-saved by level; setChanged() is BlockEntity-only
 
 ### Research Flags (for planning phases)
 
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T07:18:04.584Z
-Stopped at: Completed 01-04-PLAN.md — SquireConfig 53-entry TOML and 5 progression JSON datapack files
+Last session: 2026-04-03T07:51:20.950Z
+Stopped at: Completed 01-03-PLAN.md — SquireItemHandler IItemHandler capability and SquireMenu stub
 Resume file: None

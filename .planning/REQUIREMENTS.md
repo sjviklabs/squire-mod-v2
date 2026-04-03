@@ -49,12 +49,12 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Inventory & Equipment
 
-- [ ] **INV-01**: Squire has tiered inventory (9 slots at Servant, expanding to 36 at Champion)
-- [ ] **INV-02**: Inventory implemented via IItemHandler capability (not SimpleContainer)
+- [x] **INV-01**: Squire has tiered inventory (9 slots at Servant, expanding to 36 at Champion)
+- [x] **INV-02**: Inventory implemented via IItemHandler capability (not SimpleContainer)
 - [ ] **INV-03**: Squire picks up nearby items (with junk filtering)
 - [ ] **INV-04**: Custom 4-piece armor set with tiered textures (visual changes per tier)
 - [ ] **INV-05**: Curios/Accessories integration for equipment slots (soft dependency)
-- [ ] **INV-06**: Inventory accessible via GUI screen
+- [x] **INV-06**: Inventory accessible via GUI screen
 
 ### Work Behaviors
 
@@ -111,7 +111,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **ARC-06**: 50+ config values in squire-common.toml (no hardcoded gameplay numbers)
 - [x] **ARC-07**: Builtin datapack for entity tags and JSON data (not world-level)
 - [ ] **ARC-08**: Network payloads via StreamCodec (not manual FriendlyByteBuf)
-- [ ] **ARC-09**: Chunk loading during area clear operations
+- [x] **ARC-09**: Chunk loading during area clear operations
 
 ### Testing
 
@@ -160,14 +160,14 @@ Deferred to future release. Tracked but not in current roadmap.
 | ENT-05      | Phase 1 | Complete |
 | ENT-06      | Phase 1 | Complete |
 | ENT-07      | Phase 1 | Complete |
-| INV-01      | Phase 1 | Pending     |
-| INV-02      | Phase 1 | Pending     |
-| INV-06      | Phase 1 | Pending     |
+| INV-01      | Phase 1 | Complete |
+| INV-02      | Phase 1 | Complete |
+| INV-06      | Phase 1 | Complete |
 | ARC-04      | Phase 1 | Pending     |
 | ARC-05      | Phase 1 | Complete |
 | ARC-06      | Phase 1 | Complete |
 | ARC-07      | Phase 1 | Complete |
-| ARC-09      | Phase 1 | Pending     |
+| ARC-09      | Phase 1 | Complete |
 | TST-01      | Phase 1 | Pending     |
 | TST-02      | Phase 1 | Pending     |
 | NAV-01      | Phase 2 | Pending     |
