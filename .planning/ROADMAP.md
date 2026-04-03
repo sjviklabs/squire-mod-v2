@@ -178,7 +178,7 @@ Plans:
 - [ ] 07-01: SignpostBlock + SignpostBlockEntity — PTR-01/03, block registration, route name storage, waypoint ordering UI
 - [ ] 07-02: PatrolHandler — PTR-02, named route walking, post-combat patrol resume, stuck recovery on route
 - [ ] 07-03: MountHandler — MNT-01/02/04, horse mount/dismount, follow-while-mounted, horse UUID NBT persistence
-- [ ] 07-04: Mounted combat — MNT-03, combat engagement while mounted (verify PathfinderMob mounted navigation before implementing)
+- [ ] 07-04: Mounted combat — MNT-03, combat engagement while mounted, horse HP flee threshold, no ranged while mounted
 
 ### Phase 8: Compatibility and Polish
 
