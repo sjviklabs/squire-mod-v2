@@ -1,0 +1,70 @@
+# Project State
+
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-04-02)
+
+**Core value:** The squire feels like a real companion — it walks everywhere (never teleports), grows through shared experience, and handles itself intelligently in combat and work without the player micromanaging it.
+**Current focus:** Phase 1 — Core Entity Foundation
+
+## Current Position
+
+Phase: 1 of 8 (Core Entity Foundation)
+Plan: 0 of 5 in current phase
+Status: Ready to plan
+Last activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+
+- Total plans completed: 0
+- Average duration: -
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+| ----- | ----- | ----- | -------- |
+| -     | -     | -     | -        |
+
+**Recent Trend:**
+
+- Last 5 plans: -
+- Trend: -
+
+_Updated after each plan completion_
+
+## Accumulated Context
+
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- Foundation: PathfinderMob base class (not TamableAnimal) — avoids vanilla goal conflicts, owner tracking is ~80 lines
+- Foundation: Geckolib 4.8.3 for rendering — only production-ready option; 4.7.6 is confirmed safe fallback if 4.8.3 Maven coords don't resolve
+- Foundation: Builtin datapack embed from day one — NeoForge 1.21.1 issue #857 (datapack desync) is EOL/won't fix; must embed, not retrofit
+- Foundation: Per-entry JSON files for progression data — enables surgical operator overrides without replacing whole file
+
+### Research Flags (for planning phases)
+
+- Phase 6 (FishingHandler): Verify 1.21.1 bobber entity behavior and loot table trigger path before implementing
+- Phase 7 (MountHandler): PathfinderMob mounted navigation is sparsely documented — research before Phase 7 design
+- Phase 8 (MineColonies whitelist): Verify specific API method signatures in MineColonies 1.1.1231 before implementing compat
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+None yet.
+
+## Session Continuity
+
+Last session: 2026-04-02
+Stopped at: Roadmap written, STATE.md initialized, REQUIREMENTS.md traceability populated. Ready for `/gsd:plan-phase 1`.
+Resume file: None

@@ -151,17 +151,88 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ## Traceability
 
-| Requirement | Phase | Status |
-| --- | --- | --- |
-| (Populated during roadmap creation) | | |
+| Requirement | Phase   | Status      |
+| ----------- | ------- | ----------- |
+| ENT-01      | Phase 1 | Pending     |
+| ENT-02      | Phase 1 | Pending     |
+| ENT-03      | Phase 1 | Pending     |
+| ENT-04      | Phase 1 | Pending     |
+| ENT-05      | Phase 1 | Pending     |
+| ENT-06      | Phase 1 | Pending     |
+| ENT-07      | Phase 1 | Pending     |
+| INV-01      | Phase 1 | Pending     |
+| INV-02      | Phase 1 | Pending     |
+| INV-06      | Phase 1 | Pending     |
+| ARC-04      | Phase 1 | Pending     |
+| ARC-05      | Phase 1 | Pending     |
+| ARC-06      | Phase 1 | Pending     |
+| ARC-07      | Phase 1 | Pending     |
+| ARC-09      | Phase 1 | Pending     |
+| TST-01      | Phase 1 | Pending     |
+| TST-02      | Phase 1 | Pending     |
+| NAV-01      | Phase 2 | Pending     |
+| NAV-02      | Phase 2 | Pending     |
+| NAV-03      | Phase 2 | Pending     |
+| NAV-04      | Phase 2 | Pending     |
+| NAV-05      | Phase 2 | Pending     |
+| ARC-01      | Phase 2 | Pending     |
+| ARC-02      | Phase 2 | Pending     |
+| ARC-03      | Phase 2 | Pending     |
+| ARC-08      | Phase 2 | Pending     |
+| RND-01      | Phase 3 | Pending     |
+| RND-02      | Phase 3 | Pending     |
+| RND-03      | Phase 3 | Pending     |
+| RND-04      | Phase 3 | Pending     |
+| RND-05      | Phase 3 | Pending     |
+| RND-06      | Phase 3 | Pending     |
+| INV-04      | Phase 3 | Pending     |
+| CMB-01      | Phase 4 | Pending     |
+| CMB-02      | Phase 4 | Pending     |
+| CMB-03      | Phase 4 | Pending     |
+| CMB-04      | Phase 4 | Pending     |
+| CMB-05      | Phase 4 | Pending     |
+| CMB-06      | Phase 4 | Pending     |
+| CMB-07      | Phase 4 | Pending     |
+| CMB-08      | Phase 4 | Pending     |
+| CMB-09      | Phase 4 | Pending     |
+| CMB-10      | Phase 4 | Pending     |
+| PRG-01      | Phase 4 | Pending     |
+| PRG-02      | Phase 4 | Pending     |
+| PRG-03      | Phase 4 | Pending     |
+| PRG-04      | Phase 4 | Pending     |
+| PRG-05      | Phase 4 | Pending     |
+| PRG-06      | Phase 4 | Pending     |
+| GUI-01      | Phase 5 | Pending     |
+| GUI-02      | Phase 5 | Pending     |
+| GUI-03      | Phase 5 | Pending     |
+| INV-03      | Phase 5 | Pending     |
+| INV-05      | Phase 8 | Pending     |
+| WRK-01      | Phase 6 | Pending     |
+| WRK-02      | Phase 6 | Pending     |
+| WRK-03      | Phase 6 | Pending     |
+| WRK-04      | Phase 6 | Pending     |
+| WRK-05      | Phase 6 | Pending     |
+| WRK-06      | Phase 6 | Pending     |
+| WRK-07      | Phase 6 | Pending     |
+| WRK-08      | Phase 6 | Pending     |
+| PTR-01      | Phase 7 | Pending     |
+| PTR-02      | Phase 7 | Pending     |
+| PTR-03      | Phase 7 | Pending     |
+| MNT-01      | Phase 7 | Pending     |
+| MNT-02      | Phase 7 | Pending     |
+| MNT-03      | Phase 7 | Pending     |
+| MNT-04      | Phase 7 | Pending     |
+| CMP-01      | Phase 8 | Pending     |
+| CMP-02      | Phase 8 | Pending     |
+| CMP-03      | Phase 8 | Pending     |
 
 **Coverage:**
 
-- v1 requirements: 53 total
-- Mapped to phases: 0
-- Unmapped: 53
+- v1 requirements: 72 total
+- Mapped to phases: 72
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-04-02_
-_Last updated: 2026-04-02 after initial definition_
+_Last updated: 2026-04-02 — traceability populated after roadmap creation_
