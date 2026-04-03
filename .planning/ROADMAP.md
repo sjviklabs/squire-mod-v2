@@ -196,9 +196,9 @@ Plans:
 
 Plans:
 
-- [ ] 08-01: MineColoniesCompat — CMP-01, friendly-fire gate, clearance prevention, MobCategory.MISC, ModList guard (verify whitelist API against MineColonies 1.1.1231 before implementing)
-- [ ] 08-02: JadeCompat + CuriosCompat — CMP-02 Jade status overlay provider, CMP-03/INV-05 Curios slot registration, soft-dep guards
-- [ ] 08-03: Polish pass — full "looks done but isn't" checklist, Oculus final verification, config validation final pass, dedicated server smoke test
+- [ ] 08-01-PLAN.md — MineColoniesCompat: package-scan entity detection (zero MC imports), friendly-fire gate, ModList guard (CMP-01)
+- [ ] 08-02-PLAN.md — JadeCompat @WailaPlugin tooltip + CuriosCompat runtime accessor + slot datapack JSON (CMP-02, CMP-03, INV-05)
+- [ ] 08-03-PLAN.md — Wire optional deps in neoforge.mods.toml + SquireMod startup logging + ATM10 human smoke test
 
 ## Progress
 
