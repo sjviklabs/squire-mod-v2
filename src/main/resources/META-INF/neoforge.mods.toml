@@ -1,0 +1,30 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+    modId = "squire"
+    version = "2.0.0"
+    displayName = "Squire Mod v2"
+    description = "A real companion — walks everywhere, never teleports."
+
+[[dependencies.squire]]
+    modId = "neoforge"
+    type = "required"
+    versionRange = "[21.1.221,)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.squire]]
+    modId = "minecraft"
+    type = "required"
+    versionRange = "[1.21.1,)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.squire]]
+    modId = "geckolib"
+    type = "required"
+    versionRange = "[4.8,)"
+    ordering = "NONE"
+    side = "BOTH"

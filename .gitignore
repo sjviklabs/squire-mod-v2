@@ -1,0 +1,49 @@
+# Eclipse
+bin/
+*.launch
+.settings/
+.metadata/
+.classpath
+.project
+
+# IntelliJ IDEA
+out/
+*.ipr
+*.iws
+*.iml
+.idea/
+
+# VS Code
+.vscode/
+
+# Gradle
+build/
+.gradle/
+
+# NeoForge / Minecraft
+run/
+runs/
+run-data/
+src/generated/
+crash-reports/
+logs/
+*.log
+run_output.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Secrets / env
+.env
+*.pem
+*.key
+
+# Releases (local JAR staging)
+releases/
+
+# Other
+repo/
+eclipse/
