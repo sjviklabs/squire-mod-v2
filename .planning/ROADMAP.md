@@ -104,7 +104,7 @@ Plans:
 4. Squire earns XP from kills and advances through all 5 tiers; tier thresholds come from JSON datapack (not hardcoded)
 5. Combat tactics resolve lazily at first engagement from entity type tags — no hardcoded mob instance checks anywhere in CombatHandler
 
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
 
@@ -127,7 +127,7 @@ Plans:
 4. Squire picks up nearby dropped items, filtered against the configured junk list (INV-03)
 5. All UI code is clean of client-side class references in server paths — mod loads without crash on a dedicated server
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
@@ -149,7 +149,7 @@ Plans:
 4. Squire interacts with containers — deposits excess inventory into a target chest, withdraws requested items
 5. Player can queue multiple work commands in sequence; squire executes them in order and reports completion via chat
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
@@ -171,7 +171,7 @@ Plans:
 4. Squire engages mobs in combat while mounted; dismounts when the horse is killed or when commanded
 5. Horse UUID persists in NBT — squire returns to the same horse after server restart
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
@@ -192,7 +192,7 @@ Plans:
 3. Curios/Accessories equipment slots are registered and functional when Curios is present; mod loads and functions correctly without Curios
 4. All three compat providers are guarded by ModList.isLoaded() — no class-not-found errors when optional dependencies are absent
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 
