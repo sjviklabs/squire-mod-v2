@@ -1,0 +1,106 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "animation.squire.idle": {
+      "animation_length": 2.0,
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": {
+            "0.0": [0, 0, 0],
+            "1.0": [5, 0, 0],
+            "2.0": [0, 0, 0]
+          }
+        }
+      }
+    },
+    "animation.squire.walk": {
+      "animation_length": 1.0,
+      "loop": true,
+      "bones": {
+        "right_leg": {
+          "rotation": {
+            "0.0": [30, 0, 0],
+            "0.5": [-30, 0, 0],
+            "1.0": [30, 0, 0]
+          }
+        },
+        "left_leg": {
+          "rotation": {
+            "0.0": [-30, 0, 0],
+            "0.5": [30, 0, 0],
+            "1.0": [-30, 0, 0]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0.0": [-20, 0, 0],
+            "0.5": [20, 0, 0],
+            "1.0": [-20, 0, 0]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0.0": [20, 0, 0],
+            "0.5": [-20, 0, 0],
+            "1.0": [20, 0, 0]
+          }
+        }
+      }
+    },
+    "animation.squire.sprint": {
+      "animation_length": 0.5,
+      "loop": true,
+      "bones": {
+        "right_leg": {
+          "rotation": {
+            "0.0": [45, 0, 0],
+            "0.25": [-45, 0, 0],
+            "0.5": [45, 0, 0]
+          }
+        },
+        "left_leg": {
+          "rotation": {
+            "0.0": [-45, 0, 0],
+            "0.25": [45, 0, 0],
+            "0.5": [-45, 0, 0]
+          }
+        },
+        "right_arm": {
+          "rotation": {
+            "0.0": [-30, 0, 0],
+            "0.25": [30, 0, 0],
+            "0.5": [-30, 0, 0]
+          }
+        },
+        "left_arm": {
+          "rotation": {
+            "0.0": [30, 0, 0],
+            "0.25": [-30, 0, 0],
+            "0.5": [30, 0, 0]
+          }
+        },
+        "body": {
+          "rotation": {
+            "0.0": [-10, 0, 0],
+            "0.5": [-10, 0, 0]
+          }
+        }
+      }
+    },
+    "animation.squire.attack": {
+      "animation_length": 0.5,
+      "loop": false,
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0.0": [0, 0, 0],
+            "0.1": [-90, 0, 0],
+            "0.4": [20, 0, 0],
+            "0.5": [0, 0, 0]
+          }
+        }
+      }
+    }
+  }
+}
