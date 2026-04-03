@@ -4,6 +4,8 @@ import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
 import com.sjviklabs.squire.item.SquireCrestItem;
+import com.sjviklabs.squire.network.SquireCommandPayload;
+import com.sjviklabs.squire.network.SquireModePayload;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -16,6 +18,8 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
@@ -118,6 +122,29 @@ public final class SquireRegistry {
      *
      * Both return the same SquireItemHandler so automation sees the same inventory as the GUI.
      */
+    /**
+     * Registers network payloads on the MOD event bus.
+     * Both payloads use StreamCodec.composite() — no raw FriendlyByteBuf writes (ARC-08).
+     *
+     * Phase 2 payloads:
+     * - SquireCommandPayload: CMD_STAY and CMD_FOLLOW (client → server)
+     * - SquireModePayload:    mode query stub, no-op in Phase 2 (client → server)
+     */
+    @SubscribeEvent
+    public static void registerPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToServer(
+                SquireCommandPayload.TYPE,
+                SquireCommandPayload.STREAM_CODEC,
+                SquireCommandPayload::handle
+        );
+        registrar.playToServer(
+                SquireModePayload.TYPE,
+                SquireModePayload.STREAM_CODEC,
+                SquireModePayload::handle
+        );
+    }
+
     @SubscribeEvent
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerEntity(
