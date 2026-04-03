@@ -50,10 +50,13 @@ dependencies {
     localRuntime "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
 
     // Phase 8: Jade soft-dep (declared now, used Phase 8)
+    // Uses api.modrinth.com/maven — Jade project slug on Modrinth is "jade"
     compileOnly "maven.modrinth:jade:15.10.4+neoforge"
 
-    // Phase 8: MineColonies soft-dep (declared now, used Phase 8)
-    compileOnly "com.minecolonies:minecolonies:1.1.1231-1.21.1:api"
+    // Phase 8: MineColonies soft-dep — coordinates need verification at Phase 8
+    // The ldtteam Jfrog repo only publishes 1.12.2-era artifacts.
+    // TODO Phase 8: verify correct Maven coordinates for MineColonies 1.21.1 API jar
+    // compileOnly "com.minecolonies:minecolonies:1.1.1231-1.21.1:api"
 }
 
 test {
@@ -65,7 +68,8 @@ repositories {
     maven { url = "https://maven.theillusivec4.top/" }
     maven { url = "https://www.cursemaven.com" }
     maven { url = "https://ldtteam.jfrog.io/ldtteam/modding/" }
-    maven { url = "https://maven.modrinth.com" }
+    // Modrinth Maven — correct URL is api.modrinth.com/maven (maven.modrinth.com is unreliable)
+    maven { url = "https://api.modrinth.com/maven" }
 }
 
 tasks.withType(JavaCompile).configureEach {
