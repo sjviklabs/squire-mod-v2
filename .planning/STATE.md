@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-03-PLAN.md — SquireItemHandler IItemHandler capability and SquireMenu stub
-last_updated: "2026-04-03T07:51:20.952Z"
+stopped_at: "Completed 01-05-PLAN.md — Phase 1 test harness: 36 JUnit 5 tests green, GameTest scaffold compiled"
+last_updated: "2026-04-03T08:10:07.989Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
-  completed_phases: 0
-  total_plans: 10
-  completed_plans: 4
+  completed_phases: 1
+  total_plans: 13
+  completed_plans: 5
   percent: 0
 ---
 
@@ -56,6 +56,7 @@ _Updated after each plan completion_
 | Phase 01-core-entity-foundation P02 | 15 | 2 tasks | 6 files |
 | Phase 01-core-entity-foundation P04 | 18 | 2 tasks | 7 files |
 | Phase 01-core-entity-foundation P03 | 27 | 2 tasks | 4 files |
+| Phase 01-core-entity-foundation P05 | 18 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,9 @@ Recent decisions affecting current work:
 - [Phase 01-core-entity-foundation]: ItemStackHandler at max capacity (42) — getSlots() gates tier access, avoids resize on tier-up
 - [Phase 01-core-entity-foundation]: IMenuTypeExtension.create() over new MenuType() — required for RegistryFriendlyByteBuf extra data (entity ID) in NeoForge 21.1.221
 - [Phase 01-core-entity-foundation]: onContentsChanged no-op on PathfinderMob — entity NBT auto-saved by level; setChanged() is BlockEntity-only
+- [Phase 01-core-entity-foundation]: unitTest { enable() } required in moddev DSL — without it NeoForge/MC/DFU classes are absent from JUnit classpath
+- [Phase 01-core-entity-foundation]: TestableItemHandler test double accepts SquireTier directly, bypassing live SquireEntity DeferredHolder requirement
+- [Phase 01-core-entity-foundation]: SquireData CODEC test uses JsonOps.INSTANCE headlessly — DFU is pure Java, no NeoForge bootstrap needed
 
 ### Research Flags (for planning phases)
 
@@ -94,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T07:51:20.950Z
-Stopped at: Completed 01-03-PLAN.md — SquireItemHandler IItemHandler capability and SquireMenu stub
+Last session: 2026-04-03T08:10:07.986Z
+Stopped at: Completed 01-05-PLAN.md — Phase 1 test harness: 36 JUnit 5 tests green, GameTest scaffold compiled
 Resume file: None

@@ -13,7 +13,7 @@ Eight phases derived from the actual dependency graph of the build. Phases 1-2 a
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Core Entity Foundation** - Register the squire, establish persistence, inventory, and config — everything downstream depends on these being correct
+- [x] **Phase 1: Core Entity Foundation** - Register the squire, establish persistence, inventory, and config — everything downstream depends on these being correct (completed 2026-04-03)
 - [ ] **Phase 2: Brain, FSM, and Follow** - The state machine skeleton and the first real behavior — squire walks with the player, never teleports
 - [ ] **Phase 3: Rendering** - Geckolib entity model, animations, skin variants, armor layers — squire looks like a squire
 - [ ] **Phase 4: Combat and Progression** - Melee, ranged, flee, auto-equip, 5-tier XP system, data-driven tactics — squire fights and grows
@@ -207,7 +207,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase                          | Plans Complete | Status      | Completed |
 | ------------------------------ | -------------- | ----------- | --------- |
-| 1. Core Entity Foundation      | 4/5            | In Progress | -         |
+| 1. Core Entity Foundation      | 5/5 | Complete   | 2026-04-03 |
 | 2. Brain, FSM, and Follow      | 0/4            | Planned     | -         |
 | 3. Rendering                   | 0/4            | Planned     | -         |
 | 4. Combat and Progression      | 0/5            | Not started | -         |

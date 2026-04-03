@@ -115,8 +115,8 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Testing
 
-- [ ] **TST-01**: JUnit 5 unit tests for core systems (FSM, inventory, progression)
-- [ ] **TST-02**: NeoForge GameTests for in-world entity verification
+- [x] **TST-01**: JUnit 5 unit tests for core systems (FSM, inventory, progression)
+- [x] **TST-02**: NeoForge GameTests for in-world entity verification
 
 ## v2 Requirements
 
@@ -168,8 +168,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | ARC-06      | Phase 1 | Complete |
 | ARC-07      | Phase 1 | Complete |
 | ARC-09      | Phase 1 | Complete |
-| TST-01      | Phase 1 | Pending     |
-| TST-02      | Phase 1 | Pending     |
+| TST-01      | Phase 1 | Complete |
+| TST-02      | Phase 1 | Complete |
 | NAV-01      | Phase 2 | Pending     |
 | NAV-02      | Phase 2 | Pending     |
 | NAV-03      | Phase 2 | Pending     |
