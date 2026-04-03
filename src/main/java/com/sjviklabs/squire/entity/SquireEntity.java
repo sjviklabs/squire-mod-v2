@@ -4,7 +4,9 @@ import com.sjviklabs.squire.SquireRegistry;
 import com.sjviklabs.squire.brain.SquireActivityLog;
 import com.sjviklabs.squire.brain.SquireBrain;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
+import com.sjviklabs.squire.progression.ProgressionHandler;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.tags.DamageTypeTags;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
@@ -107,6 +109,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     @Nullable
     private SquireActivityLog activityLog;
 
+    // ---- Progression handler (lazy-initialized in aiStep — requires entity registered) ----
+    @Nullable
+    private ProgressionHandler progressionHandler;
+
     // ================================================================
     // Constructor
     // ================================================================
@@ -122,6 +128,12 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     /** Returns this squire's IItemHandler (used by capability registration and SquireMenu). */
     public SquireItemHandler getItemHandler() {
         return this.itemHandler;
+    }
+
+    /** Returns the progression handler (may be null before first server-side tick). */
+    @Nullable
+    public ProgressionHandler getProgressionHandler() {
+        return this.progressionHandler;
     }
 
     // ================================================================
@@ -388,13 +400,37 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
 
     @Override
     public void aiStep() {
-        if (!this.level().isClientSide && this.squireBrain == null) {
-            this.squireBrain = new SquireBrain(this);
+        if (!this.level().isClientSide) {
+            if (this.squireBrain == null) {
+                this.squireBrain = new SquireBrain(this);
+            }
+            if (this.progressionHandler == null) {
+                this.progressionHandler = new ProgressionHandler(this);
+                // Apply attribute modifiers from saved NBT level (already set via readAdditionalSaveData)
+                this.progressionHandler.setFromAttachment(this.totalXP, getLevel());
+            }
         }
         if (this.squireBrain != null) {
             this.squireBrain.tick();
         }
+        if (this.progressionHandler != null) {
+            this.progressionHandler.tick(); // ticks down undying cooldown
+        }
         super.aiStep();
+        // PathfinderMob does not call updateSwingTime() automatically (only Monster does).
+        // Required for weapon swing animations to complete at the correct duration.
+        // See: 04-RESEARCH.md Pitfall F — attack animation duration.
+        this.updateSwingTime();
+    }
+
+    /**
+     * Extend swing duration to 10 ticks to match the halberd animation length.
+     * PathfinderMob default is 6 ticks — too short for a two-handed weapon swing.
+     * See: 04-RESEARCH.md Pitfall F — attack animation duration.
+     */
+    @Override
+    public int getCurrentSwingDuration() {
+        return 10;
     }
 
     // ================================================================
