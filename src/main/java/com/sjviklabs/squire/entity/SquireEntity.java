@@ -39,6 +39,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.util.FakePlayer;
 
+import net.minecraft.world.item.NameTagItem;
+import net.minecraft.core.component.DataComponents;
+
 import javax.annotation.Nullable;
 import java.util.UUID;
 
@@ -292,6 +295,20 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
      */
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        // RND-03: Name tag interaction — rename the squire
+        if (!this.level().isClientSide()
+                && player.getItemInHand(hand).getItem() instanceof NameTagItem) {
+            Component newName = player.getItemInHand(hand).get(DataComponents.CUSTOM_NAME);
+            if (newName != null) {
+                this.setCustomName(newName);
+                this.setCustomNameVisible(true);
+                if (!player.getAbilities().instabuild) {
+                    player.getItemInHand(hand).shrink(1);
+                }
+                return InteractionResult.SUCCESS;
+            }
+        }
+
         if (!this.level().isClientSide && player instanceof ServerPlayer serverPlayer) {
             if (this.isOwnedBy(player)) {
                 final int entityId = this.getId();
@@ -321,6 +338,19 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
      */
     public void ensureChunkLoaded() {
         // Phase 6: ForceChunkManager.forceChunk((ServerLevel)this.level(), this.chunkPosition(), this, true);
+    }
+
+    // ================================================================
+    // Name display (RND-03)
+    // ================================================================
+
+    /**
+     * Show the name tag above the squire whenever a custom name is set,
+     * regardless of look angle or distance. Matches v0.5.0 behavior.
+     */
+    @Override
+    public boolean shouldShowName() {
+        return this.hasCustomName();
     }
 
     // ================================================================
