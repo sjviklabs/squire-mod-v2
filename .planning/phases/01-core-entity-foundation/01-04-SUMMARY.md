@@ -79,7 +79,7 @@ completed: 2026-04-03
 1. **Task 1: SquireConfig — 53-entry TOML with validator-correct defaults** - `d857254` (feat)
 2. **Task 2: Builtin datapack — 5 progression JSON files embedded in JAR** - `8e80840` (feat)
 
-**Plan metadata:** pending final commit (docs)
+**Plan metadata:** `21b8487` (docs: complete plan)
 
 ## Files Created/Modified
 
