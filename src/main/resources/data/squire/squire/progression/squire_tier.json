@@ -1,0 +1,10 @@
+{
+  "tier": "squire",
+  "min_level": 10,
+  "backpack_slots": 27,
+  "max_health": 30.0,
+  "attack_damage": 7.0,
+  "movement_speed": 0.34,
+  "xp_to_next": 2000,
+  "description": "A proven warrior. Ranged combat and shield unlocked."
+}

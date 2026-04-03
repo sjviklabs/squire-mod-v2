@@ -1,0 +1,10 @@
+{
+  "tier": "apprentice",
+  "min_level": 5,
+  "backpack_slots": 18,
+  "max_health": 25.0,
+  "attack_damage": 5.0,
+  "movement_speed": 0.32,
+  "xp_to_next": 1000,
+  "description": "Learning the ropes. Combat unlocked."
+}

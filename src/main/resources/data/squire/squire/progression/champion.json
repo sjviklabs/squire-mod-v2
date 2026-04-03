@@ -1,0 +1,10 @@
+{
+  "tier": "champion",
+  "min_level": 30,
+  "backpack_slots": 36,
+  "max_health": 40.0,
+  "attack_damage": 12.0,
+  "movement_speed": 0.38,
+  "xp_to_next": 0,
+  "description": "The pinnacle. Undying ability active."
+}

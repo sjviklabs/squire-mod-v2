@@ -1,0 +1,10 @@
+{
+  "tier": "servant",
+  "min_level": 0,
+  "backpack_slots": 9,
+  "max_health": 20.0,
+  "attack_damage": 3.0,
+  "movement_speed": 0.30,
+  "xp_to_next": 500,
+  "description": "A new companion, eager to prove themselves."
+}

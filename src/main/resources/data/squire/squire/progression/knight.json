@@ -1,0 +1,10 @@
+{
+  "tier": "knight",
+  "min_level": 20,
+  "backpack_slots": 32,
+  "max_health": 35.0,
+  "attack_damage": 9.0,
+  "movement_speed": 0.36,
+  "xp_to_next": 3000,
+  "description": "A veteran of many battles. Mounting unlocked."
+}
