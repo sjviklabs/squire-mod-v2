@@ -24,6 +24,12 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+    // Enable NeoForge/Minecraft classes on the JUnit 5 test classpath (TST-01)
+    // Without this, ItemStackHandler, ModConfigSpec, AttachmentType, etc. are not resolvable.
+    unitTest {
+        enable()
+        testedMod = mods.squire
+    }
 }
 
 java {
