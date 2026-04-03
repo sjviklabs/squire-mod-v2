@@ -1,8 +1,11 @@
 package com.sjviklabs.squire.brain;
 
+import com.sjviklabs.squire.brain.handler.CombatHandler;
+import com.sjviklabs.squire.brain.handler.DangerHandler;
 import com.sjviklabs.squire.brain.handler.FollowHandler;
 import com.sjviklabs.squire.brain.handler.SurvivalHandler;
 import com.sjviklabs.squire.entity.SquireEntity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 
 /**
@@ -27,6 +30,8 @@ public class SquireBrain {
     // ── Behavior handlers ────────────────────────────────────────────────────
     private final FollowHandler follow;
     private final SurvivalHandler survival;
+    private final CombatHandler combat;
+    private final DangerHandler danger;
 
     private int idleTicks;
 
@@ -41,6 +46,8 @@ public class SquireBrain {
         // 2. Initialize handlers
         this.follow = new FollowHandler(squire);
         this.survival = new SurvivalHandler(squire);
+        this.combat = new CombatHandler(squire);
+        this.danger = new DangerHandler(squire);
 
         // 3. Subscribe BEFORE registerTransitions() so no event fires into an empty handler.
         //    SIT_TOGGLE resets eat cooldown so squire doesn't eat mid-sit-down animation.
@@ -79,6 +86,10 @@ public class SquireBrain {
         return bus;
     }
 
+    public CombatHandler getCombatHandler() {
+        return combat;
+    }
+
     // -------------------------------------------------------------------------
     // Transitions
     // -------------------------------------------------------------------------
@@ -93,7 +104,103 @@ public class SquireBrain {
     private void registerTransitions() {
         registerSittingTransitions();
         registerEatingTransitions();
+        registerCombatTransitions();
         registerFollowTransitions();
+    }
+
+    /**
+     * COMBAT transitions (gap closure from Phase 4 verification):
+     * Priority 10-19 (combat layer, between sitting/eating and follow).
+     *
+     * - Global enter COMBAT_APPROACH when squire has a target and isn't sitting (priority 10, tickRate 5)
+     * - COMBAT_APPROACH per-tick: drives melee/tactic logic via CombatHandler.tick() (priority 11, tickRate 1)
+     * - COMBAT_APPROACH → COMBAT_RANGED when ranged is preferred (priority 12, tickRate 5)
+     * - COMBAT_RANGED per-tick: drives ranged logic via CombatHandler.tickRanged() (priority 13, tickRate 1)
+     * - COMBAT_APPROACH/COMBAT_RANGED → FLEEING when CombatHandler triggers flee (priority 10, tickRate 1)
+     * - FLEEING per-tick: keeps fleeing, returns to IDLE when safe (priority 11, tickRate 1)
+     * - Combat exit → IDLE when target is null/dead (priority 10, tickRate 5)
+     */
+    private void registerCombatTransitions() {
+        // Enter COMBAT_APPROACH (global — any non-sitting state when target exists)
+        machine.addTransition(new AITransition(
+                null,
+                () -> {
+                    if (squire.isOrderedToSit()) return false;
+                    LivingEntity target = squire.getTarget();
+                    return target != null && target.isAlive();
+                },
+                s -> {
+                    combat.start();
+                    bus.publish(SquireEvent.COMBAT_START, s);
+                    return SquireAIState.COMBAT_APPROACH;
+                },
+                5, 10
+        ));
+
+        // COMBAT_APPROACH per-tick: delegate to CombatHandler which returns next state
+        machine.addTransition(new AITransition(
+                SquireAIState.COMBAT_APPROACH,
+                () -> squire.getTarget() != null && squire.getTarget().isAlive(),
+                s -> {
+                    LivingEntity target = squire.getTarget();
+                    danger.tick(target, combat);
+                    SquireAIState next = combat.tick(s);
+                    // CombatHandler may return COMBAT_RANGED or FLEEING
+                    return next != null ? next : SquireAIState.COMBAT_APPROACH;
+                },
+                1, 11
+        ));
+
+        // COMBAT_RANGED per-tick
+        machine.addTransition(new AITransition(
+                SquireAIState.COMBAT_RANGED,
+                () -> squire.getTarget() != null && squire.getTarget().isAlive(),
+                s -> {
+                    SquireAIState next = combat.tickRanged(s);
+                    return next != null ? next : SquireAIState.COMBAT_RANGED;
+                },
+                1, 13
+        ));
+
+        // FLEEING per-tick: flee until safe distance reached, then exit combat
+        machine.addTransition(new AITransition(
+                SquireAIState.FLEEING,
+                () -> true,
+                s -> {
+                    LivingEntity target = squire.getTarget();
+                    if (target == null || !target.isAlive() || s.distanceToSqr(target) > 256) {
+                        combat.stop();
+                        squire.setTarget(null);
+                        bus.publish(SquireEvent.COMBAT_END, s);
+                        return SquireAIState.IDLE;
+                    }
+                    return SquireAIState.FLEEING;
+                },
+                1, 11
+        ));
+
+        // Exit combat when target dies or disappears (from any combat state)
+        machine.addTransition(new AITransition(
+                SquireAIState.COMBAT_APPROACH,
+                () -> squire.getTarget() == null || !squire.getTarget().isAlive(),
+                s -> {
+                    combat.stop();
+                    bus.publish(SquireEvent.COMBAT_END, s);
+                    return SquireAIState.IDLE;
+                },
+                5, 10
+        ));
+
+        machine.addTransition(new AITransition(
+                SquireAIState.COMBAT_RANGED,
+                () -> squire.getTarget() == null || !squire.getTarget().isAlive(),
+                s -> {
+                    combat.stop();
+                    bus.publish(SquireEvent.COMBAT_END, s);
+                    return SquireAIState.IDLE;
+                },
+                5, 10
+        ));
     }
 
     /**
