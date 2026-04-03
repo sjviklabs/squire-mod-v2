@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Core Entity Foundation** - Register the squire, establish persistence, inventory, and config — everything downstream depends on these being correct (completed 2026-04-03)
 - [x] **Phase 2: Brain, FSM, and Follow** - The state machine skeleton and the first real behavior — squire walks with the player, never teleports (completed 2026-04-03)
 - [x] **Phase 3: Rendering** - Geckolib entity model, animations, skin variants, armor layers — squire looks like a squire (completed 2026-04-03)
-- [ ] **Phase 4: Combat and Progression** - Melee, ranged, flee, auto-equip, 5-tier XP system, data-driven tactics — squire fights and grows
+- [x] **Phase 4: Combat and Progression** - Melee, ranged, flee, auto-equip, 5-tier XP system, data-driven tactics — squire fights and grows (completed 2026-04-03)
 - [ ] **Phase 5: UI and Controls** - Inventory screen, radial menu, commands, Crest item — player can control and equip the squire
 - [ ] **Phase 6: Work Behaviors** - Mining, farming, fishing, torch placement, task queuing, personality — squire is a working companion, not just a bodyguard
 - [ ] **Phase 7: Patrol and Mounting** - Signpost waypoints, patrol routes, horse riding, mounted combat — squire handles advanced autonomous tasks
@@ -210,7 +210,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 1. Core Entity Foundation      | 5/5 | Complete    | 2026-04-03 |
 | 2. Brain, FSM, and Follow      | 4/4 | Complete    | 2026-04-03 |
 | 3. Rendering                   | 4/4 | Complete    | 2026-04-03 |
-| 4. Combat and Progression      | 4/5 | In Progress|  |
+| 4. Combat and Progression      | 5/5 | Complete   | 2026-04-03 |
 | 5. UI and Controls             | 0/4            | Not started | -         |
 | 6. Work Behaviors              | 0/4            | Not started | -         |
 | 7. Patrol and Mounting         | 0/4            | Not started | -         |
