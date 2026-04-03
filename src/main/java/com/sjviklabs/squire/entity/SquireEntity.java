@@ -1,6 +1,7 @@
 package com.sjviklabs.squire.entity;
 
 import com.sjviklabs.squire.SquireRegistry;
+import com.sjviklabs.squire.brain.SquireActivityLog;
 import com.sjviklabs.squire.brain.SquireBrain;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
 import net.minecraft.nbt.CompoundTag;
@@ -76,6 +77,10 @@ public class SquireEntity extends PathfinderMob {
     // ---- AI (lazy-initialized in aiStep — constructor fires before registerGoals) ----
     @Nullable
     private SquireBrain squireBrain;
+
+    // ---- Activity log (lazy-initialized alongside brain) ----
+    @Nullable
+    private SquireActivityLog activityLog;
 
     // ================================================================
     // Constructor
@@ -166,6 +171,48 @@ public class SquireEntity extends PathfinderMob {
     }
 
     // ================================================================
+    // FSM helper methods (required by Phase 2 behavior handlers)
+    // ================================================================
+
+    /** True when the squire is in SIT mode (prevents follow/work behavior). */
+    public boolean isOrderedToSit() {
+        return getSquireMode() == MODE_SIT;
+    }
+
+    /** True when the squire is in FOLLOW mode. */
+    public boolean shouldFollowOwner() {
+        return getSquireMode() == MODE_FOLLOW;
+    }
+
+    /** Delegates to PathfinderMob.setSprinting() for use by FSM handlers. */
+    public void setSquireSprinting(boolean sprint) {
+        this.setSprinting(sprint);
+    }
+
+    /**
+     * Returns the owning player, or null if unowned or offline.
+     * OwnerHurtByTargetGoal is TamableAnimal-specific and cannot be used with
+     * PathfinderMob — combat retaliation handled by SquireBrain FSM transitions.
+     */
+    @Nullable
+    public Player getOwner() {
+        if (ownerUUID == null) return null;
+        return level().getPlayerByUUID(ownerUUID);
+    }
+
+    /**
+     * Returns the activity log for this squire, creating it lazily on first call.
+     * Used by TickRateStateMachine to log state transitions when activityLogging is enabled.
+     */
+    @Nullable
+    public SquireActivityLog getActivityLog() {
+        if (!this.level().isClientSide && activityLog == null) {
+            activityLog = new SquireActivityLog(this);
+        }
+        return activityLog;
+    }
+
+    // ================================================================
     // Progression accessors
     // ================================================================
 
@@ -192,6 +239,10 @@ public class SquireEntity extends PathfinderMob {
         this.goalSelector.addGoal(0, new FloatGoal(this));
         // OpenDoorGoal: squire can follow player through doors
         this.goalSelector.addGoal(1, new OpenDoorGoal(this, true));
+        // HurtByTargetGoal: squire retaliates when attacked (PathfinderMob-compatible).
+        // Note: OwnerHurtByTargetGoal requires TamableAnimal — not applicable here.
+        // Owner-hurt retaliation is handled by SquireBrain FSM combat transitions in Phase 2.
+        this.targetSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this));
         // All follow/combat/work behavior is Phase 2 (SquireBrain FSM).
     }
 
