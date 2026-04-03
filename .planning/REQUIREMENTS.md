@@ -23,7 +23,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [ ] **NAV-02**: Squire sprints to catch up when player is far
 - [ ] **NAV-03**: Squire swims through water to follow
 - [ ] **NAV-04**: Squire can sit/stay on command (toggle)
-- [ ] **NAV-05**: Squire navigates caves, hills, and structures via pathfinding
+- [x] **NAV-05**: Squire navigates caves, hills, and structures via pathfinding
 
 ### Combat
 
@@ -103,7 +103,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Architecture
 
-- [ ] **ARC-01**: Custom tick-rate state machine (FSM) replacing vanilla GoalSelector
+- [x] **ARC-01**: Custom tick-rate state machine (FSM) replacing vanilla GoalSelector
 - [ ] **ARC-02**: Handler-per-behavior pattern (one handler class per behavior)
 - [ ] **ARC-03**: Internal event bus so handlers react to each other's state changes
 - [ ] **ARC-04**: SquireEntity (lifecycle/NBT) split from SquireBrain (AI/FSM)
@@ -174,8 +174,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | NAV-02      | Phase 2 | Pending     |
 | NAV-03      | Phase 2 | Pending     |
 | NAV-04      | Phase 2 | Pending     |
-| NAV-05      | Phase 2 | Pending     |
-| ARC-01      | Phase 2 | Pending     |
+| NAV-05      | Phase 2 | Complete |
+| ARC-01      | Phase 2 | Complete |
 | ARC-02      | Phase 2 | Pending     |
 | ARC-03      | Phase 2 | Pending     |
 | ARC-08      | Phase 2 | Pending     |
