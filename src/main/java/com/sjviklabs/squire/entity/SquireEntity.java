@@ -452,6 +452,8 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         }
         // Inventory — ItemStackHandler provides NBT serialization
         tag.put("Inventory", this.itemHandler.serializeNBT(this.registryAccess()));
+        // Progression — save XP and level (attribute modifiers auto-saved by NeoForge)
+        if (progressionHandler != null) progressionHandler.save(tag);
     }
 
     @Override
@@ -479,6 +481,9 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         if (tag.contains("Inventory")) {
             this.itemHandler.deserializeNBT(this.registryAccess(), tag.getCompound("Inventory"));
         }
+        // Progression — restore XP and level; handler lazy-init in aiStep() will apply modifiers
+        if (progressionHandler == null) progressionHandler = new ProgressionHandler(this);
+        progressionHandler.load(tag);
     }
 
     // ================================================================
@@ -487,6 +492,20 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
 
     @Override
     public void die(DamageSource source) {
+        // PRG-06: Champion undying — survive lethal damage at 1 HP once per life (with cooldown).
+        // Skip for void damage, /kill, and other insta-kill sources (Pitfall G).
+        if (progressionHandler != null
+                && progressionHandler.canUndying()
+                && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            setHealth(1.0F);
+            progressionHandler.triggerUndying();
+            // Broadcast totem-of-undying particle burst to nearby clients
+            if (level() instanceof ServerLevel serverLevelUndying) {
+                serverLevelUndying.broadcastEntityEvent(this, (byte) 35); // vanilla totem effect ID
+            }
+            return; // squire lives — do NOT call super.die()
+        }
+
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
             // Find owner and persist progression to attachment before super.die() removes entity
             if (this.ownerUUID != null) {
