@@ -1,6 +1,7 @@
 package com.sjviklabs.squire.brain;
 
 import com.sjviklabs.squire.brain.handler.FollowHandler;
+import com.sjviklabs.squire.brain.handler.SurvivalHandler;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.world.entity.Pose;
 
@@ -25,23 +26,27 @@ public class SquireBrain {
 
     // ── Behavior handlers ────────────────────────────────────────────────────
     private final FollowHandler follow;
-
-    // TODO (02-04): SurvivalHandler survival — added by Plan 02-04
+    private final SurvivalHandler survival;
 
     private int idleTicks;
 
     public SquireBrain(SquireEntity squire) {
         this.squire = squire;
+
+        // Construction order is CRITICAL — do not reorder:
+        // 1. machine and bus first (nothing can fire until transitions are registered)
         this.machine = new TickRateStateMachine();
         this.bus = new SquireBrainEventBus();
 
-        // Subscriptions registered BEFORE registerTransitions() so no event fires
-        // into an empty bus. Phase 2 has no subscribers yet — handlers added in
-        // 02-04 (SurvivalHandler) will subscribe from their constructors.
-
-        // Initialize handlers — their constructors may subscribe to the bus.
+        // 2. Initialize handlers
         this.follow = new FollowHandler(squire);
+        this.survival = new SurvivalHandler(squire);
 
+        // 3. Subscribe BEFORE registerTransitions() so no event fires into an empty handler.
+        //    SIT_TOGGLE resets eat cooldown so squire doesn't eat mid-sit-down animation.
+        bus.subscribe(SquireEvent.SIT_TOGGLE, s -> survival.reset());
+
+        // 4. Register transitions last — lambdas capture fully-initialized handler references.
         registerTransitions();
     }
 
@@ -81,10 +86,51 @@ public class SquireBrain {
     /**
      * Register all FSM transitions. Called once during construction after all
      * handlers and subscriptions are set up.
+     *
+     * Priority order reflects behavioral priority:
+     *   sitting (1) > eating (20) > following (30)
      */
     private void registerTransitions() {
         registerSittingTransitions();
+        registerEatingTransitions();
         registerFollowTransitions();
+    }
+
+    /**
+     * EATING transitions (plan 02-04):
+     * - Global enter EATING at priority 20, tickRate 10
+     * - EATING per-tick at priority 21, tickRate 1
+     *
+     * Pitfall 5 guard: the enter transition checks currentState != EATING to prevent
+     * re-entering EATING every 10 ticks while already eating.
+     */
+    private void registerEatingTransitions() {
+
+        // Enter EATING (global — fires from any state except EATING itself, priority 20, tickRate 10)
+        machine.addTransition(new AITransition(
+                null,   // sourceState null = global
+                () -> machine.getCurrentState() != SquireAIState.EATING
+                        && survival.shouldEat(),
+                s -> {
+                    survival.startEating();
+                    return SquireAIState.EATING;
+                },
+                10, // tickRate
+                20  // priority
+        ));
+
+        // EATING per-tick: decrements cooldown, then returns IDLE to re-evaluate state
+        // (machine immediately re-enters FOLLOWING_OWNER if still following)
+        machine.addTransition(new AITransition(
+                SquireAIState.EATING,
+                () -> true,
+                s -> {
+                    survival.tick();
+                    return SquireAIState.IDLE;
+                },
+                1,  // tickRate — runs every tick
+                21  // priority — fires after enter check would lose to priority 20
+        ));
     }
 
     /**
