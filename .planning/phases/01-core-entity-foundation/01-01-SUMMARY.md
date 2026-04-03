@@ -163,5 +163,15 @@ None - no external service configuration required. The build is self-contained v
 
 ---
 
+## Self-Check: PASSED
+
+- FOUND: build.gradle
+- FOUND: SquireMod.java
+- FOUND: SquireRegistry.java
+- FOUND: neoforge.mods.toml
+- FOUND: SUMMARY.md
+- FOUND commit: deccc3c (Task 1)
+- FOUND commit: f8fe7de (Task 2)
+
 _Phase: 01-core-entity-foundation_
 _Completed: 2026-04-03_
