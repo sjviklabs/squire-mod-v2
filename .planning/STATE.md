@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 04-01-PLAN.md — CombatHandler, DangerHandler, SquireEntity swing duration fix
-last_updated: "2026-04-03T19:57:51.129Z"
+stopped_at: Completed 04-04-PLAN.md — ProgressionHandler, Champion undying, SquireEntity wiring
+last_updated: "2026-04-03T20:04:59.700Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 33
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -68,6 +68,7 @@ _Updated after each plan completion_
 | Phase 04-combat-progression P03 | 8 | 2 tasks | 6 files |
 | Phase 04-combat-progression P05 | 12 | 2 tasks | 5 files |
 | Phase 04-combat-progression P01 | 20 | 2 tasks | 3 files |
+| Phase 04-combat-progression P04 | 20 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,8 @@ Recent decisions affecting current work:
 - [Phase 04-combat-progression]: abilities.json is a root-level JSON array; ProgressionDataLoader dispatches by filename stem ('abilities' vs tier name) to handle the mixed schema
 - [Phase 04-combat-progression]: Item instanceof checks (BowItem, ShieldItem) retained in CombatHandler for equipment reads — zero mob entity instanceof checks present (the real CMB-07 intent)
 - [Phase 04-combat-progression]: DangerHandler is a thin collaborator: detect explosive threat via Creeper.getSwellDir(), delegate startFlee() to CombatHandler — no flee state stored in DangerHandler
+- [Phase 04-combat-progression]: invalidateCapabilities() is a no-op stub on SquireEntity — NeoForge 21.1 entity caps are not cached; SquireItemHandler getSlots() gates tier access dynamically
+- [Phase 04-combat-progression]: undyingCooldown not persisted to NBT — resets on squire respawn by design
 
 ### Research Flags (for planning phases)
 
@@ -130,6 +133,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T19:57:51.127Z
-Stopped at: Completed 04-01-PLAN.md — CombatHandler, DangerHandler, SquireEntity swing duration fix
+Last session: 2026-04-03T20:04:59.697Z
+Stopped at: Completed 04-04-PLAN.md — ProgressionHandler, Champion undying, SquireEntity wiring
 Resume file: None
