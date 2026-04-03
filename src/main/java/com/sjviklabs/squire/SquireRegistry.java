@@ -3,6 +3,7 @@ package com.sjviklabs.squire;
 import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
+import com.sjviklabs.squire.item.SquireArmorItem;
 import com.sjviklabs.squire.item.SquireCrestItem;
 import com.sjviklabs.squire.network.SquireCommandPayload;
 import com.sjviklabs.squire.network.SquireModePayload;
@@ -10,6 +11,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -66,6 +69,26 @@ public final class SquireRegistry {
 
     public static final DeferredHolder<Item, SquireCrestItem> CREST =
             ITEMS.register("squire_crest", () -> new SquireCrestItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_HELMET =
+            ITEMS.register("squire_helmet",
+                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.HELMET,
+                    new Item.Properties().stacksTo(1)));
+
+    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_CHESTPLATE =
+            ITEMS.register("squire_chestplate",
+                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.CHESTPLATE,
+                    new Item.Properties().stacksTo(1)));
+
+    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_LEGGINGS =
+            ITEMS.register("squire_leggings",
+                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.LEGGINGS,
+                    new Item.Properties().stacksTo(1)));
+
+    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_BOOTS =
+            ITEMS.register("squire_boots",
+                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.BOOTS,
+                    new Item.Properties().stacksTo(1)));
 
     // ---- Attachment Types ----
 
