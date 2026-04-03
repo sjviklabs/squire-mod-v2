@@ -2,6 +2,7 @@ package com.sjviklabs.squire.entity;
 
 import com.sjviklabs.squire.SquireRegistry;
 import com.sjviklabs.squire.brain.SquireBrain;
+import com.sjviklabs.squire.inventory.SquireItemHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -11,6 +12,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -26,7 +30,6 @@ import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.common.util.FakePlayer;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -67,11 +70,8 @@ public class SquireEntity extends PathfinderMob {
     // ---- Progression fields (synched via SynchedEntityData, stored in NBT) ----
     private int totalXP = 0;
 
-    // ---- Inventory capability (null until Plan 01-03 initializes it) ----
-    // Declared as Object to avoid forward-reference compile errors.
-    // Plan 01-03 will cast and initialize this properly.
-    @Nullable
-    Object itemHandler = null;
+    // ---- Inventory capability (initialized in constructor) ----
+    private SquireItemHandler itemHandler;
 
     // ---- AI (lazy-initialized in aiStep — constructor fires before registerGoals) ----
     @Nullable
@@ -86,6 +86,12 @@ public class SquireEntity extends PathfinderMob {
         this.setPersistenceRequired();
         this.setCanPickUpLoot(false); // Phase 5 handles item pickup
         this.getNavigation().setCanFloat(true);
+        this.itemHandler = new SquireItemHandler(this);
+    }
+
+    /** Returns this squire's IItemHandler (used by capability registration and SquireMenu). */
+    public SquireItemHandler getItemHandler() {
+        return this.itemHandler;
     }
 
     // ================================================================
@@ -203,6 +209,48 @@ public class SquireEntity extends PathfinderMob {
     }
 
     // ================================================================
+    // Inventory GUI interaction (INV-06)
+    // ================================================================
+
+    /**
+     * Opens the squire's inventory screen when the owner right-clicks.
+     * Only the squire's owner can open the menu. Non-owners get the default interaction.
+     * Full GUI screen is registered in Phase 5; this stub opens server-side correctly.
+     */
+    @Override
+    public InteractionResult mobInteract(Player player, InteractionHand hand) {
+        if (!this.level().isClientSide && player instanceof ServerPlayer serverPlayer) {
+            if (this.isOwnedBy(player)) {
+                final int entityId = this.getId();
+                // Use NeoForge openMenu overload that accepts an extraDataWriter so the
+                // client-side IContainerFactory (SQUIRE_MENU) can locate this entity by ID.
+                serverPlayer.openMenu(
+                    new SimpleMenuProvider(
+                        (id, inv, p) -> new com.sjviklabs.squire.inventory.SquireMenu(id, inv, this),
+                        Component.literal(this.hasCustomName() && this.getCustomName() != null
+                            ? this.getCustomName().getString() : "Squire")
+                    ),
+                    buf -> buf.writeInt(entityId)
+                );
+                return InteractionResult.CONSUME;
+            }
+        }
+        return super.mobInteract(player, hand);
+    }
+
+    // ================================================================
+    // Chunk loading stub (ARC-09)
+    // ================================================================
+
+    /**
+     * Stub: ensures the chunk at this squire's position is loaded during area clear operations.
+     * Full implementation added in Phase 6 (MiningHandler) using ForceChunkManager.
+     */
+    public void ensureChunkLoaded() {
+        // Phase 6: ForceChunkManager.forceChunk((ServerLevel)this.level(), this.chunkPosition(), this, true);
+    }
+
+    // ================================================================
     // Despawn / leash / food prevention
     // ================================================================
 
@@ -251,11 +299,8 @@ public class SquireEntity extends PathfinderMob {
         if (this.hasCustomName() && this.getCustomName() != null) {
             tag.putString("SquireName", this.getCustomName().getString());
         }
-        // Inventory hook — Plan 01-03 sets itemHandler; safe if still null
-        if (this.itemHandler != null) {
-            // SquireItemHandler.serializeNBT() will be called by Plan 01-03 override
-            // Left as hook: tag.put("Inventory", this.itemHandler.serializeNBT(provider));
-        }
+        // Inventory — ItemStackHandler provides NBT serialization
+        tag.put("Inventory", this.itemHandler.serializeNBT(this.registryAccess()));
     }
 
     @Override
@@ -279,9 +324,9 @@ public class SquireEntity extends PathfinderMob {
         if (tag.contains("SquireName")) {
             this.setCustomName(Component.literal(tag.getString("SquireName")));
         }
-        // Inventory hook — Plan 01-03 will handle "Inventory" tag deserialization
-        if (tag.contains("Inventory") && this.itemHandler != null) {
-            // Left as hook for Plan 01-03
+        // Inventory — restore from NBT (ItemStackHandler handles the format)
+        if (tag.contains("Inventory")) {
+            this.itemHandler.deserializeNBT(this.registryAccess(), tag.getCompound("Inventory"));
         }
     }
 

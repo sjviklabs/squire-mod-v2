@@ -2,6 +2,7 @@ package com.sjviklabs.squire;
 
 import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
+import com.sjviklabs.squire.inventory.SquireMenu;
 import com.sjviklabs.squire.item.SquireCrestItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.EntityType;
@@ -11,7 +12,9 @@ import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
-import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -66,6 +69,20 @@ public final class SquireRegistry {
             ATTACHMENT_TYPES.register("squire_data",
                     SquireDataAttachment::buildAttachmentType);
 
+    // ---- Menu Types ----
+
+    public static final DeferredHolder<MenuType<?>, MenuType<SquireMenu>> SQUIRE_MENU =
+            MENU_TYPES.register("squire_menu", () ->
+                IMenuTypeExtension.create((windowId, inv, data) -> {
+                    // Client-side factory — locate squire entity by network ID sent from server
+                    // Full client Screen registered in Phase 5; this stub handles entity lookup
+                    int entityId = data.readInt();
+                    if (inv.player.level().getEntity(entityId) instanceof SquireEntity squire) {
+                        return new SquireMenu(windowId, inv, squire);
+                    }
+                    return null;
+                }));
+
     // ---- Private constructor ----
 
     private SquireRegistry() {}
@@ -80,7 +97,7 @@ public final class SquireRegistry {
         ATTACHMENT_TYPES.register(modEventBus);
         MENU_TYPES.register(modEventBus);
 
-        // Register mod-bus event handlers (attribute creation)
+        // Register mod-bus event handlers (attribute creation, capabilities)
         modEventBus.register(SquireRegistry.class);
     }
 
@@ -91,5 +108,27 @@ public final class SquireRegistry {
     @SubscribeEvent
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(SquireRegistry.SQUIRE.get(), SquireEntity.createAttributes().build());
+    }
+
+    /**
+     * Registers IItemHandler capabilities on the squire entity.
+     *
+     * ENTITY       — accessed by the GUI and direct capability queries.
+     * ENTITY_AUTOMATION — accessed by hoppers, pipes, and other automation (INV-02).
+     *
+     * Both return the same SquireItemHandler so automation sees the same inventory as the GUI.
+     */
+    @SubscribeEvent
+    public static void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerEntity(
+            Capabilities.ItemHandler.ENTITY,
+            SquireRegistry.SQUIRE.get(),
+            (squire, context) -> squire.getItemHandler()
+        );
+        event.registerEntity(
+            Capabilities.ItemHandler.ENTITY_AUTOMATION,
+            SquireRegistry.SQUIRE.get(),
+            (squire, context) -> squire.getItemHandler()
+        );
     }
 }
