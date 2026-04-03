@@ -19,9 +19,9 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Follow & Navigation
 
-- [ ] **NAV-01**: Squire follows the player without ever teleporting
-- [ ] **NAV-02**: Squire sprints to catch up when player is far
-- [ ] **NAV-03**: Squire swims through water to follow
+- [x] **NAV-01**: Squire follows the player without ever teleporting
+- [x] **NAV-02**: Squire sprints to catch up when player is far
+- [x] **NAV-03**: Squire swims through water to follow
 - [ ] **NAV-04**: Squire can sit/stay on command (toggle)
 - [x] **NAV-05**: Squire navigates caves, hills, and structures via pathfinding
 
@@ -170,9 +170,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | ARC-09      | Phase 1 | Complete |
 | TST-01      | Phase 1 | Complete |
 | TST-02      | Phase 1 | Complete |
-| NAV-01      | Phase 2 | Pending     |
-| NAV-02      | Phase 2 | Pending     |
-| NAV-03      | Phase 2 | Pending     |
+| NAV-01      | Phase 2 | Complete |
+| NAV-02      | Phase 2 | Complete |
+| NAV-03      | Phase 2 | Complete |
 | NAV-04      | Phase 2 | Pending     |
 | NAV-05      | Phase 2 | Complete |
 | ARC-01      | Phase 2 | Complete |
