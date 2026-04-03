@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 05-02-PLAN.md — SquireKeybinds, SquireRadialScreen, SquireClientEvents
+stopped_at: Completed 05-01-PLAN.md — SquireMenu equipment slots, SquireScreen client renderer
 last_updated: "2026-04-03T22:57:22.876Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 33
-  completed_plans: 19
+  completed_plans: 20
   percent: 0
 ---
 
@@ -71,6 +71,7 @@ _Updated after each plan completion_
 | Phase 04-combat-progression P04 | 20 | 2 tasks | 2 files |
 | Phase 04-combat-progression P02 | 15 | 2 tasks | 5 files |
 | Phase 05-ui-controls P02 | 13 | 2 tasks | 4 files |
+| Phase 05-ui-controls P01 | 39 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,9 @@ Recent decisions affecting current work:
 - [Phase 05-ui-controls]: 4-wedge radial layout for Phase 5 only — expands in later phases
 - [Phase 05-ui-controls]: confirmed boolean in SquireRadialScreen prevents double packet send on close
 - [Phase 05-ui-controls]: blockInteractionRange() over getBlockReach() — correct 1.21.1 LocalPlayer API
+- [Phase 05-ui-controls]: ArmorItem.getType() for equipment slot validation — canEquip(slot, null) NPEs in NeoForge 1.21.1; entity required non-null
+- [Phase 05-ui-controls]: RegisterMenuScreensEvent.register() over MenuScreens.register() — direct call has private access in 1.21.1
+- [Phase 05-ui-controls]: SquireMenu(SquireTier, IItemHandler) headless constructor for JUnit tests — bypasses live SquireEntity and DeferredHolder resolution
 
 ### Research Flags (for planning phases)
 
