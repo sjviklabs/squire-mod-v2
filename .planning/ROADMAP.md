@@ -82,14 +82,14 @@ Plans:
 4. Custom 4-piece armor set renders on the squire with tier-appropriate textures
 5. All rendering works correctly in ATM10 with Oculus shaders enabled — no T-pose, no invisible entity
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 
-- [ ] 03-01: Geckolib setup — GeoEntityRenderer, SquireModel, AnimatableInstanceCache (final field, GeckoLibUtil.createInstanceCache), animation controllers
-- [ ] 03-02: Blockbench model — .geo.json squire model, idle/walk/sprint/attack animations, male/female variants
-- [ ] 03-03: Armor and backpack layers — GeoLayerRenderer for armor set, tier-scaled backpack visual, tiered armor textures (RND-06, INV-04)
-- [ ] 03-04: Personality stubs and naming — RND-03 name tag/command naming, RND-04 chat line scaffolding, Oculus/ATM10 shader validation pass
+- [ ] 03-01-PLAN.md — Geckolib setup: GeoEntity on SquireEntity, SquireModel, SquireRenderer, SquireClientEvents, AnimatableInstanceCache final field
+- [ ] 03-02-PLAN.md — Model and assets: squire_male/female.geo.json, squire.animation.json, placeholder textures (skins + 8 tiered armor PNGs)
+- [ ] 03-03-PLAN.md — Armor and backpack layers: SquireArmorLayer (ItemArmorGeoLayer, tiered textures), SquireBackpackLayer (GeoRenderLayer, bone visibility), SquireArmorItem x4
+- [ ] 03-04-PLAN.md — Naming, personality, and Oculus validation: shouldShowName(), name tag mobInteract(), ChatHandler stub, Oculus checkpoint
 
 ### Phase 4: Combat and Progression
 
@@ -207,9 +207,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase                          | Plans Complete | Status      | Completed |
 | ------------------------------ | -------------- | ----------- | --------- |
-| 1. Core Entity Foundation      | 4/5 | In Progress|  |
+| 1. Core Entity Foundation      | 4/5            | In Progress | -         |
 | 2. Brain, FSM, and Follow      | 0/4            | Planned     | -         |
-| 3. Rendering                   | 0/4            | Not started | -         |
+| 3. Rendering                   | 0/4            | Planned     | -         |
 | 4. Combat and Progression      | 0/5            | Not started | -         |
 | 5. UI and Controls             | 0/4            | Not started | -         |
 | 6. Work Behaviors              | 0/4            | Not started | -         |
