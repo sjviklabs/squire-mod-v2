@@ -77,7 +77,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 - [ ] **MNT-01**: Squire mounts and rides horses
 - [ ] **MNT-02**: Squire follows player while mounted
-- [ ] **MNT-03**: Squire engages in combat while mounted
+- [x] **MNT-03**: Squire engages in combat while mounted
 - [ ] **MNT-04**: Mount state persists across sessions (horse UUID in NBT)
 
 ### UI & Controls
@@ -220,7 +220,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | PTR-03      | Phase 7 | Complete |
 | MNT-01      | Phase 7 | Pending     |
 | MNT-02      | Phase 7 | Pending     |
-| MNT-03      | Phase 7 | Pending     |
+| MNT-03      | Phase 7 | Complete |
 | MNT-04      | Phase 7 | Pending     |
 | CMP-01      | Phase 8 | Pending     |
 | CMP-02      | Phase 8 | Pending     |
