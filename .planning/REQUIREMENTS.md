@@ -58,9 +58,9 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Work Behaviors
 
-- [ ] **WRK-01**: Squire mines single blocks on command
-- [ ] **WRK-02**: Squire performs area clear (multi-block mining)
-- [ ] **WRK-03**: Squire auto-places torches in darkness
+- [x] **WRK-01**: Squire mines single blocks on command
+- [x] **WRK-02**: Squire performs area clear (multi-block mining)
+- [x] **WRK-03**: Squire auto-places torches in darkness
 - [x] **WRK-04**: Squire farms (tilling + harvesting)
 - [x] **WRK-05**: Squire fishes (simulated fishing)
 - [ ] **WRK-06**: Squire places blocks on command
@@ -207,9 +207,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | GUI-03      | Phase 5 | Complete |
 | INV-03      | Phase 5 | Complete |
 | INV-05      | Phase 8 | Pending     |
-| WRK-01      | Phase 6 | Pending     |
-| WRK-02      | Phase 6 | Pending     |
-| WRK-03      | Phase 6 | Pending     |
+| WRK-01      | Phase 6 | Complete |
+| WRK-02      | Phase 6 | Complete |
+| WRK-03      | Phase 6 | Complete |
 | WRK-04      | Phase 6 | Complete |
 | WRK-05      | Phase 6 | Complete |
 | WRK-06      | Phase 6 | Pending     |
