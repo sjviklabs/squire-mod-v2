@@ -434,8 +434,7 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     public Component getDisplayName() {
         String name = this.hasCustomName() && this.getCustomName() != null
                 ? this.getCustomName().getString() : "Squire";
-        String tier = getTier().name().charAt(0) + getTier().name().substring(1).toLowerCase();
-        return Component.literal(name + " [Lv." + getLevel() + " " + tier + "] v2.0.0");
+        return Component.literal(name);
     }
 
     // ================================================================

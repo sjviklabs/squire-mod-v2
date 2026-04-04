@@ -368,19 +368,24 @@ public class SquireMenu extends AbstractContainerMenu {
                 case CHESTPLATE -> isArmorOfType(stack, ArmorItem.Type.CHESTPLATE);
                 case LEGGINGS   -> isArmorOfType(stack, ArmorItem.Type.LEGGINGS);
                 case BOOTS      -> isArmorOfType(stack, ArmorItem.Type.BOOTS);
-                case MAINHAND, OFFHAND -> true;
+                case MAINHAND   -> isWeapon(stack);
+                case OFFHAND    -> stack.getItem() instanceof net.minecraft.world.item.ShieldItem;
             };
         }
 
-        /**
-         * Returns true if the stack is an ArmorItem of the specified ArmorItem.Type.
-         * Uses direct ArmorItem.getType() comparison — no entity required.
-         */
         private static boolean isArmorOfType(ItemStack stack, ArmorItem.Type expected) {
             if (stack.getItem() instanceof ArmorItem armorItem) {
                 return armorItem.getType() == expected;
             }
             return false;
+        }
+
+        private static boolean isWeapon(ItemStack stack) {
+            net.minecraft.world.item.Item item = stack.getItem();
+            return item instanceof net.minecraft.world.item.SwordItem
+                || item instanceof net.minecraft.world.item.AxeItem
+                || item instanceof net.minecraft.world.item.BowItem
+                || item instanceof com.sjviklabs.squire.item.SquireHalberdItem;
         }
     }
 }

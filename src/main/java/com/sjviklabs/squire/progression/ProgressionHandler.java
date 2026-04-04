@@ -154,6 +154,14 @@ public class ProgressionHandler {
                     com.sjviklabs.squire.brain.SquireEvent.LEVEL_UP, squire);
         }
 
+        // Level-up particle effect (small burst)
+        if (squire.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            sl.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
+                    squire.getX(), squire.getY() + 1.5, squire.getZ(),
+                    15, 0.5, 0.5, 0.5, 0.1);
+            squire.playSound(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.0F, 1.0F);
+        }
+
         if (newTier != oldTier) {
             // Refresh capability references held by pipes/hoppers — slot count expanded
             squire.invalidateCapabilities();
@@ -162,6 +170,17 @@ public class ProgressionHandler {
             if (squire.getSquireBrain() != null) {
                 squire.getSquireBrain().getBus().publish(
                         com.sjviklabs.squire.brain.SquireEvent.TIER_ADVANCE, squire);
+            }
+
+            // Tier advance: firework explosion effect + fanfare
+            if (squire.level() instanceof net.minecraft.server.level.ServerLevel sl2) {
+                sl2.sendParticles(net.minecraft.core.particles.ParticleTypes.FIREWORK,
+                        squire.getX(), squire.getY() + 2.0, squire.getZ(),
+                        50, 0.8, 1.0, 0.8, 0.2);
+                sl2.sendParticles(net.minecraft.core.particles.ParticleTypes.TOTEM_OF_UNDYING,
+                        squire.getX(), squire.getY() + 1.0, squire.getZ(),
+                        30, 0.5, 0.8, 0.5, 0.3);
+                squire.playSound(net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.5F, 1.0F);
             }
 
             // Notify owner of tier promotion

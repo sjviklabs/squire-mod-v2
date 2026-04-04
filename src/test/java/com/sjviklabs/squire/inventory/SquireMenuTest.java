@@ -129,18 +129,22 @@ class SquireMenuTest {
     }
 
     /**
-     * Menu slot 4 (mainhand) must accept any item — pickaxe, sword, or dirt.
-     * RED: Phase 1 stub has no mainhand slot at index 4.
+     * Menu slot 4 (mainhand) accepts weapons only — swords, axes, bows.
+     * Rejects non-weapon items like pickaxes and dirt.
      */
     @Test
-    void equipmentSlot4_mainhand_acceptsAnyItem() {
+    void equipmentSlot4_mainhand_acceptsWeaponsOnly() {
         var m = menu(SquireTier.SERVANT);
-        assertTrue(m.slots.get(4).mayPlace(new ItemStack(Items.IRON_PICKAXE)),
-                "Mainhand slot must accept a pickaxe");
         assertTrue(m.slots.get(4).mayPlace(new ItemStack(Items.IRON_SWORD)),
                 "Mainhand slot must accept a sword");
-        assertTrue(m.slots.get(4).mayPlace(new ItemStack(Items.DIRT)),
-                "Mainhand slot must accept dirt");
+        assertTrue(m.slots.get(4).mayPlace(new ItemStack(Items.IRON_AXE)),
+                "Mainhand slot must accept an axe");
+        assertTrue(m.slots.get(4).mayPlace(new ItemStack(Items.BOW)),
+                "Mainhand slot must accept a bow");
+        assertFalse(m.slots.get(4).mayPlace(new ItemStack(Items.IRON_PICKAXE)),
+                "Mainhand slot must reject a pickaxe");
+        assertFalse(m.slots.get(4).mayPlace(new ItemStack(Items.DIRT)),
+                "Mainhand slot must reject dirt");
     }
 
     // ── quickMoveStack routing ────────────────────────────────────────────────
