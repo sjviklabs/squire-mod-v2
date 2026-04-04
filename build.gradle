@@ -2,7 +2,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = "2.0.0"
+version = project.mod_version
 group = "com.sjviklabs.squire"
 
 neoForge {
@@ -82,4 +82,12 @@ repositories {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+processResources {
+    var replaceProperties = [mod_version: project.mod_version]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
 }

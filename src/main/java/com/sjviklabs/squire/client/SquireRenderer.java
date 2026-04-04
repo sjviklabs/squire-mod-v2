@@ -5,7 +5,10 @@ import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
+import software.bernie.geckolib.renderer.layer.BlockAndItemGeoLayer;
 import com.sjviklabs.squire.client.SquireArmorLayer;
 import com.sjviklabs.squire.client.SquireBackpackLayer;
 
@@ -27,6 +30,18 @@ public class SquireRenderer extends GeoEntityRenderer<SquireEntity> {
         super(context, new SquireModel());
         addRenderLayer(new SquireArmorLayer(this));
         addRenderLayer(new SquireBackpackLayer(this));
+        // Held items — renders weapons/tools in the squire's hands
+        addRenderLayer(new BlockAndItemGeoLayer<>(this,
+                (bone, entity) -> {
+                    // Map hand bones to equipment slots
+                    return switch (bone.getName()) {
+                        case "right_hand" -> entity.getMainHandItem();
+                        case "left_hand"  -> entity.getOffhandItem();
+                        default -> ItemStack.EMPTY;
+                    };
+                },
+                (bone, entity) -> null // no block rendering
+        ));
     }
 
     @Override

@@ -12,12 +12,14 @@ import com.sjviklabs.squire.item.SquireShieldItem;
 import com.sjviklabs.squire.network.SquireCommandPayload;
 import com.sjviklabs.squire.network.SquireModePayload;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -63,6 +65,9 @@ public final class SquireRegistry {
 
     public static final DeferredRegister<MenuType<?>> MENU_TYPES =
             DeferredRegister.create(Registries.MENU, SquireMod.MODID);
+
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, SquireMod.MODID);
 
     public static final DeferredRegister<Block> BLOCKS =
             DeferredRegister.create(Registries.BLOCK, SquireMod.MODID);
@@ -141,6 +146,24 @@ public final class SquireRegistry {
             ITEMS.register("signpost",
                     () -> new BlockItem(SIGNPOST_BLOCK.get(), new Item.Properties()));
 
+    // ---- Creative Tab ----
+
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> SQUIRE_TAB =
+            CREATIVE_TABS.register("squire_tab", () -> CreativeModeTab.builder()
+                    .title(Component.literal("Squire"))
+                    .icon(() -> CREST.get().getDefaultInstance())
+                    .displayItems((params, output) -> {
+                        output.accept(CREST.get());
+                        output.accept(SQUIRE_HELMET.get());
+                        output.accept(SQUIRE_CHESTPLATE.get());
+                        output.accept(SQUIRE_LEGGINGS.get());
+                        output.accept(SQUIRE_BOOTS.get());
+                        output.accept(HALBERD.get());
+                        output.accept(SHIELD.get());
+                        output.accept(SIGNPOST_ITEM.get());
+                    })
+                    .build());
+
     // ---- Menu Types ----
 
     public static final DeferredHolder<MenuType<?>, MenuType<SquireMenu>> SQUIRE_MENU =
@@ -172,6 +195,7 @@ public final class SquireRegistry {
         // calls SIGNPOST_BLOCK.get() which requires the block holder to be resolved first.
         BLOCKS.register(modEventBus);
         BLOCK_ENTITY_TYPES.register(modEventBus);
+        CREATIVE_TABS.register(modEventBus);
 
         // Register mod-bus event handlers (attribute creation, capabilities)
         modEventBus.register(SquireRegistry.class);

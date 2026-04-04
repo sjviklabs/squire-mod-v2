@@ -19,7 +19,7 @@ public final class SquireMod {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     public SquireMod(IEventBus modEventBus, ModContainer container) {
-        LOGGER.info("[Squire] Initializing Squire Mod v2");
+        LOGGER.info("[Squire] Initializing Squire Mod");
         SquireRegistry.register(modEventBus);
         container.registerConfig(ModConfig.Type.COMMON, SquireConfig.SPEC, "squire-common.toml");
         NeoForge.EVENT_BUS.addListener(SquireMod::onAddReloadListeners);

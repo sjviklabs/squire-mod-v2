@@ -4,8 +4,8 @@ license = "MIT"
 
 [[mods]]
     modId = "squire"
-    version = "2.0.0"
-    displayName = "Squire Mod v2"
+    version = "${mod_version}"
+    displayName = "Squire Mod"
     description = "A real companion — walks everywhere, never teleports."
 
 [[dependencies.squire]]
