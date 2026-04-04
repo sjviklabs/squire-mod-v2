@@ -1,6 +1,8 @@
 package com.sjviklabs.squire;
 
 import com.mojang.logging.LogUtils;
+import com.sjviklabs.squire.compat.CuriosCompat;
+import com.sjviklabs.squire.compat.MineColoniesCompat;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.progression.ProgressionDataLoader;
 import net.neoforged.bus.api.IEventBus;
@@ -21,6 +23,15 @@ public final class SquireMod {
         SquireRegistry.register(modEventBus);
         container.registerConfig(ModConfig.Type.COMMON, SquireConfig.SPEC, "squire-common.toml");
         NeoForge.EVENT_BUS.addListener(SquireMod::onAddReloadListeners);
+
+        // Compat startup logging
+        if (MineColoniesCompat.isActive()) {
+            LOGGER.info("[Squire] MineColonies detected — citizen friendly-fire prevention active");
+        }
+        if (CuriosCompat.isActive()) {
+            LOGGER.info("[Squire] Curios detected — accessory slots registered via datapack");
+        }
+        // Jade is auto-discovered via @WailaPlugin — no logging needed here
     }
 
     private static void onAddReloadListeners(AddReloadListenerEvent event) {

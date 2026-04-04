@@ -28,3 +28,24 @@ license = "MIT"
     versionRange = "[4.8,)"
     ordering = "NONE"
     side = "BOTH"
+
+[[dependencies.squire]]
+    modId = "jade"
+    type = "optional"
+    versionRange = "[15.0,)"
+    ordering = "NONE"
+    side = "CLIENT"
+
+[[dependencies.squire]]
+    modId = "curios"
+    type = "optional"
+    versionRange = "[9.5,)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.squire]]
+    modId = "minecolonies"
+    type = "optional"
+    versionRange = "[1.1,)"
+    ordering = "NONE"
+    side = "BOTH"
