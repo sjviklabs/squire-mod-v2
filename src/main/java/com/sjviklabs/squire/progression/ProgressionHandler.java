@@ -148,9 +148,21 @@ public class ProgressionHandler {
 
         applyModifiers();
 
+        // Fire LEVEL_UP event for ChatHandler
+        if (squire.getSquireBrain() != null) {
+            squire.getSquireBrain().getBus().publish(
+                    com.sjviklabs.squire.brain.SquireEvent.LEVEL_UP, squire);
+        }
+
         if (newTier != oldTier) {
             // Refresh capability references held by pipes/hoppers — slot count expanded
             squire.invalidateCapabilities();
+
+            // Fire TIER_ADVANCE event for ChatHandler
+            if (squire.getSquireBrain() != null) {
+                squire.getSquireBrain().getBus().publish(
+                        com.sjviklabs.squire.brain.SquireEvent.TIER_ADVANCE, squire);
+            }
 
             // Notify owner of tier promotion
             if (squire.getOwner() instanceof Player player) {

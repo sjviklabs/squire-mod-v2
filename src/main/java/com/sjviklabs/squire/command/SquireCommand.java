@@ -50,8 +50,9 @@ public final class SquireCommand {
                 .executes(ctx -> showInfo(ctx.getSource()))
             )
 
-            // /squire mine <pos> — mine a block at position
+            // /squire mine — mine selected area (Crest corners) or single block
             .then(Commands.literal("mine")
+                .executes(ctx -> mineArea(ctx.getSource()))
                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
                     .executes(ctx -> mineBlock(ctx.getSource(), BlockPosArgument.getBlockPos(ctx, "pos")))
                 )
@@ -64,9 +65,14 @@ public final class SquireCommand {
                 )
             )
 
-            // /squire farm — start farming nearby crops
+            // /squire farm — farm selected area (Crest corners) or nearby crops
             .then(Commands.literal("farm")
                 .executes(ctx -> startFarm(ctx.getSource()))
+            )
+
+            // /squire clear — clear Crest area selection
+            .then(Commands.literal("clear")
+                .executes(ctx -> clearSelection(ctx.getSource()))
             )
 
             // /squire fish — start fishing at nearest water
@@ -232,13 +238,64 @@ public final class SquireCommand {
         return 1;
     }
 
+    private static int mineArea(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        // Check held Crest for area selection
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
+            net.minecraft.core.BlockPos[] area = com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
+            if (area != null) {
+                int count = squire.getSquireBrain().getMiningHandler().setAreaTarget(area[0], area[1]);
+                com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
+                source.sendSuccess(() -> Component.literal("Squire mining area: " + count + " blocks."), false);
+                return 1;
+            }
+        }
+        source.sendFailure(Component.literal("Select an area first: right-click two blocks with the Crest."));
+        return 0;
+    }
+
     private static int startFarm(CommandSourceStack source) {
         if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
         if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        // Check held Crest for area selection
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
+            net.minecraft.core.BlockPos[] area = com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
+            if (area != null) {
+                squire.getSquireBrain().getFarmingHandler().setArea(area[0], area[1]);
+                com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
+                source.sendSuccess(() -> Component.literal("Squire farming the selected area."), false);
+                return 1;
+            }
+        }
+        // No area selected — scan nearby
         squire.getSquireBrain().getFarmingHandler().tick(com.sjviklabs.squire.brain.SquireAIState.FARM_SCAN);
-        source.sendSuccess(() -> Component.literal("Squire is farming."), false);
+        source.sendSuccess(() -> Component.literal("Squire farming nearby crops."), false);
         return 1;
+    }
+
+    private static int clearSelection(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
+            com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
+            source.sendSuccess(() -> Component.literal("Area selection cleared."), false);
+            return 1;
+        }
+        source.sendFailure(Component.literal("Hold the Crest to clear selection."));
+        return 0;
     }
 
     private static int startFish(CommandSourceStack source) {

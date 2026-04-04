@@ -17,5 +17,11 @@ public enum SquireEvent {
     COMBAT_END,
 
     /** Published when a work handler completes its assigned task (farm, fish, mine, etc.). */
-    WORK_TASK_COMPLETE
+    WORK_TASK_COMPLETE,
+
+    /** Published when the squire gains a level. */
+    LEVEL_UP,
+
+    /** Published when the squire advances to a new tier. */
+    TIER_ADVANCE
 }

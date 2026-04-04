@@ -108,6 +108,23 @@ public class SquireBrain {
         // PATROL_WALK/PATROL_WAIT: save/restore waypoint index across combat interruptions
         bus.subscribe(SquireEvent.COMBAT_START, s -> patrol.onCombatStart());
         bus.subscribe(SquireEvent.COMBAT_END,   s -> patrol.onCombatEnd());
+        // ChatHandler: personality lines on combat and work events
+        bus.subscribe(SquireEvent.COMBAT_START, s -> {
+            var owner = s.getOwner();
+            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLine(s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.COMBAT_START);
+        });
+        bus.subscribe(SquireEvent.WORK_TASK_COMPLETE, s -> {
+            var owner = s.getOwner();
+            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLine(s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.IDLE);
+        });
+        bus.subscribe(SquireEvent.LEVEL_UP, s -> {
+            var owner = s.getOwner();
+            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLine(s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.LEVEL_UP);
+        });
+        bus.subscribe(SquireEvent.TIER_ADVANCE, s -> {
+            var owner = s.getOwner();
+            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLine(s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.NEW_TIER);
+        });
 
         // 4. Register transitions last — lambdas capture fully-initialized handler references.
         registerTransitions();

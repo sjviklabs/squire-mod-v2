@@ -427,7 +427,15 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
      */
     @Override
     public boolean shouldShowName() {
-        return this.hasCustomName();
+        return true; // Always show name tag with version + tier info
+    }
+
+    @Override
+    public Component getDisplayName() {
+        String name = this.hasCustomName() && this.getCustomName() != null
+                ? this.getCustomName().getString() : "Squire";
+        String tier = getTier().name().charAt(0) + getTier().name().substring(1).toLowerCase();
+        return Component.literal(name + " [Lv." + getLevel() + " " + tier + "] v2.0.0");
     }
 
     // ================================================================
