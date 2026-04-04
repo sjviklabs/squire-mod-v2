@@ -2,6 +2,7 @@ package com.sjviklabs.squire.entity;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.nbt.CompoundTag;
 import net.neoforged.neoforge.attachment.AttachmentType;
 
 import java.util.Optional;
@@ -27,7 +28,8 @@ public class SquireDataAttachment {
             int level,
             String customName,
             boolean slimModel,
-            Optional<UUID> squireUUID
+            Optional<UUID> squireUUID,
+            Optional<CompoundTag> inventoryNBT
     ) {
         public static final Codec<SquireData> CODEC = RecordCodecBuilder.create(instance ->
                 instance.group(
@@ -38,36 +40,48 @@ public class SquireDataAttachment {
                         Codec.STRING.optionalFieldOf("squireUUID").xmap(
                                 opt -> opt.map(UUID::fromString),
                                 opt -> opt.map(UUID::toString)
-                        ).forGetter(SquireData::squireUUID)
+                        ).forGetter(SquireData::squireUUID),
+                        CompoundTag.CODEC.optionalFieldOf("inventoryNBT")
+                                .forGetter(SquireData::inventoryNBT)
                 ).apply(instance, SquireData::new));
 
         public static SquireData empty() {
-            return new SquireData(0, 0, "Squire", false, Optional.empty());
+            return new SquireData(0, 0, "Squire", false, Optional.empty(), Optional.empty());
         }
 
         /** Return new record with updated XP and level. */
         public SquireData withXP(int totalXP, int level) {
-            return new SquireData(totalXP, level, this.customName, this.slimModel, this.squireUUID);
+            return new SquireData(totalXP, level, this.customName, this.slimModel, this.squireUUID, this.inventoryNBT);
         }
 
         /** Return new record with updated custom name. */
         public SquireData withName(String name) {
-            return new SquireData(this.totalXP, this.level, name, this.slimModel, this.squireUUID);
+            return new SquireData(this.totalXP, this.level, name, this.slimModel, this.squireUUID, this.inventoryNBT);
         }
 
         /** Return new record with updated slim model flag. */
         public SquireData withAppearance(boolean slim) {
-            return new SquireData(this.totalXP, this.level, this.customName, slim, this.squireUUID);
+            return new SquireData(this.totalXP, this.level, this.customName, slim, this.squireUUID, this.inventoryNBT);
         }
 
         /** Return new record with the given squire UUID (or cleared if empty). */
         public SquireData withSquireUUID(Optional<UUID> uuid) {
-            return new SquireData(this.totalXP, this.level, this.customName, this.slimModel, uuid);
+            return new SquireData(this.totalXP, this.level, this.customName, this.slimModel, uuid, this.inventoryNBT);
         }
 
         /** Return new record with squire UUID cleared. */
         public SquireData clearSquireUUID() {
-            return new SquireData(this.totalXP, this.level, this.customName, this.slimModel, Optional.empty());
+            return new SquireData(this.totalXP, this.level, this.customName, this.slimModel, Optional.empty(), this.inventoryNBT);
+        }
+
+        /** Return new record with inventory NBT saved (for recall persistence). */
+        public SquireData withInventory(CompoundTag nbt) {
+            return new SquireData(this.totalXP, this.level, this.customName, this.slimModel, this.squireUUID, Optional.ofNullable(nbt));
+        }
+
+        /** Return new record with inventory cleared (after re-summon). */
+        public SquireData clearInventory() {
+            return new SquireData(this.totalXP, this.level, this.customName, this.slimModel, this.squireUUID, Optional.empty());
         }
 
         /** True if a squire UUID is currently stored (i.e., a squire is summoned). */

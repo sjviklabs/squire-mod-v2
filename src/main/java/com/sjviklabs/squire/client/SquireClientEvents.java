@@ -12,6 +12,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.fml.common.EventBusSubscriber.Bus;
 
 /**
@@ -63,6 +64,11 @@ public class SquireClientEvents {
      */
     @EventBusSubscriber(modid = SquireMod.MODID, bus = Bus.GAME, value = Dist.CLIENT)
     public static class GameEvents {
+
+        @SubscribeEvent
+        public static void onRenderLevel(RenderLevelStageEvent event) {
+            SquireAreaRenderer.onRenderLevel(event);
+        }
 
         @SubscribeEvent
         public static void onKeyInput(InputEvent.Key event) {

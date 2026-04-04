@@ -66,6 +66,10 @@ public class SquireBrain {
     // ── Task queue (Phase 6) ─────────────────────────────────────────────────
     private final TaskQueue taskQueue = new TaskQueue();
 
+    // ── Work suspension: resume interrupted tasks after combat/follow ─────────
+    @javax.annotation.Nullable
+    private SquireAIState suspendedWorkState = null;
+
     private int idleTicks;
 
     public SquireBrain(SquireEntity squire) {
@@ -106,8 +110,18 @@ public class SquireBrain {
         //    SIT_TOGGLE resets eat cooldown so squire doesn't eat mid-sit-down animation.
         bus.subscribe(SquireEvent.SIT_TOGGLE, s -> survival.reset());
         // PATROL_WALK/PATROL_WAIT: save/restore waypoint index across combat interruptions
-        bus.subscribe(SquireEvent.COMBAT_START, s -> patrol.onCombatStart());
+        bus.subscribe(SquireEvent.COMBAT_START, s -> {
+            patrol.onCombatStart();
+            suspendWorkIfActive();
+        });
         bus.subscribe(SquireEvent.COMBAT_END,   s -> patrol.onCombatEnd());
+        // Award kill XP when combat ends with a dead target (not fled/lost)
+        bus.subscribe(SquireEvent.COMBAT_END, s -> {
+            net.minecraft.world.entity.LivingEntity target = s.getTarget();
+            if (target != null && !target.isAlive() && s.getProgressionHandler() != null) {
+                s.getProgressionHandler().addKillXP();
+            }
+        });
         // ChatHandler: personality lines on combat and work events
         bus.subscribe(SquireEvent.COMBAT_START, s -> {
             var owner = s.getOwner();
@@ -138,8 +152,13 @@ public class SquireBrain {
     public void tick() {
         if (machine.getCurrentState() == SquireAIState.IDLE) {
             idleTicks++;
-            // Dispatch next queued task when idle and queue is non-empty
-            if (!taskQueue.isEmpty()) {
+
+            // Priority 1: resume interrupted work (combat/follow broke away)
+            if (tryResumeWork()) {
+                idleTicks = 0;
+            }
+            // Priority 2: dispatch next queued task
+            else if (!taskQueue.isEmpty()) {
                 SquireTask next = taskQueue.poll();
                 if (next != null) {
                     dispatch(next);
@@ -187,6 +206,78 @@ public class SquireBrain {
     public FarmingHandler getFarmingHandler() { return farming; }
     public FishingHandler getFishingHandler() { return fishing; }
     public ChestHandler getChestHandler() { return chest; }
+
+    // -------------------------------------------------------------------------
+    // Work suspension / resume
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the resume-entry state for a given work state, or null if the
+     * state is not a resumable work state.
+     *
+     * When a work state is interrupted by combat or follow, we save the resume
+     * state here. When the interruption ends and the squire returns to IDLE,
+     * we re-enter this state — the handler's internal state (blockQueue, area
+     * corners, water target) is still alive so work continues where it left off.
+     */
+    @javax.annotation.Nullable
+    private static SquireAIState resumeStateFor(SquireAIState state) {
+        return switch (state) {
+            case MINING_APPROACH, MINING_BREAK     -> SquireAIState.MINING_APPROACH;
+            case FARM_SCAN, FARM_APPROACH, FARM_WORK -> SquireAIState.FARM_SCAN;
+            case FISHING_APPROACH, FISHING_IDLE     -> SquireAIState.FISHING_APPROACH;
+            case PLACING_APPROACH, PLACING_BLOCK   -> SquireAIState.PLACING_APPROACH;
+            case CHEST_APPROACH, CHEST_INTERACT    -> SquireAIState.CHEST_APPROACH;
+            default -> null;
+        };
+    }
+
+    /**
+     * Called before entering combat or follow-catchup. Saves the current work
+     * state so it can be resumed after the interruption ends.
+     */
+    private void suspendWorkIfActive() {
+        SquireAIState current = machine.getCurrentState();
+        SquireAIState resume = resumeStateFor(current);
+        if (resume != null) {
+            suspendedWorkState = resume;
+            if (com.sjviklabs.squire.config.SquireConfig.activityLogging.get()) {
+                LOGGER.debug("[Squire] Suspending work state {} — will resume as {}", current, resume);
+            }
+        }
+    }
+
+    /**
+     * Called when the squire reaches IDLE. If a suspended work state exists and
+     * the handler still has work to do, resume it instead of polling the task queue.
+     *
+     * @return true if work was resumed, false if no suspended state or handler is done.
+     */
+    private boolean tryResumeWork() {
+        if (suspendedWorkState == null) return false;
+
+        SquireAIState resume = suspendedWorkState;
+        suspendedWorkState = null;
+
+        // Verify the handler still has active work before resuming
+        boolean hasWork = switch (resume) {
+            case MINING_APPROACH -> mining.hasTarget() || mining.isAreaClearing();
+            case FARM_SCAN       -> true; // farming rescans continuously while area is set
+            case FISHING_APPROACH -> true; // fishing handler manages its own water target
+            case PLACING_APPROACH -> true; // placing handler checks its own target
+            case CHEST_APPROACH  -> true;  // chest handler checks its own target
+            default -> false;
+        };
+
+        if (hasWork) {
+            if (com.sjviklabs.squire.config.SquireConfig.activityLogging.get()) {
+                LOGGER.debug("[Squire] Resuming suspended work state: {}", resume);
+            }
+            machine.forceState(resume);
+            return true;
+        }
+        return false;
+    }
 
     // -------------------------------------------------------------------------
     // Task dispatch

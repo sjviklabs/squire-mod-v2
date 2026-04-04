@@ -94,10 +94,29 @@ public final class SquireEquipmentHelper {
     /**
      * Full inventory scan: equip the best armor in each slot, best weapon in
      * mainhand, and a shield in offhand. Called periodically on a tick interval.
+     *
+     * Starts with a cleanup pass that ejects invalid items from equipment slots
+     * (e.g. non-weapons in mainhand, non-shields in offhand from before validation).
      */
     public static void runFullEquipCheck(SquireEntity squire) {
         IItemHandler handler = squire.getCapability(Capabilities.ItemHandler.ENTITY);
         if (handler == null) return;
+
+        // --- Cleanup pass: eject misplaced items from weapon/shield slots ---
+        {
+            ItemStack mainhand = squire.getItemBySlot(EquipmentSlot.MAINHAND);
+            if (!mainhand.isEmpty() && !isMeleeWeapon(mainhand)
+                    && !(mainhand.getItem() instanceof BowItem)) {
+                squire.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+                insertIntoBackpack(handler, mainhand);
+            }
+
+            ItemStack offhand = squire.getItemBySlot(EquipmentSlot.OFFHAND);
+            if (!offhand.isEmpty() && !isShield(offhand)) {
+                squire.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+                insertIntoBackpack(handler, offhand);
+            }
+        }
 
         // --- Armor slots ---
         for (EquipmentSlot slot : new EquipmentSlot[]{

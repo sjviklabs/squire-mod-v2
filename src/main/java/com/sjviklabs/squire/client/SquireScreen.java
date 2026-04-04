@@ -227,33 +227,36 @@ public class SquireScreen extends AbstractContainerScreen<SquireMenu> {
 
     private void renderStats(GuiGraphics g, int guiX, int guiY) {
         int statsX   = guiX + ENTITY_AREA_WIDTH + 2;
-        int statsY   = guiY + 4;
+        int row1Y    = guiY + 2;
+        int row2Y    = guiY + 11;
         int barWidth = 80;
         int barHeight = 5;
+        int rightEdge = guiX + imageWidth - 6;
 
-        int level    = menu.getSquireLevel();
+        // ── Row 1: Level + HP bar + HP text ── Mode (right-aligned) ──
+        int level = menu.getSquireLevel();
         String levelStr = "Lv." + level;
-        g.drawString(font, levelStr, statsX, statsY, LABEL_COLOR, false);
+        g.drawString(font, levelStr, statsX, row1Y, LABEL_COLOR, false);
 
         // HP bar
         float hpFrac = menu.getHealthMax() > 0
                 ? menu.getHealthCurrent() / menu.getHealthMax() : 0f;
-        int hpBarX = statsX + font.width(levelStr) + 6;
-        g.fill(hpBarX, statsY + 1, hpBarX + barWidth, statsY + 1 + barHeight, HP_BAR_BG);
-        g.fill(hpBarX, statsY + 1, hpBarX + (int)(barWidth * hpFrac), statsY + 1 + barHeight, HP_BAR_FG);
+        int hpBarX = statsX + font.width(levelStr) + 4;
+        g.fill(hpBarX, row1Y + 2, hpBarX + barWidth, row1Y + 2 + barHeight, HP_BAR_BG);
+        g.fill(hpBarX, row1Y + 2, hpBarX + (int)(barWidth * hpFrac), row1Y + 2 + barHeight, HP_BAR_FG);
         String hpStr = String.format("%.0f/%.0f", menu.getHealthCurrent(), menu.getHealthMax());
-        g.drawString(font, hpStr, hpBarX + barWidth + 3, statsY, LABEL_COLOR, false);
+        g.drawString(font, hpStr, hpBarX + barWidth + 3, row1Y, LABEL_COLOR, false);
 
-        // XP bar (simple progress to next level based on totalXP and level)
-        int xpBarX = hpBarX + barWidth + font.width(hpStr) + 10;
-        float xpFrac = computeXpFraction(level, menu.getTotalXP());
-        g.fill(xpBarX, statsY + 1, xpBarX + barWidth, statsY + 1 + barHeight, XP_BAR_BG);
-        g.fill(xpBarX, statsY + 1, xpBarX + (int)(barWidth * xpFrac), statsY + 1 + barHeight, XP_BAR_FG);
-        g.drawString(font, menu.getTotalXP() + " XP", xpBarX + barWidth + 3, statsY, LABEL_DIM, false);
-
-        // Mode indicator (top-right corner)
+        // Mode indicator (right-aligned on row 1)
         String modeStr = modeLabel(menu.getSquireMode());
-        g.drawString(font, modeStr, guiX + imageWidth - font.width(modeStr) - 6, statsY, LABEL_DIM, false);
+        g.drawString(font, modeStr, rightEdge - font.width(modeStr), row1Y, LABEL_DIM, false);
+
+        // ── Row 2: XP bar + XP text ──
+        int xpBarX = statsX;
+        float xpFrac = computeXpFraction(level, menu.getTotalXP());
+        g.fill(xpBarX, row2Y + 2, xpBarX + barWidth, row2Y + 2 + barHeight, XP_BAR_BG);
+        g.fill(xpBarX, row2Y + 2, xpBarX + (int)(barWidth * xpFrac), row2Y + 2 + barHeight, XP_BAR_FG);
+        g.drawString(font, menu.getTotalXP() + " XP", xpBarX + barWidth + 3, row2Y, LABEL_DIM, false);
     }
 
     // ── Drawing helpers ───────────────────────────────────────────────────────

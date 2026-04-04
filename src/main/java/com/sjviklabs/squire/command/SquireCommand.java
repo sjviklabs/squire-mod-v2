@@ -151,6 +151,32 @@ public final class SquireCommand {
                         EntityArgument.getPlayer(ctx, "player")))
                 )
             )
+
+            // /squire queue — task queue management
+            .then(Commands.literal("queue")
+                // /squire queue list — show queued tasks
+                .executes(ctx -> queueList(ctx.getSource()))
+                // /squire queue mine — enqueue area mine from Crest selection
+                .then(Commands.literal("mine")
+                    .executes(ctx -> queueMine(ctx.getSource()))
+                    .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                        .executes(ctx -> queueMineBlock(ctx.getSource(),
+                            BlockPosArgument.getBlockPos(ctx, "pos")))
+                    )
+                )
+                // /squire queue farm — enqueue farm from Crest selection or 16x16
+                .then(Commands.literal("farm")
+                    .executes(ctx -> queueFarm(ctx.getSource()))
+                )
+                // /squire queue fish — enqueue fishing
+                .then(Commands.literal("fish")
+                    .executes(ctx -> queueFish(ctx.getSource()))
+                )
+                // /squire queue clear — clear all queued tasks
+                .then(Commands.literal("clear")
+                    .executes(ctx -> queueClear(ctx.getSource()))
+                )
+            )
         );
     }
 
@@ -358,12 +384,16 @@ public final class SquireCommand {
         SquireEntity squire = findOwnedSquire(player);
         if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
 
-        // Persist state to attachment before discarding
+        // Persist state + inventory to attachment before discarding
         com.sjviklabs.squire.entity.SquireDataAttachment.SquireData data =
                 player.getData(com.sjviklabs.squire.SquireRegistry.SQUIRE_DATA.get());
+        // Serialize inventory to NBT for recall persistence
+        net.minecraft.nbt.CompoundTag inventoryNBT = squire.getItemHandler()
+                .serializeNBT(squire.registryAccess());
         player.setData(com.sjviklabs.squire.SquireRegistry.SQUIRE_DATA.get(),
                 data.withXP(squire.getTotalXP(), squire.getLevel())
-                    .withSquireUUID(java.util.Optional.empty()));
+                    .withSquireUUID(java.util.Optional.empty())
+                    .withInventory(inventoryNBT));
         squire.releaseChunkLoading();
         squire.discard();
         source.sendSuccess(() -> Component.literal("Your squire returns to the Crest."), false);
@@ -486,6 +516,131 @@ public final class SquireCommand {
         squire.setCustomName(null);
         squire.setCustomNameVisible(false);
         source.sendSuccess(() -> Component.literal("Squire name cleared."), false);
+        return 1;
+    }
+
+    // ================================================================
+    // /squire queue
+    // ================================================================
+
+    private static int queueList(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        var queue = squire.getSquireBrain().getTaskQueue();
+        if (queue.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("Task queue is empty."), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("Task queue: " + queue.size() + " task(s) pending."), false);
+        }
+        return 1;
+    }
+
+    private static int queueMine(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
+            net.minecraft.core.BlockPos[] area = com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
+            if (area != null) {
+                net.minecraft.nbt.CompoundTag p = new net.minecraft.nbt.CompoundTag();
+                p.putInt("ax", area[0].getX()); p.putInt("ay", area[0].getY()); p.putInt("az", area[0].getZ());
+                p.putInt("bx", area[1].getX()); p.putInt("by", area[1].getY()); p.putInt("bz", area[1].getZ());
+                boolean ok = squire.getSquireBrain().getTaskQueue()
+                        .enqueue(new com.sjviklabs.squire.brain.SquireTask("mine_area", p));
+                if (ok) {
+                    com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
+                    source.sendSuccess(() -> Component.literal("Queued: mine area."), false);
+                } else {
+                    source.sendFailure(Component.literal("Task queue is full."));
+                }
+                return 1;
+            }
+        }
+        source.sendFailure(Component.literal("Select an area with the Crest first."));
+        return 0;
+    }
+
+    private static int queueMineBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        net.minecraft.nbt.CompoundTag p = new net.minecraft.nbt.CompoundTag();
+        p.putInt("x", pos.getX()); p.putInt("y", pos.getY()); p.putInt("z", pos.getZ());
+        boolean ok = squire.getSquireBrain().getTaskQueue()
+                .enqueue(new com.sjviklabs.squire.brain.SquireTask("mine", p));
+        if (ok) {
+            source.sendSuccess(() -> Component.literal("Queued: mine at " + pos.toShortString()), false);
+        } else {
+            source.sendFailure(Component.literal("Task queue is full."));
+        }
+        return 1;
+    }
+
+    private static int queueFarm(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        net.minecraft.nbt.CompoundTag p = new net.minecraft.nbt.CompoundTag();
+
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
+            net.minecraft.core.BlockPos[] area = com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
+            if (area != null) {
+                p.putInt("ax", area[0].getX()); p.putInt("ay", area[0].getY()); p.putInt("az", area[0].getZ());
+                p.putInt("bx", area[1].getX()); p.putInt("by", area[1].getY()); p.putInt("bz", area[1].getZ());
+                com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
+            }
+        }
+
+        // If no Crest area, default to 16x16 around squire
+        if (!p.contains("ax")) {
+            net.minecraft.core.BlockPos sp = squire.blockPosition();
+            p.putInt("ax", sp.getX() - 8); p.putInt("ay", sp.getY()); p.putInt("az", sp.getZ() - 8);
+            p.putInt("bx", sp.getX() + 8); p.putInt("by", sp.getY()); p.putInt("bz", sp.getZ() + 8);
+        }
+
+        boolean ok = squire.getSquireBrain().getTaskQueue()
+                .enqueue(new com.sjviklabs.squire.brain.SquireTask("farm", p));
+        if (ok) {
+            source.sendSuccess(() -> Component.literal("Queued: farm area."), false);
+        } else {
+            source.sendFailure(Component.literal("Task queue is full."));
+        }
+        return 1;
+    }
+
+    private static int queueFish(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        boolean ok = squire.getSquireBrain().getTaskQueue()
+                .enqueue(new com.sjviklabs.squire.brain.SquireTask("fish", new net.minecraft.nbt.CompoundTag()));
+        if (ok) {
+            source.sendSuccess(() -> Component.literal("Queued: fish."), false);
+        } else {
+            source.sendFailure(Component.literal("Task queue is full."));
+        }
+        return 1;
+    }
+
+    private static int queueClear(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        squire.getSquireBrain().getTaskQueue().clear();
+        source.sendSuccess(() -> Component.literal("Task queue cleared."), false);
         return 1;
     }
 

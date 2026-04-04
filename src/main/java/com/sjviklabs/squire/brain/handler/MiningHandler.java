@@ -128,13 +128,19 @@ public class MiningHandler {
 
         int maxBlocks = SquireConfig.areaMaxBlocks.get();
 
-        // Build layer by layer: top-down (Y desc), then nearest-first within each layer
+        // Build layer by layer: top-down (Y desc), scanline order within each layer.
+        // Scanline: sweep Z rows front-to-back, X columns left-to-right within each row.
+        // Alternating X direction per Z row (boustrophedon) minimizes travel distance.
         outer:
         for (int y = maxY; y >= minY; y--) {
-            List<BlockPos> layer = new ArrayList<>();
-            for (int x = minX; x <= maxX; x++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    if (blockQueue.size() + layer.size() >= maxBlocks) break outer;
+            boolean reverseX = false;
+            for (int z = minZ; z <= maxZ; z++) {
+                int xStart = reverseX ? maxX : minX;
+                int xEnd   = reverseX ? minX : maxX;
+                int xStep  = reverseX ? -1 : 1;
+
+                for (int x = xStart; reverseX ? x >= xEnd : x <= xEnd; x += xStep) {
+                    if (blockQueue.size() >= maxBlocks) break outer;
 
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = squire.level().getBlockState(pos);
@@ -147,18 +153,10 @@ public class MiningHandler {
                     FluidState fluid = state.getFluidState();
                     if (!fluid.isEmpty() && state.getBlock().defaultBlockState().isAir()) continue;
 
-                    layer.add(pos);
+                    blockQueue.add(pos);
                 }
+                reverseX = !reverseX;
             }
-
-            // Sort this layer nearest-first (ascending distance from squire)
-            layer.sort((a, b) -> {
-                double da = squire.distanceToSqr(a.getX() + 0.5, a.getY() + 0.5, a.getZ() + 0.5);
-                double db = squire.distanceToSqr(b.getX() + 0.5, b.getY() + 0.5, b.getZ() + 0.5);
-                return Double.compare(da, db);
-            });
-
-            blockQueue.addAll(layer);
         }
 
         // Pop the first block as the immediate target
@@ -408,6 +406,11 @@ public class MiningHandler {
 
             // Deposit any newly spawned item entities near the broken block into squire inventory
             collectDropsNearPos(serverLevel, brokenPos);
+
+            // Award mining XP
+            if (squire.getProgressionHandler() != null) {
+                squire.getProgressionHandler().addMineXP();
+            }
 
             if (SquireConfig.activityLogging.get()) {
                 LOGGER.debug("[Squire] Broke block at {}", posStr);

@@ -204,6 +204,11 @@ public class FishingHandler {
             }
         }
 
+        // Award fishing XP per catch
+        if (!drops.isEmpty() && squire.getProgressionHandler() != null) {
+            squire.getProgressionHandler().addFishXP();
+        }
+
         if (SquireConfig.activityLogging.get() && !drops.isEmpty()) {
             LOGGER.debug("[FISH] Caught {} item(s)", drops.size());
         }

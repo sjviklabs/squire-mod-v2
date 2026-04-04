@@ -203,7 +203,14 @@ public class SquireCrestItem extends Item {
         squire.setTotalXP(data.totalXP());
         squire.setSlimModel(data.slimModel());
 
+        // Restore inventory from attachment (saved on /squire recall)
+        data.inventoryNBT().ifPresent(nbt ->
+                squire.getItemHandler().deserializeNBT(level.registryAccess(), nbt));
+
         level.addFreshEntity(squire);
+
+        // Clear stored inventory from attachment now that it's been restored
+        player.setData(SquireRegistry.SQUIRE_DATA.get(), data.clearInventory());
 
         // SOUL particles for materialization feel
         level.sendParticles(ParticleTypes.SOUL,

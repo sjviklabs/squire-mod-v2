@@ -75,6 +75,10 @@ public class FarmingHandler {
     // Work tick countdown
     private int workTicksRemaining = 0;
 
+    // Rescan cooldown: when area is fully grown/planted, wait before rescanning
+    private static final int RESCAN_INTERVAL = 100; // 5 seconds
+    private int rescanCooldown = 0;
+
     private enum FarmAction { TILL, PLANT, HARVEST }
 
     // ── Constructor ───────────────────────────────────────────────────────────
@@ -103,6 +107,7 @@ public class FarmingHandler {
         this.approachTicks = 0;
         this.stuckTicks = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
+        this.rescanCooldown = 0;
         machine.forceState(SquireAIState.FARM_SCAN);
     }
 
@@ -125,6 +130,9 @@ public class FarmingHandler {
     /**
      * FARM_SCAN: scan all (x, cornerA.y, z) positions in area.
      * Priority: harvest mature crops first, then till/plant.
+     *
+     * When no work is found, stays in FARM_SCAN with a cooldown instead of
+     * returning to IDLE — crops may still be growing and need harvest later.
      */
     private void tickScan() {
         if (cornerA == null || cornerB == null) {
@@ -132,6 +140,12 @@ public class FarmingHandler {
             return;
         }
         if (squire.level().isClientSide) return;
+
+        // Rescan cooldown: wait before scanning again after finding nothing
+        if (rescanCooldown > 0) {
+            rescanCooldown--;
+            return;
+        }
 
         BlockPos next = findNextTask();
         if (next != null) {
@@ -144,14 +158,10 @@ public class FarmingHandler {
             return;
         }
 
-        // Nothing to do in this scan — area is complete or crops still growing
-        // Fire task complete and return to IDLE
+        // Nothing to do right now — crops still growing. Wait and rescan.
+        rescanCooldown = RESCAN_INTERVAL;
         if (SquireConfig.activityLogging.get()) {
-            LOGGER.debug("[FARM] Area scan complete — no work remaining, returning to IDLE");
-        }
-        machine.forceState(SquireAIState.IDLE);
-        if (squire.getSquireBrain() != null) {
-            squire.getSquireBrain().getBus().publish(SquireEvent.WORK_TASK_COMPLETE, squire);
+            LOGGER.debug("[FARM] Area scan complete — no work found, rescanning in {} ticks", RESCAN_INTERVAL);
         }
     }
 
@@ -359,8 +369,10 @@ public class FarmingHandler {
         // Break the crop — drops items naturally into the world; squire picks up via ItemHandler
         level.destroyBlock(pos, true, squire);
 
-        // After harvest, add the farmland below back to consideration for replanting
-        // (autoReplant config respected — FARM_SCAN will naturally find it on next pass)
+        // Award harvest XP
+        if (squire.getProgressionHandler() != null) {
+            squire.getProgressionHandler().addHarvestXP();
+        }
 
         return true;
     }
