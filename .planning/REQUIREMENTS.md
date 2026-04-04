@@ -70,7 +70,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 ### Patrol
 
 - [x] **PTR-01**: Signpost block that serves as patrol waypoint
-- [ ] **PTR-02**: Squire patrols between signpost waypoints in defined order
+- [x] **PTR-02**: Squire patrols between signpost waypoints in defined order
 - [x] **PTR-03**: Player can define and modify patrol routes
 
 ### Mounted
@@ -216,7 +216,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | WRK-07      | Phase 6 | Complete |
 | WRK-08      | Phase 6 | Pending     |
 | PTR-01      | Phase 7 | Complete |
-| PTR-02      | Phase 7 | Pending     |
+| PTR-02      | Phase 7 | Complete |
 | PTR-03      | Phase 7 | Complete |
 | MNT-01      | Phase 7 | Pending     |
 | MNT-02      | Phase 7 | Pending     |

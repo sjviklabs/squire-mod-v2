@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 07-01-PLAN.md — SignpostBlock + SignpostBlockEntity + Phase 7 test scaffolds
-last_updated: "2026-04-04T02:19:54.042Z"
+stopped_at: Completed 07-02-PLAN.md — PatrolHandler + SquireBrain PATROL_WALK/PATROL_WAIT + config entries + 4 green unit tests
+last_updated: "2026-04-04T03:04:38.798Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 33
-  completed_plans: 26
+  completed_plans: 27
   percent: 0
 ---
 
@@ -78,6 +78,7 @@ _Updated after each plan completion_
 | Phase 06-work-behaviors P01 | 27 | 3 tasks | 7 files |
 | Phase 06-work-behaviors P03 | 12 | 3 tasks | 5 files |
 | Phase 07-patrol-mounting P01 | 45 | 2 tasks | 10 files |
+| Phase 07-patrol-mounting P02 | 41 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -150,6 +151,8 @@ Recent decisions affecting current work:
 - [Phase 07-patrol-mounting]: Static writeTag/readTag on SignpostBlockEntity for headless NBT tests — BlockEntity constructor in 1.21.1 requires live registry; static helpers bypass instantiation entirely
 - [Phase 07-patrol-mounting]: BlockEntityType registration: Builder.of(...).build(null) — new BlockEntityType(factory, false, block) constructor does not exist in 1.21.1
 - [Phase 07-patrol-mounting]: PENDING_LINKS kept private in SignpostBlock; removePendingLink(UUID) static accessor used by SquireRegistry PlayerLoggedOutEvent handler
+- [Phase 07-patrol-mounting]: Two-predicate buildRouteFromSignpost: Predicate<BlockPos> + Function<BlockPos,BlockPos> cleanly separates missing signpost from terminal signpost (both would return null in single-function design)
+- [Phase 07-patrol-mounting]: Map-backed test doubles for PatrolHandlerTest: BlockEntity constructor null-checks BlockEntityType in MC 1.21.1; Map<BlockPos,BlockPos> lambdas provide equivalent coverage without any BlockEntity instantiation
 
 ### Research Flags (for planning phases)
 
@@ -167,6 +170,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T02:19:54.040Z
-Stopped at: Completed 07-01-PLAN.md — SignpostBlock + SignpostBlockEntity + Phase 7 test scaffolds
+Last session: 2026-04-04T03:04:38.795Z
+Stopped at: Completed 07-02-PLAN.md — PatrolHandler + SquireBrain PATROL_WALK/PATROL_WAIT + config entries + 4 green unit tests
 Resume file: None
