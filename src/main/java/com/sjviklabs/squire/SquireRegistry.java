@@ -1,5 +1,7 @@
 package com.sjviklabs.squire;
 
+import com.sjviklabs.squire.block.SignpostBlock;
+import com.sjviklabs.squire.block.SignpostBlockEntity;
 import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
@@ -15,14 +17,19 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterials;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -56,6 +63,12 @@ public final class SquireRegistry {
 
     public static final DeferredRegister<MenuType<?>> MENU_TYPES =
             DeferredRegister.create(Registries.MENU, SquireMod.MODID);
+
+    public static final DeferredRegister<Block> BLOCKS =
+            DeferredRegister.create(Registries.BLOCK, SquireMod.MODID);
+
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, SquireMod.MODID);
 
     // ---- Entity Types ----
 
@@ -104,6 +117,30 @@ public final class SquireRegistry {
             ATTACHMENT_TYPES.register("squire_data",
                     SquireDataAttachment::buildAttachmentType);
 
+    // ---- Blocks ----
+
+    public static final DeferredHolder<Block, SignpostBlock> SIGNPOST_BLOCK =
+            BLOCKS.register("signpost",
+                    () -> new SignpostBlock(Block.Properties.of()
+                            .strength(2.0f)
+                            .requiresCorrectToolForDrops()));
+
+    // ---- Block Entity Types ----
+    // SIGNPOST_BLOCK.get() is safe here because BLOCKS.register(modBus) is called before
+    // BLOCK_ENTITY_TYPES.register(modBus) in register() — see registration order comment.
+
+    public static final Supplier<BlockEntityType<SignpostBlockEntity>> SIGNPOST_BLOCK_ENTITY =
+            BLOCK_ENTITY_TYPES.register("signpost",
+                    () -> BlockEntityType.Builder
+                            .of(SignpostBlockEntity::new, SIGNPOST_BLOCK.get())
+                            .build(null));
+
+    // ---- Block Items (declared after BLOCKS so SIGNPOST_BLOCK.get() resolves) ----
+
+    public static final DeferredHolder<Item, BlockItem> SIGNPOST_ITEM =
+            ITEMS.register("signpost",
+                    () -> new BlockItem(SIGNPOST_BLOCK.get(), new Item.Properties()));
+
     // ---- Menu Types ----
 
     public static final DeferredHolder<MenuType<?>, MenuType<SquireMenu>> SQUIRE_MENU =
@@ -131,9 +168,16 @@ public final class SquireRegistry {
         ITEMS.register(modEventBus);
         ATTACHMENT_TYPES.register(modEventBus);
         MENU_TYPES.register(modEventBus);
+        // BLOCKS must be registered before BLOCK_ENTITY_TYPES — BlockEntityType constructor
+        // calls SIGNPOST_BLOCK.get() which requires the block holder to be resolved first.
+        BLOCKS.register(modEventBus);
+        BLOCK_ENTITY_TYPES.register(modEventBus);
 
         // Register mod-bus event handlers (attribute creation, capabilities)
         modEventBus.register(SquireRegistry.class);
+
+        // Register game-bus event handlers (player logout — cleans stale PENDING_LINKS)
+        NeoForge.EVENT_BUS.addListener(SquireRegistry::onPlayerLogout);
     }
 
     // ================================================================
@@ -188,5 +232,13 @@ public final class SquireRegistry {
             SquireRegistry.SQUIRE.get(),
             (squire, context) -> squire.getItemHandler()
         );
+    }
+
+    /**
+     * Clears stale PENDING_LINKS entries when a player disconnects mid-link.
+     * Registered on the NeoForge game event bus (not mod bus).
+     */
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        SignpostBlock.removePendingLink(event.getEntity().getUUID());
     }
 }

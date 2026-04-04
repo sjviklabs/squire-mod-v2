@@ -1,19 +1,20 @@
 package com.sjviklabs.squire.block;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for SignpostBlockEntity NBT round-trips and linking gesture.
  *
- * All tests are @Disabled until Task 2 creates SignpostBlockEntity.
- * Task 2 will:
- *   1. Create SignpostBlockEntity with mode, linkedSignpost, waitTicks, assignedOwner fields
- *   2. Remove @Disabled from the five NBT round-trip tests
- *   3. Add imports for SignpostBlockEntity, BlockPos, UUID, CompoundTag
- *
- * NBT round-trip tests run headlessly: CompoundTag and NbtUtils are pure Java classes
- * with no NeoForge bootstrap required (same pattern as SquireDataAttachmentTest).
+ * Tests call the package-private static writeTag/readTag helpers directly, avoiding
+ * BlockEntity instantiation (which requires a frozen registry in the test environment).
+ * This is the same headless-safe pattern used by SquireDataAttachmentTest (CODEC + JsonOps).
  *
  * Requirements: PTR-01, PTR-03
  * Run: ./gradlew test --tests "*.SignpostBlockEntityTest"
@@ -21,41 +22,63 @@ import org.junit.jupiter.api.Test;
 class SignpostBlockEntityTest {
 
     // ─── PTR-01: NBT round-trip ───────────────────────────────────────────────
-    // All five tests are stubs until Task 2 creates SignpostBlockEntity.
-    // Task 2 implementation:
-    //   - Create SignpostBlockEntity(BlockPos, BlockState) constructor
-    //   - saveAdditional/loadAdditional with mode, linkedSignpost, waitTicks, assignedOwner
-    //   - NbtUtils.writeBlockPos / readBlockPos(tag, key).ifPresent() for linkedSignpost
 
     @Test
-    @Disabled("requires SignpostBlockEntity — enabled in Task 2")
     void test_nbtRoundTrip_mode() {
-        // save PatrolMode.WAYPOINT → new tag → load → assert mode == WAYPOINT
+        CompoundTag tag = new CompoundTag();
+        SignpostBlockEntity.writeTag(tag, SignpostBlockEntity.PatrolMode.WAYPOINT, null, 40, null);
+
+        SignpostBlockEntity.NbtData data = SignpostBlockEntity.readTag(tag);
+
+        assertEquals(SignpostBlockEntity.PatrolMode.WAYPOINT, data.mode,
+                "Mode must survive NBT round-trip");
     }
 
     @Test
-    @Disabled("requires SignpostBlockEntity — enabled in Task 2")
     void test_nbtRoundTrip_linkedSignpost() {
-        // save BlockPos(10, 64, 20) → new tag → load → assert pos equals expected
-        // Uses NbtUtils.writeBlockPos/readBlockPos(tag, "LinkedSignpost").ifPresent()
+        BlockPos expected = new BlockPos(10, 64, 20);
+        CompoundTag tag = new CompoundTag();
+        SignpostBlockEntity.writeTag(tag, SignpostBlockEntity.PatrolMode.WAYPOINT, expected, 40, null);
+
+        SignpostBlockEntity.NbtData data = SignpostBlockEntity.readTag(tag);
+
+        assertEquals(expected, data.linkedSignpost,
+                "LinkedSignpost BlockPos must survive NBT round-trip via NbtUtils");
     }
 
     @Test
-    @Disabled("requires SignpostBlockEntity — enabled in Task 2")
     void test_nbtRoundTrip_waitTicks() {
-        // save waitTicks=40 → new tag → load → assert 40
+        CompoundTag tag = new CompoundTag();
+        SignpostBlockEntity.writeTag(tag, SignpostBlockEntity.PatrolMode.WAYPOINT, null, 40, null);
+
+        SignpostBlockEntity.NbtData data = SignpostBlockEntity.readTag(tag);
+
+        assertEquals(40, data.waitTicks,
+                "WaitTicks must survive NBT round-trip");
     }
 
     @Test
-    @Disabled("requires SignpostBlockEntity — enabled in Task 2")
     void test_nbtRoundTrip_assignedOwner() {
-        // save UUID.randomUUID() → new tag → load → assert equals
+        UUID expected = UUID.randomUUID();
+        CompoundTag tag = new CompoundTag();
+        SignpostBlockEntity.writeTag(tag, SignpostBlockEntity.PatrolMode.WAYPOINT, null, 40, expected);
+
+        SignpostBlockEntity.NbtData data = SignpostBlockEntity.readTag(tag);
+
+        assertEquals(expected, data.assignedOwner,
+                "AssignedOwner UUID must survive NBT round-trip");
     }
 
     @Test
-    @Disabled("requires SignpostBlockEntity — enabled in Task 2")
     void test_nbtRoundTrip_absentLinkedSignpost() {
-        // do NOT set linkedSignpost → save → load → assert getLinkedSignpost() == null
+        // writeTag with null linkedSignpost — key must not be written
+        CompoundTag tag = new CompoundTag();
+        SignpostBlockEntity.writeTag(tag, SignpostBlockEntity.PatrolMode.WAYPOINT, null, 40, null);
+
+        SignpostBlockEntity.NbtData data = SignpostBlockEntity.readTag(tag);
+
+        assertNull(data.linkedSignpost,
+                "Absent LinkedSignpost key must produce null after load");
     }
 
     // ─── PTR-03: linking gesture ──────────────────────────────────────────────
