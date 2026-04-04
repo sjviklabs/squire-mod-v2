@@ -26,9 +26,14 @@ public class FollowHandler {
     private int pathRecalcTimer = 0;
     private Vec3 lastPos = null;
     private int stuckTicks = 0;
+    private int recoveryCooldown = 0;
 
-    /** Ticks of minimal movement before stuck recovery fires (3 s at 20 TPS). */
-    private static final int STUCK_THRESHOLD = 60;
+    // Breadcrumb ring buffer — records owner positions as intermediate waypoints
+    private static final int BREADCRUMB_SIZE = 10;
+    private static final int BREADCRUMB_INTERVAL = 20; // record every 20 ticks (1 second)
+    private final Vec3[] breadcrumbs = new Vec3[BREADCRUMB_SIZE];
+    private int breadcrumbHead = 0;
+    private int breadcrumbTimer = 0;
 
     public FollowHandler(SquireEntity squire) {
         this.squire = squire;
@@ -61,6 +66,11 @@ public class FollowHandler {
         pathRecalcTimer = 0;
         lastPos = null;
         stuckTicks = 0;
+        recoveryCooldown = 0;
+        breadcrumbHead = 0;
+        breadcrumbTimer = 0;
+        java.util.Arrays.fill(breadcrumbs, null);
+        squire.ensureChunkLoaded();
         if (squire.getNavigation() instanceof GroundPathNavigation nav) {
             nav.setCanOpenDoors(true);
             nav.setCanPassDoors(true);
@@ -71,6 +81,7 @@ public class FollowHandler {
     public void stop() {
         squire.setSquireSprinting(false);
         squire.getNavigation().stop();
+        squire.releaseChunkLoading();
         if (squire.getNavigation() instanceof GroundPathNavigation nav) {
             nav.setCanOpenDoors(false);
             nav.setCanPassDoors(false);
@@ -90,13 +101,29 @@ public class FollowHandler {
         // Smooth head tracking every tick
         s.getLookControl().setLookAt(owner, 10.0F, (float) s.getMaxHeadXRot());
 
-        // Stuck detection — runs every tick regardless of pathRecalcTimer
+        // Record owner breadcrumbs every BREADCRUMB_INTERVAL ticks
+        if (++breadcrumbTimer >= BREADCRUMB_INTERVAL) {
+            breadcrumbTimer = 0;
+            breadcrumbs[breadcrumbHead] = owner.position();
+            breadcrumbHead = (breadcrumbHead + 1) % breadcrumbs.length;
+        }
+
+        // Refresh chunk loading as squire moves (~every 5 seconds)
+        if (s.tickCount % 100 == 0) {
+            s.releaseChunkLoading();
+            s.ensureChunkLoaded();
+        }
+
+        // Stuck detection — runs every tick, uses config threshold + recovery cooldown
         Vec3 currentPos = s.position();
-        if (lastPos != null && currentPos.distanceTo(lastPos) < 0.1) {
+        if (recoveryCooldown > 0) {
+            recoveryCooldown--;
+        } else if (lastPos != null && currentPos.distanceTo(lastPos) < 0.1) {
             stuckTicks++;
-            if (stuckTicks >= STUCK_THRESHOLD) {
+            if (stuckTicks >= SquireConfig.stuckDetectionTicks.get()) {
                 handleStuck(s, owner);
                 stuckTicks = 0;
+                recoveryCooldown = SquireConfig.stuckRecoveryTicks.get();
             }
         } else {
             stuckTicks = 0;
@@ -142,9 +169,23 @@ public class FollowHandler {
         // Force immediate path replan regardless of throttle timer
         s.getNavigation().stop();
         s.getNavigation().moveTo(owner, 1.3D);
+
+        // If direct path failed, try breadcrumb waypoints (most recent first)
+        if (s.getNavigation().isDone()) {
+            for (int i = 0; i < breadcrumbs.length; i++) {
+                int idx = (breadcrumbHead - 1 - i + breadcrumbs.length) % breadcrumbs.length;
+                Vec3 crumb = breadcrumbs[idx];
+                if (crumb == null) continue;
+                if (s.getNavigation().moveTo(crumb.x, crumb.y, crumb.z, 1.3D)) {
+                    var log = s.getActivityLog();
+                    if (log != null) log.log("FOLLOW", "Using breadcrumb waypoint " + i + " steps back");
+                    break;
+                }
+            }
+        }
+
         // Activate swimming if stuck in water
         if (s.isInWater()) s.setSwimming(true);
-        // Debug log
         var log = s.getActivityLog();
         if (log != null) {
             log.log("FOLLOW", "Stuck detected — applying jump boost and replanning path");

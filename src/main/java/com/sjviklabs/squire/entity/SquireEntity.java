@@ -1,8 +1,10 @@
 package com.sjviklabs.squire.entity;
 
+import com.sjviklabs.squire.SquireMod;
 import com.sjviklabs.squire.SquireRegistry;
 import com.sjviklabs.squire.brain.SquireActivityLog;
 import com.sjviklabs.squire.brain.SquireBrain;
+import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
 import com.sjviklabs.squire.progression.ProgressionHandler;
 import net.minecraft.nbt.CompoundTag;
@@ -358,12 +360,40 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     // Chunk loading stub (ARC-09)
     // ================================================================
 
+    // ── Chunk loading ────────────────────────────────────────────────────────
+    private final java.util.Set<net.minecraft.world.level.ChunkPos> forceLoadedChunks = new java.util.HashSet<>();
+
     /**
-     * Stub: ensures the chunk at this squire's position is loaded during area clear operations.
-     * Full implementation added in Phase 6 (MiningHandler) using ForceChunkManager.
+     * Force-load chunks around this squire so it doesn't freeze in unloaded chunks.
+     * Uses vanilla setChunkForced() via ServerLevel. Tracks loaded chunks in a set
+     * so releaseChunkLoading() can clean up.
      */
     public void ensureChunkLoaded() {
-        // Phase 6: ForceChunkManager.forceChunk((ServerLevel)this.level(), this.chunkPosition(), this, true);
+        if (!(this.level() instanceof ServerLevel serverLevel)) return;
+        int radius = SquireConfig.chunkLoadRadius.get();
+        if (radius <= 0) return;
+
+        net.minecraft.world.level.ChunkPos center = this.chunkPosition();
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                net.minecraft.world.level.ChunkPos cp = new net.minecraft.world.level.ChunkPos(center.x + dx, center.z + dz);
+                if (forceLoadedChunks.add(cp)) {
+                    serverLevel.setChunkForced(cp.x, cp.z, true);
+                }
+            }
+        }
+    }
+
+    /**
+     * Release all force-loaded chunks. Called by FollowHandler on stop,
+     * and in die()/remove() to prevent chunk leak.
+     */
+    public void releaseChunkLoading() {
+        if (!(this.level() instanceof ServerLevel serverLevel)) return;
+        for (net.minecraft.world.level.ChunkPos cp : forceLoadedChunks) {
+            serverLevel.setChunkForced(cp.x, cp.z, false);
+        }
+        forceLoadedChunks.clear();
     }
 
     /**
@@ -531,6 +561,9 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
             }
             return; // squire lives — do NOT call super.die()
         }
+
+        // Release force-loaded chunks before death cleanup
+        releaseChunkLoading();
 
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
             // Find owner and persist progression to attachment before super.die() removes entity
