@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 06-03-PLAN.md — PlacingHandler + ChestHandler work behaviors
-last_updated: "2026-04-04T01:25:20.229Z"
+stopped_at: Completed 07-01-PLAN.md — SignpostBlock + SignpostBlockEntity + Phase 7 test scaffolds
+last_updated: "2026-04-04T02:19:54.042Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 33
-  completed_plans: 25
+  completed_plans: 26
   percent: 0
 ---
 
@@ -77,6 +77,7 @@ _Updated after each plan completion_
 | Phase 06-work-behaviors P02 | 19 | 3 tasks | 8 files |
 | Phase 06-work-behaviors P01 | 27 | 3 tasks | 7 files |
 | Phase 06-work-behaviors P03 | 12 | 3 tasks | 5 files |
+| Phase 07-patrol-mounting P01 | 45 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -146,6 +147,9 @@ Recent decisions affecting current work:
 - [Phase 06-work-behaviors]: PlacingHandler slot caching: inventorySlot set once in setTarget(), re-validated but not re-scanned in PLACING_BLOCK
 - [Phase 06-work-behaviors]: ChestHandler dual-path: BaseContainerBlockEntity handles vanilla chests; Capabilities.ItemHandler.BLOCK fallback covers modded storage
 - [Phase 06-work-behaviors]: chestAbilityMinLevel defaults to 0 (available from any level) — TODO Phase 4: replace with progression ability system
+- [Phase 07-patrol-mounting]: Static writeTag/readTag on SignpostBlockEntity for headless NBT tests — BlockEntity constructor in 1.21.1 requires live registry; static helpers bypass instantiation entirely
+- [Phase 07-patrol-mounting]: BlockEntityType registration: Builder.of(...).build(null) — new BlockEntityType(factory, false, block) constructor does not exist in 1.21.1
+- [Phase 07-patrol-mounting]: PENDING_LINKS kept private in SignpostBlock; removePendingLink(UUID) static accessor used by SquireRegistry PlayerLoggedOutEvent handler
 
 ### Research Flags (for planning phases)
 
@@ -163,6 +167,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T01:09:05.211Z
-Stopped at: Completed 06-03-PLAN.md — PlacingHandler + ChestHandler work behaviors
+Last session: 2026-04-04T02:19:54.040Z
+Stopped at: Completed 07-01-PLAN.md — SignpostBlock + SignpostBlockEntity + Phase 7 test scaffolds
 Resume file: None

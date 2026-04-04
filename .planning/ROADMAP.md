@@ -213,5 +213,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 4. Combat and Progression      | 5/5 | Complete    | 2026-04-03 |
 | 5. UI and Controls             | 4/4 | Complete    | 2026-04-04 |
 | 6. Work Behaviors              | 3/4 | Complete    | 2026-04-04 |
-| 7. Patrol and Mounting         | 0/4            | Not started | -         |
+| 7. Patrol and Mounting         | 1/4 | In Progress|  |
 | 8. Compatibility and Polish    | 0/3            | Not started | -         |
