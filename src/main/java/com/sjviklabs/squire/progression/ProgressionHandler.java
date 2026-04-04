@@ -99,6 +99,8 @@ public class ProgressionHandler {
 
     private void addXP(int amount) {
         this.totalXP += amount;
+        // Sync back to entity so GUI, NBT, and attachment all see the updated value
+        squire.setTotalXP(this.totalXP);
         recalculateLevel();
     }
 

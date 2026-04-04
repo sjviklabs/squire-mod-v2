@@ -146,6 +146,68 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     }
 
     // ================================================================
+    // Equipment bridge — SquireItemHandler is the single source of truth
+    // ================================================================
+
+    /**
+     * Maps EquipmentSlot to SquireItemHandler slot index.
+     * This bridges vanilla's getItemBySlot/setItemSlot to our IItemHandler,
+     * ensuring the inventory GUI, rendering, combat, and auto-equip all
+     * read/write the same storage.
+     */
+    private static int handlerSlotFor(EquipmentSlot slot) {
+        return switch (slot) {
+            case HEAD    -> SquireItemHandler.SLOT_HELMET;
+            case CHEST   -> SquireItemHandler.SLOT_CHEST;
+            case LEGS    -> SquireItemHandler.SLOT_LEGS;
+            case FEET    -> SquireItemHandler.SLOT_BOOTS;
+            case MAINHAND -> SquireItemHandler.SLOT_MAINHAND;
+            case OFFHAND  -> SquireItemHandler.SLOT_OFFHAND;
+            default -> -1;
+        };
+    }
+
+    @Override
+    public ItemStack getItemBySlot(EquipmentSlot slot) {
+        int idx = handlerSlotFor(slot);
+        if (idx >= 0 && itemHandler != null) {
+            return itemHandler.getStackInSlot(idx);
+        }
+        return super.getItemBySlot(slot);
+    }
+
+    @Override
+    public void setItemSlot(EquipmentSlot slot, ItemStack stack) {
+        int idx = handlerSlotFor(slot);
+        if (idx >= 0 && itemHandler != null) {
+            itemHandler.setSlotContents(idx, stack);
+            return;
+        }
+        super.setItemSlot(slot, stack);
+    }
+
+    @Override
+    public Iterable<ItemStack> getArmorSlots() {
+        // Return armor from handler so rendering reads the correct source
+        java.util.List<ItemStack> armor = new java.util.ArrayList<>(4);
+        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_BOOTS));
+        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_LEGS));
+        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_CHEST));
+        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_HELMET));
+        return armor;
+    }
+
+    @Override
+    public ItemStack getMainHandItem() {
+        return itemHandler != null ? itemHandler.getStackInSlot(SquireItemHandler.SLOT_MAINHAND) : ItemStack.EMPTY;
+    }
+
+    @Override
+    public ItemStack getOffhandItem() {
+        return itemHandler != null ? itemHandler.getStackInSlot(SquireItemHandler.SLOT_OFFHAND) : ItemStack.EMPTY;
+    }
+
+    // ================================================================
     // Attributes
     // ================================================================
 

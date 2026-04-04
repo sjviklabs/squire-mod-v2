@@ -77,6 +77,16 @@ public class SquireItemHandler extends ItemStackHandler {
         return super.extractItem(slot, amount, simulate);
     }
 
+    /**
+     * Directly set the contents of a slot, bypassing insertItem validation.
+     * Used by SquireEntity.setItemSlot() to bridge vanilla equipment to the handler.
+     * This is the only method that should write equipment slots directly.
+     */
+    public void setSlotContents(int slot, ItemStack stack) {
+        this.stacks.set(slot, stack);
+        onContentsChanged(slot);
+    }
+
     @Override
     protected void onContentsChanged(int slot) {
         // Entity NBT is saved automatically by the level on the next save cycle.
