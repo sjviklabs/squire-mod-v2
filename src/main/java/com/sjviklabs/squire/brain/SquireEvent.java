@@ -14,5 +14,8 @@ public enum SquireEvent {
     COMBAT_START,
 
     /** Published when CombatHandler exits combat (Phase 4 populates subscribers). */
-    COMBAT_END
+    COMBAT_END,
+
+    /** Published when a work handler completes its assigned task (farm, fish, mine, etc.). */
+    WORK_TASK_COMPLETE
 }

@@ -239,6 +239,15 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     }
 
     /**
+     * Returns the squire's brain (FSM + event bus). May be null before first server-side tick.
+     * Used by work handlers that need to fire events (e.g. WORK_TASK_COMPLETE) or force state.
+     */
+    @Nullable
+    public SquireBrain getSquireBrain() {
+        return this.squireBrain;
+    }
+
+    /**
      * Returns the activity log for this squire, creating it lazily on first call.
      * Used by TickRateStateMachine to log state transitions when activityLogging is enabled.
      */
