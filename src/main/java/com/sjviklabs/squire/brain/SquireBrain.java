@@ -1,13 +1,23 @@
 package com.sjviklabs.squire.brain;
 
+import com.sjviklabs.squire.brain.handler.ChestHandler;
 import com.sjviklabs.squire.brain.handler.CombatHandler;
 import com.sjviklabs.squire.brain.handler.DangerHandler;
+import com.sjviklabs.squire.brain.handler.FarmingHandler;
+import com.sjviklabs.squire.brain.handler.FishingHandler;
 import com.sjviklabs.squire.brain.handler.FollowHandler;
 import com.sjviklabs.squire.brain.handler.ItemHandler;
+import com.sjviklabs.squire.brain.handler.MiningHandler;
+import com.sjviklabs.squire.brain.handler.PlacingHandler;
 import com.sjviklabs.squire.brain.handler.SurvivalHandler;
+import com.sjviklabs.squire.brain.handler.TorchHandler;
 import com.sjviklabs.squire.entity.SquireEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Central brain for a squire — owns the FSM, event bus, and behavior handlers.
@@ -28,12 +38,25 @@ public class SquireBrain {
     private final TickRateStateMachine machine;
     private final SquireBrainEventBus bus;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SquireBrain.class);
+
     // ── Behavior handlers ────────────────────────────────────────────────────
     private final FollowHandler follow;
     private final SurvivalHandler survival;
     private final CombatHandler combat;
     private final DangerHandler danger;
     private final ItemHandler item;
+
+    // ── Work handlers (Phase 6) ──────────────────────────────────────────────
+    private final MiningHandler mining;
+    private final PlacingHandler placing;
+    private final FarmingHandler farming;
+    private final FishingHandler fishing;
+    private final ChestHandler chest;
+    private final TorchHandler torch;
+
+    // ── Task queue (Phase 6) ─────────────────────────────────────────────────
+    private final TaskQueue taskQueue = new TaskQueue();
 
     private int idleTicks;
 
@@ -52,6 +75,14 @@ public class SquireBrain {
         this.danger = new DangerHandler(squire);
         this.item = new ItemHandler(squire);
 
+        // Work handlers (Phase 6) — machine reference passed so handlers can forceState()
+        this.mining  = new MiningHandler(squire, machine);
+        this.placing = new PlacingHandler(squire, machine);
+        this.farming = new FarmingHandler(squire, machine);
+        this.fishing = new FishingHandler(squire, machine);
+        this.chest   = new ChestHandler(squire, machine);
+        this.torch   = new TorchHandler(squire);
+
         // 3. Subscribe BEFORE registerTransitions() so no event fires into an empty handler.
         //    SIT_TOGGLE resets eat cooldown so squire doesn't eat mid-sit-down animation.
         bus.subscribe(SquireEvent.SIT_TOGGLE, s -> survival.reset());
@@ -66,7 +97,16 @@ public class SquireBrain {
 
     /** Called every server-side aiStep() from SquireEntity. */
     public void tick() {
-        if (machine.getCurrentState() != SquireAIState.IDLE) {
+        if (machine.getCurrentState() == SquireAIState.IDLE) {
+            idleTicks++;
+            // Dispatch next queued task when idle and queue is non-empty
+            if (!taskQueue.isEmpty()) {
+                SquireTask next = taskQueue.poll();
+                if (next != null) {
+                    dispatch(next);
+                }
+            }
+        } else {
             idleTicks = 0;
         }
         machine.tick(squire);
@@ -91,6 +131,74 @@ public class SquireBrain {
 
     public CombatHandler getCombatHandler() {
         return combat;
+    }
+
+    /** Returns the task queue for NBT persistence (SquireEntity save/load). */
+    public TaskQueue getTaskQueue() {
+        return taskQueue;
+    }
+
+    // -------------------------------------------------------------------------
+    // Task dispatch
+    // -------------------------------------------------------------------------
+
+    /**
+     * Route a dequeued task to the appropriate work handler.
+     *
+     * Each handler's setTarget / setArea / startFishing method internally calls
+     * machine.forceState() to enter the correct approach state.
+     *
+     * commandName values: "mine", "mine_area", "place", "farm", "fish",
+     *                     "chest_deposit", "chest_withdraw"
+     */
+    private void dispatch(SquireTask task) {
+        CompoundTag p = task.params();
+        switch (task.commandName()) {
+            case "mine" -> {
+                BlockPos pos = new BlockPos(p.getInt("x"), p.getInt("y"), p.getInt("z"));
+                mining.setTarget(pos);
+                // setTarget() calls machine.forceState(MINING_APPROACH) internally
+            }
+            case "mine_area" -> {
+                BlockPos a = new BlockPos(p.getInt("ax"), p.getInt("ay"), p.getInt("az"));
+                BlockPos b = new BlockPos(p.getInt("bx"), p.getInt("by"), p.getInt("bz"));
+                mining.setAreaTarget(a, b);
+            }
+            case "place" -> {
+                BlockPos pos = new BlockPos(p.getInt("x"), p.getInt("y"), p.getInt("z"));
+                String itemId = p.getString("item");
+                net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM
+                        .get(net.minecraft.resources.ResourceLocation.parse(itemId));
+                placing.setTarget(pos, item);
+            }
+            case "farm" -> {
+                BlockPos a = new BlockPos(p.getInt("ax"), p.getInt("ay"), p.getInt("az"));
+                BlockPos b = new BlockPos(p.getInt("bx"), p.getInt("by"), p.getInt("bz"));
+                farming.setArea(a, b);
+            }
+            case "fish" -> {
+                if (p.contains("x")) {
+                    BlockPos waterPos = new BlockPos(p.getInt("x"), p.getInt("y"), p.getInt("z"));
+                    fishing.startFishing(waterPos);
+                } else {
+                    fishing.startFishing();
+                }
+            }
+            case "chest_deposit" -> {
+                BlockPos pos = new BlockPos(p.getInt("x"), p.getInt("y"), p.getInt("z"));
+                chest.setDepositTarget(pos);
+            }
+            case "chest_withdraw" -> {
+                BlockPos pos = new BlockPos(p.getInt("x"), p.getInt("y"), p.getInt("z"));
+                String itemId = p.getString("item");
+                int amount = p.contains("amount") ? p.getInt("amount") : 1;
+                net.minecraft.world.item.Item requestedItem = itemId.isEmpty() ? null
+                        : net.minecraft.core.registries.BuiltInRegistries.ITEM
+                                .get(net.minecraft.resources.ResourceLocation.parse(itemId));
+                chest.setWithdrawTarget(pos, requestedItem, amount);
+            }
+            default -> LOGGER.warn("[Squire] Unknown task command: {}", task.commandName());
+        }
     }
 
     // -------------------------------------------------------------------------
