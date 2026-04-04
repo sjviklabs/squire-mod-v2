@@ -61,10 +61,11 @@ import java.util.UUID;
  * - AI/FSM/behavior: SquireBrain (stub in Phase 1, populated in Phase 2)
  * - Inventory capability: SquireItemHandler (Phase 1-03)
  *
- * SynchedEntityData fields (exactly 3, all passed SquireEntity.class):
- * - SQUIRE_MODE  Byte    0=follow, 1=sit, 2=guard
- * - SQUIRE_LEVEL Int     0-30
- * - SLIM_MODEL   Boolean false=wide arms (Steve), true=slim arms (Alex)
+ * SynchedEntityData fields (exactly 4, all passed SquireEntity.class):
+ * - SQUIRE_MODE  Byte             0=follow, 1=sit, 2=guard
+ * - SQUIRE_LEVEL Int              0-30
+ * - SLIM_MODEL   Boolean          false=wide arms (Steve), true=slim arms (Alex)
+ * - OWNER_ID     Optional<UUID>   owner player UUID (synced to client for radial menu)
  */
 public class SquireEntity extends PathfinderMob implements GeoEntity {
 
@@ -75,6 +76,8 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
             SynchedEntityData.defineId(SquireEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> SLIM_MODEL =
             SynchedEntityData.defineId(SquireEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<java.util.Optional<java.util.UUID>> OWNER_ID =
+            SynchedEntityData.defineId(SquireEntity.class, EntityDataSerializers.OPTIONAL_UUID);
 
     public static final byte MODE_FOLLOW = 0;
     public static final byte MODE_SIT    = 1;
@@ -166,6 +169,7 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         builder.define(SQUIRE_MODE, MODE_FOLLOW);
         builder.define(SQUIRE_LEVEL, 0);
         builder.define(SLIM_MODEL, false);
+        builder.define(OWNER_ID, java.util.Optional.empty());
     }
 
     public byte getSquireMode() {
@@ -203,15 +207,18 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
 
     public void setOwnerId(@Nullable UUID uuid) {
         this.ownerUUID = uuid;
+        this.entityData.set(OWNER_ID, java.util.Optional.ofNullable(uuid));
     }
 
     /**
      * True if the given player is this squire's owner.
-     * Never returns true for null UUID or fake players.
+     * Reads from SynchedEntityData so it works on both client and server.
      */
     public boolean isOwnedBy(Player player) {
         if (player == null || player instanceof FakePlayer) return false;
-        return player.getUUID().equals(this.ownerUUID);
+        // Use synched data so client-side checks work (radial menu, rendering)
+        java.util.Optional<java.util.UUID> synced = this.entityData.get(OWNER_ID);
+        return synced.isPresent() && synced.get().equals(player.getUUID());
     }
 
     // ================================================================
@@ -293,9 +300,11 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         // OpenDoorGoal: squire can follow player through doors
         this.goalSelector.addGoal(1, new OpenDoorGoal(this, true));
         // HurtByTargetGoal: squire retaliates when attacked (PathfinderMob-compatible).
-        // Note: OwnerHurtByTargetGoal requires TamableAnimal — not applicable here.
-        // Owner-hurt retaliation is handled by SquireBrain FSM combat transitions in Phase 2.
         this.targetSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this));
+        // NearestAttackableTargetGoal: proactively target hostile mobs within 16 blocks.
+        // This makes the squire fight zombies, skeletons etc. without being hit first.
+        this.targetSelector.addGoal(2, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
+                this, net.minecraft.world.entity.monster.Monster.class, true));
         // All follow/combat/work behavior is Phase 2 (SquireBrain FSM).
     }
 
@@ -513,6 +522,7 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         super.readAdditionalSaveData(tag);
         if (tag.hasUUID("OwnerUUID")) {
             this.ownerUUID = tag.getUUID("OwnerUUID");
+            this.entityData.set(OWNER_ID, java.util.Optional.ofNullable(this.ownerUUID));
         }
         if (tag.contains("SquireMode")) {
             setSquireMode(tag.getByte("SquireMode"));
