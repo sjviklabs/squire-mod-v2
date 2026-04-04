@@ -2,6 +2,8 @@ package com.sjviklabs.squire.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.List;
+
 /**
  * Squire mod configuration — 53 entries in 10 sections, all server-enforced (COMMON type).
  *
@@ -76,6 +78,7 @@ public final class SquireConfig {
     public static final ModConfigSpec.DoubleValue itemPickupRange;
     public static final ModConfigSpec.BooleanValue autoPickup;
     public static final ModConfigSpec.IntValue autoPickupTickRate;
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> junkFilterList;
 
     // ── [rendering] ──────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue showNameTag;
@@ -255,6 +258,12 @@ public final class SquireConfig {
         autoPickupTickRate = builder
                 .comment("Ticks between auto-pickup scans")
                 .defineInRange("autoPickupTickRate", 20, 5, 100);
+        junkFilterList = builder
+                .comment("Items the squire ignores during pickup (resource locations, e.g. minecraft:cobblestone)")
+                .defineListAllowEmpty("junkFilter",
+                        List.of("minecraft:cobblestone", "minecraft:dirt", "minecraft:gravel",
+                                "minecraft:rotten_flesh", "minecraft:poisonous_potato"),
+                        s -> s instanceof String str && str.contains(":"));
         builder.pop();
 
         // ── [rendering] ──────────────────────────────────────────────────────

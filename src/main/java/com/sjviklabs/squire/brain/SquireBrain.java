@@ -3,6 +3,7 @@ package com.sjviklabs.squire.brain;
 import com.sjviklabs.squire.brain.handler.CombatHandler;
 import com.sjviklabs.squire.brain.handler.DangerHandler;
 import com.sjviklabs.squire.brain.handler.FollowHandler;
+import com.sjviklabs.squire.brain.handler.ItemHandler;
 import com.sjviklabs.squire.brain.handler.SurvivalHandler;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.world.entity.LivingEntity;
@@ -32,6 +33,7 @@ public class SquireBrain {
     private final SurvivalHandler survival;
     private final CombatHandler combat;
     private final DangerHandler danger;
+    private final ItemHandler item;
 
     private int idleTicks;
 
@@ -48,6 +50,7 @@ public class SquireBrain {
         this.survival = new SurvivalHandler(squire);
         this.combat = new CombatHandler(squire);
         this.danger = new DangerHandler(squire);
+        this.item = new ItemHandler(squire);
 
         // 3. Subscribe BEFORE registerTransitions() so no event fires into an empty handler.
         //    SIT_TOGGLE resets eat cooldown so squire doesn't eat mid-sit-down animation.
@@ -106,6 +109,7 @@ public class SquireBrain {
         registerEatingTransitions();
         registerCombatTransitions();
         registerFollowTransitions();
+        registerItemPickupTransitions();
     }
 
     /**
@@ -274,6 +278,46 @@ public class SquireBrain {
                 },
                 1,  // tickRate
                 1   // priority
+        ));
+    }
+
+    /**
+     * PICKING_UP_ITEM transitions (plan 05-04):
+     * Priority 45 (work tier — below follow at 30 but above patrol/farming).
+     *
+     * Enter from IDLE or FOLLOWING_OWNER when items are nearby and inventory has space.
+     * Per-tick: delegate to ItemHandler.tick() which returns PICKING_UP_ITEM while items remain.
+     * Exit to IDLE when no items remain or inventory is full.
+     */
+    private void registerItemPickupTransitions() {
+        // Enter PICKING_UP_ITEM from IDLE when items are nearby
+        machine.addTransition(new AITransition(
+                SquireAIState.IDLE,
+                item::hasNearbyItems,
+                s -> { item.start(); return SquireAIState.PICKING_UP_ITEM; },
+                10, 45
+        ));
+
+        // Enter PICKING_UP_ITEM from FOLLOWING_OWNER when items are nearby
+        machine.addTransition(new AITransition(
+                SquireAIState.FOLLOWING_OWNER,
+                item::hasNearbyItems,
+                s -> { item.start(); return SquireAIState.PICKING_UP_ITEM; },
+                10, 45
+        ));
+
+        // PICKING_UP_ITEM per-tick: delegate to ItemHandler which manages scan interval
+        machine.addTransition(new AITransition(
+                SquireAIState.PICKING_UP_ITEM,
+                () -> true,
+                s -> {
+                    SquireAIState next = item.tick(s);
+                    if (next != SquireAIState.PICKING_UP_ITEM) {
+                        item.stop();
+                    }
+                    return next;
+                },
+                1, 46
         ));
     }
 
