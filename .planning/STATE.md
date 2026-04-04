@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 08-01-PLAN.md — MineColoniesCompat package-scan guard with zero MC imports
-last_updated: "2026-04-04T03:25:48.091Z"
+stopped_at: Completed 08-02-PLAN.md — JadeCompat @WailaPlugin tooltip, CuriosCompat slot accessor, builtin datapack JSON
+last_updated: "2026-04-04T03:34:57.822Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 33
-  completed_plans: 29
+  completed_plans: 30
   percent: 0
 ---
 
@@ -81,6 +81,7 @@ _Updated after each plan completion_
 | Phase 07-patrol-mounting P02 | 41 | 2 tasks | 5 files |
 | Phase 07-patrol-mounting P04 | 11 | 1 tasks | 4 files |
 | Phase 08-compatibility-polish P01 | 4 | 2 tasks | 2 files |
+| Phase 08-compatibility-polish P02 | 11 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,9 @@ Recent decisions affecting current work:
 - [Phase 07-patrol-mounting]: horseFleeThreshold uses .floatValue() not (float) cast — ModConfigSpec.DoubleValue.get() returns boxed Double
 - [Phase 08-01]: isFromPackageTestHook() package-visible accessor — exposes private isFromPackage for unit tests without breaking production encapsulation
 - [Phase 08-01]: isActive() try/catch on ModList.get() — handles JUnit headless environment where FML is not bootstrapped; production behavior unchanged
+- [Phase 08-compatibility-polish]: getTier() used in JadeCompat tooltip — getSquireTier() does not exist in v2 SquireEntity
+- [Phase 08-compatibility-polish]: CuriosCompat.modPresent field package-private for clean reflection reset in unit tests
+- [Phase 08-compatibility-polish]: Jade @WailaPlugin on isolated compat class — never referenced from SquireMod or SquireRegistry to prevent ClassNotFoundException without Jade
 
 ### Research Flags (for planning phases)
 
@@ -176,6 +180,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T03:25:48.088Z
-Stopped at: Completed 08-01-PLAN.md — MineColoniesCompat package-scan guard with zero MC imports
+Last session: 2026-04-04T03:34:57.819Z
+Stopped at: Completed 08-02-PLAN.md — JadeCompat @WailaPlugin tooltip, CuriosCompat slot accessor, builtin datapack JSON
 Resume file: None

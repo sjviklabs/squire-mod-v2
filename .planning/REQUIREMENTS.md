@@ -53,7 +53,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **INV-02**: Inventory implemented via IItemHandler capability (not SimpleContainer)
 - [x] **INV-03**: Squire picks up nearby items (with junk filtering)
 - [x] **INV-04**: Custom 4-piece armor set with tiered textures (visual changes per tier)
-- [ ] **INV-05**: Curios/Accessories integration for equipment slots (soft dependency)
+- [x] **INV-05**: Curios/Accessories integration for equipment slots (soft dependency)
 - [x] **INV-06**: Inventory accessible via GUI screen
 
 ### Work Behaviors
@@ -98,8 +98,8 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 ### Mod Compatibility
 
 - [x] **CMP-01**: MineColonies compatibility (prevent citizen/squire entity conflicts)
-- [ ] **CMP-02**: Jade/WAILA tooltip overlay showing squire status
-- [ ] **CMP-03**: Curios/Accessories API integration (soft dependency, mod functions without it)
+- [x] **CMP-02**: Jade/WAILA tooltip overlay showing squire status
+- [x] **CMP-03**: Curios/Accessories API integration (soft dependency, mod functions without it)
 
 ### Architecture
 
@@ -206,7 +206,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | GUI-02      | Phase 5 | Complete |
 | GUI-03      | Phase 5 | Complete |
 | INV-03      | Phase 5 | Complete |
-| INV-05      | Phase 8 | Pending     |
+| INV-05      | Phase 8 | Complete |
 | WRK-01      | Phase 6 | Complete |
 | WRK-02      | Phase 6 | Complete |
 | WRK-03      | Phase 6 | Complete |
@@ -223,8 +223,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | MNT-03      | Phase 7 | Complete |
 | MNT-04      | Phase 7 | Pending     |
 | CMP-01      | Phase 8 | Complete |
-| CMP-02      | Phase 8 | Pending     |
-| CMP-03      | Phase 8 | Pending     |
+| CMP-02      | Phase 8 | Complete |
+| CMP-03      | Phase 8 | Complete |
 
 **Coverage:**
 
