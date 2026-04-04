@@ -8,6 +8,8 @@ import com.sjviklabs.squire.brain.handler.FishingHandler;
 import com.sjviklabs.squire.brain.handler.FollowHandler;
 import com.sjviklabs.squire.brain.handler.ItemHandler;
 import com.sjviklabs.squire.brain.handler.MiningHandler;
+import com.sjviklabs.squire.brain.handler.MountHandler;
+import com.sjviklabs.squire.brain.handler.PatrolHandler;
 import com.sjviklabs.squire.brain.handler.PlacingHandler;
 import com.sjviklabs.squire.brain.handler.SurvivalHandler;
 import com.sjviklabs.squire.brain.handler.TorchHandler;
@@ -47,6 +49,12 @@ public class SquireBrain {
     private final DangerHandler danger;
     private final ItemHandler item;
 
+    // ── Patrol handler (Phase 7) ─────────────────────────────────────────────
+    private final PatrolHandler patrol;
+
+    // ── Mount handler (Phase 7) ──────────────────────────────────────────────
+    private final MountHandler mount;
+
     // ── Work handlers (Phase 6) ──────────────────────────────────────────────
     private final MiningHandler mining;
     private final PlacingHandler placing;
@@ -83,9 +91,23 @@ public class SquireBrain {
         this.chest   = new ChestHandler(squire, machine);
         this.torch   = new TorchHandler(squire);
 
+        // Patrol handler (Phase 7)
+        this.patrol = new PatrolHandler();
+
+        // Mount handler (Phase 7) — no-arg; pendingHorseUUID injected below
+        this.mount = new MountHandler();
+        // Inject horse UUID loaded from NBT before brain can tick (MNT-04)
+        if (squire.pendingHorseUUID != null) {
+            this.mount.setHorseUUID(squire.pendingHorseUUID);
+            squire.pendingHorseUUID = null;
+        }
+
         // 3. Subscribe BEFORE registerTransitions() so no event fires into an empty handler.
         //    SIT_TOGGLE resets eat cooldown so squire doesn't eat mid-sit-down animation.
         bus.subscribe(SquireEvent.SIT_TOGGLE, s -> survival.reset());
+        // PATROL_WALK/PATROL_WAIT: save/restore waypoint index across combat interruptions
+        bus.subscribe(SquireEvent.COMBAT_START, s -> patrol.onCombatStart());
+        bus.subscribe(SquireEvent.COMBAT_END,   s -> patrol.onCombatEnd());
 
         // 4. Register transitions last — lambdas capture fully-initialized handler references.
         registerTransitions();
@@ -136,6 +158,11 @@ public class SquireBrain {
     /** Returns the task queue for NBT persistence (SquireEntity save/load). */
     public TaskQueue getTaskQueue() {
         return taskQueue;
+    }
+
+    /** Returns the mount handler — used by PatrolHandler, mounted combat, and SquireEntity NBT. */
+    public MountHandler getMountHandler() {
+        return mount;
     }
 
     // -------------------------------------------------------------------------
@@ -218,6 +245,8 @@ public class SquireBrain {
         registerCombatTransitions();
         registerFollowTransitions();
         registerItemPickupTransitions();
+        registerPatrolTransitions();
+        registerMountTransitions();
     }
 
     /**
@@ -463,4 +492,95 @@ public class SquireBrain {
                 1, 31
         ));
     }
+
+    /**
+     * PATROL_WALK / PATROL_WAIT transitions (Phase 7 plan 07-02).
+     * Priority 35 — same band as follow (30-39), below combat (10-19).
+     *
+     * These transitions are entered when external code calls patrol.startPatrol()
+     * and forces the machine into PATROL_WALK via machine.forceState(). The per-tick
+     * transitions then keep the FSM in the patrol loop until stopPatrol() is called
+     * or combat preempts.
+     *
+     * Note: the global combat enter transition at priority 10 will preempt PATROL_WALK
+     * because it has higher priority. onCombatStart/onCombatEnd subscriptions (wired
+     * in the constructor) save and restore currentIndex transparently.
+     */
+    private void registerPatrolTransitions() {
+        // PATROL_WALK per-tick: delegate to PatrolHandler; may return PATROL_WAIT or IDLE
+        machine.addTransition(new AITransition(
+                SquireAIState.PATROL_WALK,
+                () -> true,
+                s -> {
+                    SquireAIState next = patrol.tickWalk(s);
+                    return next != null ? next : SquireAIState.PATROL_WALK;
+                },
+                1, 35
+        ));
+
+        // PATROL_WAIT per-tick: delegate to PatrolHandler; returns PATROL_WALK when timer expires
+        machine.addTransition(new AITransition(
+                SquireAIState.PATROL_WAIT,
+                () -> true,
+                s -> {
+                    SquireAIState next = patrol.tickWait(s);
+                    return next != null ? next : SquireAIState.PATROL_WAIT;
+                },
+                1, 35
+        ));
+    }
+
+    /**
+     * MOUNT transitions (Phase 7):
+     * Priority 20-29 (mount layer, between combat and follow).
+     */
+    private void registerMountTransitions() {
+        // MOUNTING per-tick: approach and mount horse
+        machine.addTransition(new AITransition(
+                SquireAIState.MOUNTING,
+                () -> true,
+                s -> {
+                    SquireAIState next = mount.tickApproach(s);
+                    return next != null ? next : SquireAIState.MOUNTING;
+                },
+                1, 25
+        ));
+
+        // MOUNTED_FOLLOW per-tick: drive horse toward owner
+        machine.addTransition(new AITransition(
+                SquireAIState.MOUNTED_FOLLOW,
+                () -> mount.isMounted(squire),
+                s -> {
+                    SquireAIState next = mount.tickMountedFollow(s);
+                    return next != null ? next : SquireAIState.MOUNTED_FOLLOW;
+                },
+                1, 25
+        ));
+
+        // MOUNTED_IDLE per-tick: idle close to owner while mounted
+        machine.addTransition(new AITransition(
+                SquireAIState.MOUNTED_IDLE,
+                () -> mount.isMounted(squire),
+                s -> {
+                    SquireAIState next = mount.tickMountedIdle(s);
+                    return next != null ? next : SquireAIState.MOUNTED_IDLE;
+                },
+                5, 25
+        ));
+
+        // Exit any mounted state if no longer on horse
+        machine.addTransition(new AITransition(
+                SquireAIState.MOUNTED_FOLLOW,
+                () -> !mount.isMounted(squire),
+                s -> SquireAIState.IDLE,
+                5, 24
+        ));
+        machine.addTransition(new AITransition(
+                SquireAIState.MOUNTED_IDLE,
+                () -> !mount.isMounted(squire),
+                s -> SquireAIState.IDLE,
+                5, 24
+        ));
+    }
+
 }

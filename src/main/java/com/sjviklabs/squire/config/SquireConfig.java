@@ -79,6 +79,15 @@ public final class SquireConfig {
     public static final ModConfigSpec.IntValue fishingTickRate;
     public static final ModConfigSpec.IntValue fishingLootRolls;
 
+    // ── [patrol] ─────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.IntValue patrolDefaultWait;
+    public static final ModConfigSpec.IntValue patrolMaxRouteLength;
+
+    // ── [mount] ──────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.DoubleValue horseSearchRange;
+    public static final ModConfigSpec.DoubleValue mountedFollowSpeed;
+    public static final ModConfigSpec.DoubleValue horseFleeThreshold;
+
     // ── [progression] ────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue xpPerKill;
     public static final ModConfigSpec.IntValue xpPerBlock;
@@ -271,6 +280,29 @@ public final class SquireConfig {
         fishingLootRolls = builder
                 .comment("Number of loot table rolls per catch (higher = more items)")
                 .defineInRange("fishingLootRolls", 1, 1, 5);
+        builder.pop();
+
+        // ── [patrol] ─────────────────────────────────────────────────────────
+        builder.push("patrol");
+        patrolDefaultWait = builder
+                .comment("Ticks the squire waits at each waypoint before moving on")
+                .defineInRange("patrolDefaultWait", 40, 0, 200);
+        patrolMaxRouteLength = builder
+                .comment("Maximum number of signposts in a patrol route")
+                .defineInRange("patrolMaxRouteLength", 32, 2, 128);
+        builder.pop();
+
+        // ── [mount] ──────────────────────────────────────────────────────────
+        builder.push("mount");
+        horseSearchRange = builder
+                .comment("Range in blocks to scan for the squire's assigned horse")
+                .defineInRange("horseSearchRange", 32.0, 4.0, 64.0);
+        mountedFollowSpeed = builder
+                .comment("Speed multiplier when following player while mounted (1.0 = horse base speed)")
+                .defineInRange("mountedFollowSpeed", 1.0, 0.3, 2.0);
+        horseFleeThreshold = builder
+                .comment("Horse HP fraction below which squire dismounts to protect itself")
+                .defineInRange("horseFleeThreshold", 0.2, 0.0, 0.9);
         builder.pop();
 
         // ── [progression] ────────────────────────────────────────────────────

@@ -113,6 +113,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     @Nullable
     private ProgressionHandler progressionHandler;
 
+    // ---- Pending horse UUID (loaded from NBT, injected into MountHandler on first brain tick) ----
+    @Nullable
+    public UUID pendingHorseUUID = null;
+
     // ================================================================
     // Constructor
     // ================================================================
@@ -464,6 +468,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         tag.put("Inventory", this.itemHandler.serializeNBT(this.registryAccess()));
         // Progression — save XP and level (attribute modifiers auto-saved by NeoForge)
         if (progressionHandler != null) progressionHandler.save(tag);
+        // Mount — persist assigned horse UUID so squire reconnects after restart (MNT-04)
+        if (squireBrain != null && squireBrain.getMountHandler().getHorseUUID() != null) {
+            tag.putUUID("HorseUUID", squireBrain.getMountHandler().getHorseUUID());
+        }
     }
 
     @Override
@@ -494,6 +502,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         // Progression — restore XP and level; handler lazy-init in aiStep() will apply modifiers
         if (progressionHandler == null) progressionHandler = new ProgressionHandler(this);
         progressionHandler.load(tag);
+        // Mount — stash horse UUID for MountHandler injection on first brain tick (MNT-04)
+        if (tag.hasUUID("HorseUUID")) {
+            this.pendingHorseUUID = tag.getUUID("HorseUUID");
+        }
     }
 
     // ================================================================

@@ -46,6 +46,31 @@ public class SignpostBlockEntity extends BlockEntity {
         super(SquireRegistry.SIGNPOST_BLOCK_ENTITY.get(), pos, state);
     }
 
+    /**
+     * Test-only factory — bypasses BlockEntityType registry for headless JUnit tests.
+     * Uses a null BlockEntityType which is fine because tests never call
+     * getType() or interact with the world.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static SignpostBlockEntity forTest() {
+        return new SignpostBlockEntity(null, BlockPos.ZERO, null);
+    }
+
+    /**
+     * Headless factory with a pre-set linked signpost. Sets the field directly
+     * (no setChanged()) so it is safe to call when level is null.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static SignpostBlockEntity forTest(@Nullable BlockPos linkedTo) {
+        SignpostBlockEntity be = new SignpostBlockEntity(null, BlockPos.ZERO, null);
+        be.linkedSignpost = linkedTo; // direct field write — no setChanged(), level is null
+        return be;
+    }
+
+    private SignpostBlockEntity(@Nullable net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos, @Nullable BlockState state) {
+        super(type, pos, state);
+    }
+
     // ---- Getters / Setters ----
 
     public PatrolMode getMode() { return mode; }
@@ -81,6 +106,8 @@ public class SignpostBlockEntity extends BlockEntity {
     }
 
     // ---- Static NBT helpers (package-private for unit tests) ----
+
+    // forTest() factories defined above (lines 55-68)
 
     /**
      * Writes signpost fields into an existing CompoundTag.
