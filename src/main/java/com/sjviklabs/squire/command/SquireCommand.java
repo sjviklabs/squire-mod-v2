@@ -98,6 +98,19 @@ public final class SquireCommand {
                 )
             )
 
+            // /squire appearance male|female — switch skin variant
+            .then(Commands.literal("appearance")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests((ctx, builder) -> {
+                        builder.suggest("male");
+                        builder.suggest("female");
+                        return builder.buildFuture();
+                    })
+                    .executes(ctx -> setAppearance(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "variant")))
+                )
+            )
+
             // /squire name [text] — set custom name, or clear if no argument
             .then(Commands.literal("name")
                 .executes(ctx -> clearName(ctx.getSource()))
@@ -298,6 +311,19 @@ public final class SquireCommand {
     // ================================================================
     // /squire name [text]
     // ================================================================
+
+    private static int setAppearance(CommandSourceStack source, String variant) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        boolean slim = variant.equalsIgnoreCase("female");
+        squire.setSlimModel(slim);
+        source.sendSuccess(() -> Component.literal("Squire appearance set to " + (slim ? "female" : "male") + "."), false);
+        return 1;
+    }
 
     private static int setName(CommandSourceStack source, String nameText) {
         if (!source.isPlayer()) {
