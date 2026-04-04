@@ -5,8 +5,6 @@ import com.sjviklabs.squire.SquireRegistry;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -75,21 +73,23 @@ public class SquireClientEvents {
                 return;
             }
 
-            if (mc.player == null) return;
+            if (mc.player == null || mc.level == null) return;
 
-            // Raycast to find a squire entity under the player's crosshair
-            // blockInteractionRange() is the correct 1.21.1 API (getBlockReach removed)
-            double range = mc.player.blockInteractionRange();
-            HitResult hit = mc.player.pick(range, 0.0F, false);
-
-            if (!(hit instanceof EntityHitResult entityHit)) return;
-            Entity target = entityHit.getEntity();
-
-            if (target instanceof SquireEntity squire) {
-                // Only open if this player is the squire's owner
-                if (squire.isOwnedBy(mc.player)) {
-                    mc.setScreen(new SquireRadialScreen(squire));
+            // Find the nearest owned squire within 32 blocks (no need to aim at it)
+            SquireEntity nearest = null;
+            double nearestDist = Double.MAX_VALUE;
+            for (Entity e : mc.level.entitiesForRendering()) {
+                if (e instanceof SquireEntity squire && squire.isOwnedBy(mc.player)) {
+                    double dist = squire.distanceToSqr(mc.player);
+                    if (dist < 32 * 32 && dist < nearestDist) {
+                        nearest = squire;
+                        nearestDist = dist;
+                    }
                 }
+            }
+
+            if (nearest != null) {
+                mc.setScreen(new SquireRadialScreen(nearest));
             }
         }
     }
