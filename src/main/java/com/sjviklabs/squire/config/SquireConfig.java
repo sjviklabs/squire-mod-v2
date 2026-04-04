@@ -46,10 +46,17 @@ public final class SquireConfig {
     public static final ModConfigSpec.IntValue stuckDetectionTicks;
     public static final ModConfigSpec.IntValue stuckRecoveryTicks;
 
+    // ── [torch] ──────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.IntValue torchLightThreshold;
+    public static final ModConfigSpec.IntValue torchCheckInterval;
+    public static final ModConfigSpec.IntValue torchPlaceCooldown;
+
     // ── [mining] ─────────────────────────────────────────────────────────────
     public static final ModConfigSpec.DoubleValue mineReach;
     public static final ModConfigSpec.DoubleValue breakSpeedMultiplier;
+    public static final ModConfigSpec.DoubleValue miningSpeedPerLevel;
     public static final ModConfigSpec.IntValue maxClearVolume;
+    public static final ModConfigSpec.IntValue areaMaxBlocks;
     public static final ModConfigSpec.IntValue clearConfirmThreshold;
     public static final ModConfigSpec.IntValue miningTickRate;
     public static final ModConfigSpec.IntValue chunkLoadRadius;
@@ -171,6 +178,19 @@ public final class SquireConfig {
                 .defineInRange("stuckRecoveryTicks", 20, 5, 100);
         builder.pop();
 
+        // ── [torch] ──────────────────────────────────────────────────────────
+        builder.push("torch");
+        torchLightThreshold = builder
+                .comment("Block light level at or below which squire places a torch (0=only in pitch dark, 15=always)")
+                .defineInRange("torchLightThreshold", 7, 0, 15);
+        torchCheckInterval = builder
+                .comment("Ticks between torch placement checks when following (lower = more responsive)")
+                .defineInRange("torchCheckInterval", 20, 5, 100);
+        torchPlaceCooldown = builder
+                .comment("Ticks squire waits after placing a torch before placing another")
+                .defineInRange("torchPlaceCooldown", 40, 10, 200);
+        builder.pop();
+
         // ── [mining] ─────────────────────────────────────────────────────────
         builder.push("mining");
         mineReach = builder
@@ -179,9 +199,15 @@ public final class SquireConfig {
         breakSpeedMultiplier = builder
                 .comment("Mining speed multiplier relative to player with correct tool")
                 .defineInRange("breakSpeedMultiplier", 0.8, 0.1, 3.0);
+        miningSpeedPerLevel = builder
+                .comment("Break speed bonus added per squire level (at default 0.0167, Lv30 = +50%)")
+                .defineInRange("miningSpeedPerLevel", 0.0167, 0.0, 0.1);
         maxClearVolume = builder
                 .comment("Maximum blocks in an area-clear operation before requiring confirmation")
                 .defineInRange("maxClearVolume", 64, 1, 512);
+        areaMaxBlocks = builder
+                .comment("Hard cap on blocks queued in a single area-clear operation")
+                .defineInRange("areaMaxBlocks", 256, 1, 1024);
         clearConfirmThreshold = builder
                 .comment("Block count above which a confirmation is required to begin area clear")
                 .defineInRange("clearConfirmThreshold", 32, 1, 512);
