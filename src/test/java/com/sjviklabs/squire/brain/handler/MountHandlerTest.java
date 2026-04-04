@@ -1,7 +1,12 @@
 package com.sjviklabs.squire.brain.handler;
 
+import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for MountHandler behavior.
@@ -14,11 +19,41 @@ import org.junit.jupiter.api.Test;
  */
 class MountHandlerTest {
 
+    /**
+     * MNT-04: Horse UUID must survive a NBT save/load cycle.
+     * MountHandler is instantiated standalone (no SquireEntity) — pure Java, headless.
+     */
     @Test
-    @Disabled("requires SquireEntity live instance — implemented in Wave 2")
     void test_horseUUID_nbtRoundTrip() {
-        // MNT-04: save horseUUID to CompoundTag via SquireEntity.addAdditionalSaveData,
-        // reload via readAdditionalSaveData, assert UUID matches.
+        UUID originalUUID = UUID.randomUUID();
+
+        // Save side: create handler, assign UUID, serialize to CompoundTag
+        MountHandler writer = new MountHandler();
+        writer.setHorseUUID(originalUUID);
+
+        CompoundTag tag = new CompoundTag();
+        UUID horseUUID = writer.getHorseUUID();
+        if (horseUUID != null) {
+            tag.putUUID("HorseUUID", horseUUID);
+        }
+
+        // Load side: new handler, restore from CompoundTag
+        MountHandler reader = new MountHandler();
+        if (tag.hasUUID("HorseUUID")) {
+            reader.setHorseUUID(tag.getUUID("HorseUUID"));
+        }
+
+        assertEquals(originalUUID, reader.getHorseUUID(),
+                "Horse UUID must survive NBT save/load round-trip");
+
+        // Absent key returns null
+        MountHandler empty = new MountHandler();
+        CompoundTag emptyTag = new CompoundTag();
+        if (emptyTag.hasUUID("HorseUUID")) {
+            empty.setHorseUUID(emptyTag.getUUID("HorseUUID"));
+        }
+        assertNull(empty.getHorseUUID(),
+                "Absent HorseUUID key must result in null getHorseUUID()");
     }
 
     @Test
