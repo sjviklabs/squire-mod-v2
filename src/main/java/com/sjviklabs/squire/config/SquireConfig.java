@@ -61,6 +61,14 @@ public final class SquireConfig {
     public static final ModConfigSpec.IntValue miningTickRate;
     public static final ModConfigSpec.IntValue chunkLoadRadius;
 
+    // ── [placing] ────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.DoubleValue placingReach;
+
+    // ── [chest] ──────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.DoubleValue chestReach;
+    public static final ModConfigSpec.IntValue chestInteractCooldown;
+    public static final ModConfigSpec.IntValue chestAbilityMinLevel;
+
     // ── [farming] ────────────────────────────────────────────────────────────
     public static final ModConfigSpec.DoubleValue farmingReach;
     public static final ModConfigSpec.IntValue farmingTickRate;
@@ -217,6 +225,26 @@ public final class SquireConfig {
         chunkLoadRadius = builder
                 .comment("Chunk radius to force-load during area clear (0 = no force loading)")
                 .defineInRange("chunkLoadRadius", 1, 0, 3);
+        builder.pop();
+
+        // ── [placing]
+        builder.push("placing");
+        placingReach = builder
+                .comment("Reach in blocks for block placement operations")
+                .defineInRange("placingReach", 4.0, 1.0, 8.0);
+        builder.pop();
+
+        // ── [chest]
+        builder.push("chest");
+        chestReach = builder
+                .comment("Reach in blocks for chest interaction (deposit/withdraw)")
+                .defineInRange("chestReach", 3.0, 1.0, 8.0);
+        chestInteractCooldown = builder
+                .comment("Ticks between individual item transfers during chest interaction")
+                .defineInRange("chestInteractCooldown", 2, 1, 20);
+        chestAbilityMinLevel = builder
+                .comment("Minimum squire level required to use chest deposit/withdraw (0 = available from start)")
+                .defineInRange("chestAbilityMinLevel", 0, 0, 30);
         builder.pop();
 
         // ── [farming] ────────────────────────────────────────────────────────
