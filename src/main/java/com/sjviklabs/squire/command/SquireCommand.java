@@ -50,26 +50,38 @@ public final class SquireCommand {
                 .executes(ctx -> showInfo(ctx.getSource()))
             )
 
-            // /squire mine <pos> — Phase 6 stub
+            // /squire mine <pos> — mine a block at position
             .then(Commands.literal("mine")
-                .executes(ctx -> mineStub(ctx.getSource()))
-                .then(Commands.literal("stop")
-                    .executes(ctx -> mineStub(ctx.getSource()))
-                )
                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                    .executes(ctx -> mineStub(ctx.getSource()))
+                    .executes(ctx -> mineBlock(ctx.getSource(), BlockPosArgument.getBlockPos(ctx, "pos")))
                 )
             )
 
-            // /squire place <pos> <block> — Phase 6 stub
+            // /squire place <pos> — place a block at position (uses held block from squire inventory)
             .then(Commands.literal("place")
-                .executes(ctx -> placeStub(ctx.getSource()))
                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
-                    .executes(ctx -> placeStub(ctx.getSource()))
-                    .then(Commands.argument("block", BlockStateArgument.block(event.getBuildContext()))
-                        .executes(ctx -> placeStub(ctx.getSource()))
-                    )
+                    .executes(ctx -> placeBlock(ctx.getSource(), BlockPosArgument.getBlockPos(ctx, "pos")))
                 )
+            )
+
+            // /squire farm — start farming nearby crops
+            .then(Commands.literal("farm")
+                .executes(ctx -> startFarm(ctx.getSource()))
+            )
+
+            // /squire fish — start fishing at nearest water
+            .then(Commands.literal("fish")
+                .executes(ctx -> startFish(ctx.getSource()))
+            )
+
+            // /squire mount — mount nearest horse
+            .then(Commands.literal("mount")
+                .executes(ctx -> mountHorse(ctx.getSource()))
+            )
+
+            // /squire dismount — dismount current horse
+            .then(Commands.literal("dismount")
+                .executes(ctx -> dismountHorse(ctx.getSource()))
             )
 
             // /squire mode <follow|stay|guard> — change squire mode (no permission required)
@@ -180,20 +192,68 @@ public final class SquireCommand {
     }
 
     // ================================================================
-    // /squire mine and /squire place — Phase 6 stubs
+    // /squire mine, place, farm, fish, mount, dismount
     // ================================================================
 
-    private static final String STUB_MESSAGE =
-        "This command requires a working handler not yet implemented. Available in Phase 6.";
-
-    private static int mineStub(CommandSourceStack source) {
-        source.sendFailure(Component.literal(STUB_MESSAGE));
-        return 0;
+    private static int mineBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        squire.getSquireBrain().getMiningHandler().setTarget(pos);
+        source.sendSuccess(() -> Component.literal("Squire mining at " + pos.toShortString()), false);
+        return 1;
     }
 
-    private static int placeStub(CommandSourceStack source) {
-        source.sendFailure(Component.literal(STUB_MESSAGE));
-        return 0;
+    private static int placeBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        // Place uses whatever block item is in squire's mainhand
+        net.minecraft.world.item.ItemStack mainhand = squire.getMainHandItem();
+        if (mainhand.isEmpty() || !(mainhand.getItem() instanceof net.minecraft.world.item.BlockItem blockItem)) {
+            source.sendFailure(Component.literal("Squire has no block to place."));
+            return 0;
+        }
+        squire.getSquireBrain().getPlacingHandler().setTarget(pos, blockItem.getBlock().asItem());
+        source.sendSuccess(() -> Component.literal("Squire placing at " + pos.toShortString()), false);
+        return 1;
+    }
+
+    private static int startFarm(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        squire.getSquireBrain().getFarmingHandler().tick(com.sjviklabs.squire.brain.SquireAIState.FARM_SCAN);
+        source.sendSuccess(() -> Component.literal("Squire is farming."), false);
+        return 1;
+    }
+
+    private static int startFish(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        squire.getSquireBrain().getFishingHandler().startFishing();
+        source.sendSuccess(() -> Component.literal("Squire is fishing."), false);
+        return 1;
+    }
+
+    private static int mountHorse(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        squire.getSquireBrain().getMachine().forceState(com.sjviklabs.squire.brain.SquireAIState.MOUNTING);
+        source.sendSuccess(() -> Component.literal("Squire is mounting a horse."), false);
+        return 1;
+    }
+
+    private static int dismountHorse(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        squire.getSquireBrain().getMountHandler().orderDismount(squire);
+        squire.getSquireBrain().getMachine().forceState(com.sjviklabs.squire.brain.SquireAIState.IDLE);
+        source.sendSuccess(() -> Component.literal("Squire dismounted."), false);
+        return 1;
     }
 
     // ================================================================

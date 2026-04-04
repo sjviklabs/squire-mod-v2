@@ -275,7 +275,13 @@ public class SquireBrain {
                 () -> {
                     if (squire.isOrderedToSit()) return false;
                     LivingEntity target = squire.getTarget();
-                    return target != null && target.isAlive();
+                    if (target == null || !target.isAlive()) return false;
+                    // MineColonies friendly-fire guard
+                    if (com.sjviklabs.squire.compat.MineColoniesCompat.isFriendly(target)) {
+                        squire.setTarget(null);
+                        return false;
+                    }
+                    return true;
                 },
                 s -> {
                     combat.start();
