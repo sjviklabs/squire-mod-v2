@@ -716,6 +716,15 @@ public class CombatHandler {
         return true;
     }
 
+    /**
+     * Public melee attack entry point for mounted combat.
+     * MountHandler.tickMountedCombat() calls this when the horse is within reach of the target.
+     * Delegates to tryMeleeAttack() which handles cooldown, halberd sweep, and logging.
+     */
+    public void performMeleeAttack(SquireEntity s, LivingEntity target) {
+        tryMeleeAttack(s, target);
+    }
+
     /** Whether the squire has a valid combat target. */
     public boolean hasTarget() {
         LivingEntity target = squire.getTarget();

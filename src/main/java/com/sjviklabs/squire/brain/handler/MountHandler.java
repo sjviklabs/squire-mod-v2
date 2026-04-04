@@ -1,8 +1,10 @@
 package com.sjviklabs.squire.brain.handler;
 
 import com.sjviklabs.squire.brain.SquireAIState;
+import com.sjviklabs.squire.brain.SquireBrain;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
@@ -117,6 +119,66 @@ public class MountHandler {
             return SquireAIState.IDLE;
         }
         return SquireAIState.MOUNTED_IDLE;
+    }
+
+    /**
+     * MNT-03: Engage hostile mobs in melee while mounted.
+     *
+     * - Dismounts immediately if horse HP drops below horseFleeThreshold.
+     * - Drives horse toward target via driveHorseToward() — reuses v0.5.0 approach.
+     * - Delegates melee strike to CombatHandler.performMeleeAttack() when in range.
+     * - Reach = meleeRange + mountedMeleeReachBonus (default 2.5 + 1.5 = 4.0 blocks).
+     * - Ranged combat blocked while mounted: if target is beyond meleeRange * 2, just
+     *   drive closer instead of firing the bow.
+     * - Returns MOUNTED_FOLLOW when no target; MOUNTED_COMBAT while actively fighting.
+     *
+     * MOUNTED_FOLLOW transitions to MOUNTED_COMBAT when the combat enter transition
+     * (priority 10 global) fires while the squire is mounted. Combat preempts follow
+     * as usual, and the FSM routes per-tick to this method instead of the ground
+     * combat handlers.
+     */
+    public SquireAIState tickMountedCombat(SquireEntity s) {
+        // Null guard — must actually be riding a horse
+        if (!(s.getVehicle() instanceof AbstractHorse horse)) {
+            mounted = false;
+            orderDismount(s);
+            return SquireAIState.IDLE;
+        }
+
+        // Horse HP gate — dismount to protect squire when horse is critical
+        float hpFraction = horse.getHealth() / horse.getMaxHealth();
+        if (hpFraction < SquireConfig.horseFleeThreshold.get().floatValue()) {
+            orderDismount(s);
+            return SquireAIState.IDLE;
+        }
+
+        // No target — return to mounted follow
+        LivingEntity target = s.getTarget();
+        if (target == null || !target.isAlive()) {
+            return SquireAIState.MOUNTED_FOLLOW;
+        }
+
+        // Drive horse toward target
+        driveHorseToward(s, horse, target.getX(), target.getY(), target.getZ(), 1.0F);
+
+        // Reach: base melee range + mounted height offset bonus
+        double mountedReach = SquireConfig.meleeRange.get() + SquireConfig.mountedMeleeReachBonus.get();
+
+        // Block ranged combat while mounted — if target is far, just close in (no bow)
+        double distSq = s.distanceToSqr(target);
+        if (distSq <= mountedReach * mountedReach) {
+            // Within reach — attack via CombatHandler if available, else fall back directly
+            SquireBrain brain = s.getSquireBrain();
+            if (brain != null && brain.getCombatHandler() != null) {
+                brain.getCombatHandler().performMeleeAttack(s, target);
+            } else {
+                s.doHurtTarget(target);
+            }
+        }
+        // If target is beyond mountedReach, horse is already driving toward them above.
+        // No ranged attack is initiated — mounted combat is melee-only.
+
+        return SquireAIState.MOUNTED_COMBAT;
     }
 
     // ---- Horse driving ----

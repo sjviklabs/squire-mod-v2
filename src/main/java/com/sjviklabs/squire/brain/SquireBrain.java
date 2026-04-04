@@ -568,6 +568,27 @@ public class SquireBrain {
                 5, 25
         ));
 
+        // MOUNTED_COMBAT per-tick: drive horse toward target, strike when in reach.
+        // MOUNTED_FOLLOW transitions to MOUNTED_COMBAT when the global CombatEnterTransition
+        // fires while the squire is mounted (priority 10 preempts mounted-layer priority 25).
+        machine.addTransition(new AITransition(
+                SquireAIState.MOUNTED_COMBAT,
+                () -> mount.isMounted(squire),
+                s -> {
+                    SquireAIState next = mount.tickMountedCombat(s);
+                    return next != null ? next : SquireAIState.MOUNTED_COMBAT;
+                },
+                1, 25
+        ));
+
+        // Exit MOUNTED_COMBAT if no longer on horse
+        machine.addTransition(new AITransition(
+                SquireAIState.MOUNTED_COMBAT,
+                () -> !mount.isMounted(squire),
+                s -> SquireAIState.IDLE,
+                5, 24
+        ));
+
         // Exit any mounted state if no longer on horse
         machine.addTransition(new AITransition(
                 SquireAIState.MOUNTED_FOLLOW,

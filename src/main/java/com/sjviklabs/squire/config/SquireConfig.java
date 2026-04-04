@@ -87,6 +87,7 @@ public final class SquireConfig {
     public static final ModConfigSpec.DoubleValue horseSearchRange;
     public static final ModConfigSpec.DoubleValue mountedFollowSpeed;
     public static final ModConfigSpec.DoubleValue horseFleeThreshold;
+    public static final ModConfigSpec.DoubleValue mountedMeleeReachBonus;
 
     // ── [progression] ────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue xpPerKill;
@@ -303,6 +304,9 @@ public final class SquireConfig {
         horseFleeThreshold = builder
                 .comment("Horse HP fraction below which squire dismounts to protect itself")
                 .defineInRange("horseFleeThreshold", 0.2, 0.0, 0.9);
+        mountedMeleeReachBonus = builder
+                .comment("Extra melee reach added when attacking from horseback (compensates for height offset)")
+                .defineInRange("mountedMeleeReachBonus", 1.5, 0.0, 4.0);
         builder.pop();
 
         // ── [progression] ────────────────────────────────────────────────────
