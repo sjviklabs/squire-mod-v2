@@ -108,13 +108,13 @@ public final class SquireEquipmentHelper {
             if (!mainhand.isEmpty() && !isMeleeWeapon(mainhand)
                     && !(mainhand.getItem() instanceof BowItem)) {
                 squire.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-                insertIntoBackpack(handler, mainhand);
+                insertIntoBackpackOrDrop(squire, handler, mainhand);
             }
 
             ItemStack offhand = squire.getItemBySlot(EquipmentSlot.OFFHAND);
             if (!offhand.isEmpty() && !isShield(offhand)) {
                 squire.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
-                insertIntoBackpack(handler, offhand);
+                insertIntoBackpackOrDrop(squire, handler, offhand);
             }
         }
 
@@ -195,7 +195,7 @@ public final class SquireEquipmentHelper {
             if (holdingBow && isShield(currentOffhand)) {
                 // Stow shield into backpack while using bow
                 squire.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
-                insertIntoBackpack(handler, currentOffhand);
+                insertIntoBackpackOrDrop(squire, handler, currentOffhand);
             } else if (!holdingBow && !isShield(currentOffhand)) {
                 // Not holding bow — equip a shield if available
                 for (int i = SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
@@ -221,7 +221,7 @@ public final class SquireEquipmentHelper {
         ItemStack currentMainhand = squire.getItemBySlot(EquipmentSlot.MAINHAND);
         if (currentMainhand.getItem() instanceof BowItem) {
             squire.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-            insertIntoBackpack(handler, currentMainhand);
+            insertIntoBackpackOrDrop(squire, handler, currentMainhand);
         }
 
         // Find best melee weapon in backpack
@@ -414,7 +414,7 @@ public final class SquireEquipmentHelper {
                     playEquipSound(squire, slot);
                     // Return old item to backpack
                     if (!old.isEmpty()) {
-                        insertIntoBackpack(handler, old);
+                        insertIntoBackpackOrDrop(squire, handler, old);
                     }
                     return;
                 }
@@ -436,7 +436,7 @@ public final class SquireEquipmentHelper {
         playEquipSound(squire, slot);
 
         if (!old.isEmpty()) {
-            insertIntoBackpack(handler, old);
+            insertIntoBackpackOrDrop(squire, handler, old);
         }
     }
 
@@ -449,7 +449,22 @@ public final class SquireEquipmentHelper {
         for (int i = SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots() && !remainder.isEmpty(); i++) {
             remainder = handler.insertItem(i, remainder, false);
         }
-        // If remainder is not empty, the backpack is full — item is lost (acceptable edge case).
+        // Overflow is silently dropped — callers that have an entity reference
+        // should use insertIntoBackpackOrDrop() instead.
+    }
+
+    /**
+     * Insert a stack into backpack; drop overflow at the squire's feet.
+     * Preferred over insertIntoBackpack() when the squire entity is available.
+     */
+    private static void insertIntoBackpackOrDrop(SquireEntity squire, IItemHandler handler, ItemStack stack) {
+        ItemStack remainder = stack.copy();
+        for (int i = SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots() && !remainder.isEmpty(); i++) {
+            remainder = handler.insertItem(i, remainder, false);
+        }
+        if (!remainder.isEmpty()) {
+            squire.spawnAtLocation(remainder);
+        }
     }
 
     /**
@@ -459,7 +474,7 @@ public final class SquireEquipmentHelper {
         ItemStack offhand = squire.getItemBySlot(EquipmentSlot.OFFHAND);
         if (isShield(offhand)) {
             squire.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
-            insertIntoBackpack(handler, offhand);
+            insertIntoBackpackOrDrop(squire, handler, offhand);
         }
     }
 

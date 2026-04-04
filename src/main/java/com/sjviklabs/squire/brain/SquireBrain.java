@@ -206,6 +206,7 @@ public class SquireBrain {
     public FarmingHandler getFarmingHandler() { return farming; }
     public FishingHandler getFishingHandler() { return fishing; }
     public ChestHandler getChestHandler() { return chest; }
+    public PatrolHandler getPatrolHandler() { return patrol; }
 
     // -------------------------------------------------------------------------
     // Work suspension / resume

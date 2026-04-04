@@ -90,6 +90,32 @@ public final class SquireCommand {
                 .executes(ctx -> dismountHorse(ctx.getSource()))
             )
 
+            // /squire store — deposit squire backpack into looked-at or specified chest
+            .then(Commands.literal("store")
+                .executes(ctx -> storeItems(ctx.getSource()))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                    .executes(ctx -> storeItemsAt(ctx.getSource(),
+                        BlockPosArgument.getBlockPos(ctx, "pos")))
+                )
+            )
+
+            // /squire fetch — withdraw from looked-at or specified chest
+            .then(Commands.literal("fetch")
+                .executes(ctx -> fetchItems(ctx.getSource()))
+                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                    .executes(ctx -> fetchItemsAt(ctx.getSource(),
+                        BlockPosArgument.getBlockPos(ctx, "pos"), null, 64))
+                )
+            )
+
+            // /squire patrol — start patrolling from nearest signpost
+            .then(Commands.literal("patrol")
+                .executes(ctx -> startPatrol(ctx.getSource()))
+                .then(Commands.literal("stop")
+                    .executes(ctx -> stopPatrol(ctx.getSource()))
+                )
+            )
+
             // /squire recall — dismiss the squire (only way to recall)
             .then(Commands.literal("recall")
                 .executes(ctx -> recallSquire(ctx.getSource()))
@@ -362,8 +388,37 @@ public final class SquireCommand {
         if (!source.isPlayer()) return 0;
         SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
         if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        // Find nearest saddled horse within 16 blocks of the squire
+        var mountHandler = squire.getSquireBrain().getMountHandler();
+        double range = 16.0;
+        var horses = squire.level().getEntitiesOfClass(
+                net.minecraft.world.entity.animal.horse.AbstractHorse.class,
+                squire.getBoundingBox().inflate(range),
+                h -> h.isSaddled() && h.isAlive() && !h.isVehicle());
+
+        if (horses.isEmpty()) {
+            source.sendFailure(Component.literal("No saddled horse nearby."));
+            return 0;
+        }
+
+        // Pick the closest one
+        net.minecraft.world.entity.animal.horse.AbstractHorse nearest = null;
+        double nearestDist = Double.MAX_VALUE;
+        for (var horse : horses) {
+            double dist = squire.distanceToSqr(horse);
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearest = horse;
+            }
+        }
+
+        // Bond squire to this horse (persists via NBT)
+        mountHandler.setHorseUUID(nearest.getUUID());
         squire.getSquireBrain().getMachine().forceState(com.sjviklabs.squire.brain.SquireAIState.MOUNTING);
-        source.sendSuccess(() -> Component.literal("Squire is mounting a horse."), false);
+        String horseName = nearest.hasCustomName() && nearest.getCustomName() != null
+                ? nearest.getCustomName().getString() : "horse";
+        source.sendSuccess(() -> Component.literal("Squire is mounting " + horseName + "."), false);
         return 1;
     }
 
@@ -372,6 +427,7 @@ public final class SquireCommand {
         SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
         if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
         squire.getSquireBrain().getMountHandler().orderDismount(squire);
+        // Keep horse UUID — squire stays bonded for remounting
         squire.getSquireBrain().getMachine().forceState(com.sjviklabs.squire.brain.SquireAIState.IDLE);
         source.sendSuccess(() -> Component.literal("Squire dismounted."), false);
         return 1;
@@ -517,6 +573,154 @@ public final class SquireCommand {
         squire.setCustomNameVisible(false);
         source.sendSuccess(() -> Component.literal("Squire name cleared."), false);
         return 1;
+    }
+
+    // ================================================================
+    // /squire store, fetch
+    // ================================================================
+
+    /**
+     * Get the block the player is looking at (raycast, 5 block range).
+     * Returns null if not looking at a block.
+     */
+    @Nullable
+    private static net.minecraft.core.BlockPos getLookedAtBlock(ServerPlayer player) {
+        var hitResult = player.pick(5.0, 1.0f, false);
+        if (hitResult instanceof net.minecraft.world.phys.BlockHitResult blockHit
+                && hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            return blockHit.getBlockPos();
+        }
+        return null;
+    }
+
+    private static int storeItems(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        net.minecraft.core.BlockPos pos = getLookedAtBlock(player);
+        if (pos == null || player.serverLevel().getBlockEntity(pos) == null) {
+            source.sendFailure(Component.literal("Look at a chest or container."));
+            return 0;
+        }
+        return storeItemsAt(source, pos);
+    }
+
+    private static int storeItemsAt(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        squire.getSquireBrain().getChestHandler().setDepositTarget(pos);
+        source.sendSuccess(() -> Component.literal("Squire depositing items at " + pos.toShortString()), false);
+        return 1;
+    }
+
+    private static int fetchItems(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        net.minecraft.core.BlockPos pos = getLookedAtBlock(player);
+        if (pos == null || player.serverLevel().getBlockEntity(pos) == null) {
+            source.sendFailure(Component.literal("Look at a chest or container."));
+            return 0;
+        }
+        return fetchItemsAt(source, pos, null, 64);
+    }
+
+    private static int fetchItemsAt(CommandSourceStack source, net.minecraft.core.BlockPos pos,
+                                     @Nullable net.minecraft.world.item.Item item, int amount) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        squire.getSquireBrain().getChestHandler().setWithdrawTarget(pos, item, amount);
+        source.sendSuccess(() -> Component.literal("Squire fetching items from " + pos.toShortString()), false);
+        return 1;
+    }
+
+    // ================================================================
+    // /squire patrol
+    // ================================================================
+
+    private static int startPatrol(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        // Find nearest signpost within 16 blocks of the squire
+        net.minecraft.core.BlockPos squirePos = squire.blockPosition();
+        net.minecraft.core.BlockPos nearestSignpost = null;
+        double nearestDist = Double.MAX_VALUE;
+        int range = 16;
+
+        for (int x = -range; x <= range; x++) {
+            for (int y = -4; y <= 4; y++) {
+                for (int z = -range; z <= range; z++) {
+                    net.minecraft.core.BlockPos candidate = squirePos.offset(x, y, z);
+                    if (squire.level().getBlockEntity(candidate)
+                            instanceof com.sjviklabs.squire.block.SignpostBlockEntity) {
+                        double dist = candidate.distSqr(squirePos);
+                        if (dist < nearestDist) {
+                            nearestDist = dist;
+                            nearestSignpost = candidate;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (nearestSignpost == null) {
+            source.sendFailure(Component.literal("No signpost found within 16 blocks."));
+            return 0;
+        }
+
+        // Build route from signpost chain
+        java.util.List<net.minecraft.core.BlockPos> route =
+                com.sjviklabs.squire.brain.handler.PatrolHandler
+                        .buildRouteFromSignpost(squire.level(), nearestSignpost);
+
+        if (route.isEmpty()) {
+            source.sendFailure(Component.literal("Signpost has no linked route."));
+            return 0;
+        }
+
+        squire.getSquireBrain().getMachine().forceState(
+                com.sjviklabs.squire.brain.SquireAIState.PATROL_WALK);
+
+        // Get patrol handler from brain — it's package-private, so access via method
+        var patrolField = getPatrolHandler(squire);
+        if (patrolField != null) {
+            patrolField.startPatrol(route);
+        }
+
+        source.sendSuccess(() -> Component.literal(
+                "Squire patrolling " + route.size() + " waypoints."), false);
+        return 1;
+    }
+
+    private static int stopPatrol(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        var patrolField = getPatrolHandler(squire);
+        if (patrolField != null) {
+            patrolField.stopPatrol();
+        }
+        squire.getSquireBrain().getMachine().forceState(com.sjviklabs.squire.brain.SquireAIState.IDLE);
+        source.sendSuccess(() -> Component.literal("Squire stopped patrolling."), false);
+        return 1;
+    }
+
+    /**
+     * Access PatrolHandler from SquireBrain. Returns null if brain is null.
+     * PatrolHandler has no public accessor yet — use reflection or add one.
+     * For now, we add the accessor in SquireBrain.
+     */
+    @Nullable
+    private static com.sjviklabs.squire.brain.handler.PatrolHandler getPatrolHandler(SquireEntity squire) {
+        var brain = squire.getSquireBrain();
+        return brain != null ? brain.getPatrolHandler() : null;
     }
 
     // ================================================================

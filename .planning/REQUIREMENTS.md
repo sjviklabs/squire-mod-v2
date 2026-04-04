@@ -65,7 +65,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **WRK-05**: Squire fishes (simulated fishing)
 - [x] **WRK-06**: Squire places blocks on command
 - [x] **WRK-07**: Squire interacts with containers (deposit/withdraw items)
-- [ ] **WRK-08**: Squire supports task queuing (multiple sequential commands)
+- [x] **WRK-08**: Squire supports task queuing (multiple sequential commands)
 
 ### Patrol
 
@@ -75,10 +75,10 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Mounted
 
-- [ ] **MNT-01**: Squire mounts and rides horses
-- [ ] **MNT-02**: Squire follows player while mounted
+- [x] **MNT-01**: Squire mounts and rides horses
+- [x] **MNT-02**: Squire follows player while mounted
 - [x] **MNT-03**: Squire engages in combat while mounted
-- [ ] **MNT-04**: Mount state persists across sessions (horse UUID in NBT)
+- [x] **MNT-04**: Mount state persists across sessions (horse UUID in NBT)
 
 ### UI & Controls
 
@@ -106,7 +106,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 - [x] **ARC-01**: Custom tick-rate state machine (FSM) replacing vanilla GoalSelector
 - [x] **ARC-02**: Handler-per-behavior pattern (one handler class per behavior)
 - [x] **ARC-03**: Internal event bus so handlers react to each other's state changes
-- [ ] **ARC-04**: SquireEntity (lifecycle/NBT) split from SquireBrain (AI/FSM)
+- [ ] **ARC-04**: SquireEntity (lifecycle/NBT) split from SquireBrain (AI/FSM) _(deferred — functional as-is)_
 - [x] **ARC-05**: Single SquireRegistry for all NeoForge registrations
 - [x] **ARC-06**: 50+ config values in squire-common.toml (no hardcoded gameplay numbers)
 - [x] **ARC-07**: Builtin datapack for entity tags and JSON data (not world-level)
@@ -214,14 +214,14 @@ Deferred to future release. Tracked but not in current roadmap.
 | WRK-05      | Phase 6 | Complete |
 | WRK-06      | Phase 6 | Complete |
 | WRK-07      | Phase 6 | Complete |
-| WRK-08      | Phase 6 | Pending     |
+| WRK-08      | Phase 9 | Complete |
 | PTR-01      | Phase 7 | Complete |
 | PTR-02      | Phase 7 | Complete |
 | PTR-03      | Phase 7 | Complete |
-| MNT-01      | Phase 7 | Pending     |
-| MNT-02      | Phase 7 | Pending     |
+| MNT-01      | Phase 9 | Complete |
+| MNT-02      | Phase 9 | Complete |
 | MNT-03      | Phase 7 | Complete |
-| MNT-04      | Phase 7 | Pending     |
+| MNT-04      | Phase 9 | Complete |
 | CMP-01      | Phase 8 | Complete |
 | CMP-02      | Phase 8 | Complete |
 | CMP-03      | Phase 8 | Complete |

@@ -69,11 +69,12 @@ public class SquireRadialScreen extends Screen {
     private static final int SEGMENTS = 16;
 
     // ---- Colors (ARGB) ----
-    private static final int COLOR_NORMAL  = 0xB01A1A2E;
-    private static final int COLOR_HOVER   = 0xC0D4AF37;
-    private static final int COLOR_TEXT    = 0xFFFFFFFF;
-    private static final int COLOR_TEXT_HL = 0xFFFFFF00;
-    private static final int COLOR_BORDER  = 0xA0FFFFFF;
+    private static final int COLOR_NORMAL     = 0xC0121218;
+    private static final int COLOR_HOVER      = 0xD0B8962E;
+    private static final int COLOR_INNER_RING = 0x90181820;
+    private static final int COLOR_TEXT       = 0xFFD0D0D0;
+    private static final int COLOR_TEXT_HL    = 0xFFFFE680;
+    private static final int COLOR_BORDER     = 0x60888888;
 
     // ---- State ----
 
@@ -119,6 +120,10 @@ public class SquireRadialScreen extends Screen {
         float dist = (float) Math.sqrt(dx * dx + dy * dy);
         hoveredWedge = (dist >= DEAD_ZONE && dist <= RING_OUTER) ? computeWedge(dx, dy) : -1;
 
+        // Background dimming disc (full outer circle)
+        drawWedge(graphics, cx, cy, 0, (float)(2 * Math.PI),
+                0, RING_OUTER + 4, 0x60000000);
+
         // Draw 4 wedges
         for (int i = 0; i < WEDGE_COUNT; i++) {
             boolean hovered = (i == hoveredWedge);
@@ -128,12 +133,17 @@ public class SquireRadialScreen extends Screen {
                     RING_INNER, RING_OUTER, hovered ? COLOR_HOVER : COLOR_NORMAL);
         }
 
-        // Draw separator lines between wedges
+        // Inner dark disc (covers the center hole)
+        drawWedge(graphics, cx, cy, 0, (float)(2 * Math.PI),
+                0, RING_INNER - 1, COLOR_INNER_RING);
+
+        // Draw separator lines between wedges (from inner to outer only)
         for (int i = 0; i < WEDGE_COUNT; i++) {
             float angle = i * WEDGE_ANGLE - WEDGE_ANGLE / 2.0F;
             float sinA = (float) Math.sin(angle);
             float cosA = (float) Math.cos(angle);
-            drawLine(graphics, cx, cy,
+            drawLine(graphics,
+                    (int) (cx + sinA * RING_INNER), (int) (cy - cosA * RING_INNER),
                     (int) (cx + sinA * RING_OUTER), (int) (cy - cosA * RING_OUTER),
                     COLOR_BORDER);
         }
@@ -148,11 +158,11 @@ public class SquireRadialScreen extends Screen {
 
             String label = WEDGE_LABELS[i];
             int textW = this.font.width(label);
-            graphics.drawString(this.font, label,
-                    (int) (lx - textW / 2.0F),
-                    (int) (ly - this.font.lineHeight / 2.0F),
-                    hovered ? COLOR_TEXT_HL : COLOR_TEXT,
-                    true);
+            int tx = (int) (lx - textW / 2.0F);
+            int ty = (int) (ly - this.font.lineHeight / 2.0F);
+            // Drop shadow
+            graphics.drawString(this.font, label, tx + 1, ty + 1, 0x80000000, false);
+            graphics.drawString(this.font, label, tx, ty, hovered ? COLOR_TEXT_HL : COLOR_TEXT, false);
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
