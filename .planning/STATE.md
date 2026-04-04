@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 05-01-PLAN.md — SquireMenu equipment slots, SquireScreen client renderer
-last_updated: "2026-04-03T22:57:22.876Z"
+stopped_at: Completed 05-03-PLAN.md — SquireCommandPayload Phase 5 handler + SquireCommand Brigadier tree
+last_updated: "2026-04-04T00:05:20.874Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 33
-  completed_plans: 20
+  completed_plans: 21
   percent: 0
 ---
 
@@ -72,6 +72,7 @@ _Updated after each plan completion_
 | Phase 04-combat-progression P02 | 15 | 2 tasks | 5 files |
 | Phase 05-ui-controls P02 | 13 | 2 tasks | 4 files |
 | Phase 05-ui-controls P01 | 39 | 2 tasks | 4 files |
+| Phase 05-ui-controls P03 | 25 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -128,6 +129,8 @@ Recent decisions affecting current work:
 - [Phase 05-ui-controls]: ArmorItem.getType() for equipment slot validation — canEquip(slot, null) NPEs in NeoForge 1.21.1; entity required non-null
 - [Phase 05-ui-controls]: RegisterMenuScreensEvent.register() over MenuScreens.register() — direct call has private access in 1.21.1
 - [Phase 05-ui-controls]: SquireMenu(SquireTier, IItemHandler) headless constructor for JUnit tests — bypasses live SquireEntity and DeferredHolder resolution
+- [Phase 05-ui-controls]: CMD constants renumbered for Phase 5 radial order: FOLLOW=0, GUARD=1, STAY=2, INVENTORY=3; deferred cmds start at 4
+- [Phase 05-ui-controls]: Bus.GAME deprecated in NeoForge 21.1.221 — @EventBusSubscriber without bus param defaults to GAME bus (correct forward-compatible pattern)
 
 ### Research Flags (for planning phases)
 
@@ -145,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T22:57:22.873Z
-Stopped at: Completed 05-02-PLAN.md — SquireKeybinds, SquireRadialScreen, SquireClientEvents
+Last session: 2026-04-04T00:05:20.871Z
+Stopped at: Completed 05-03-PLAN.md — SquireCommandPayload Phase 5 handler + SquireCommand Brigadier tree
 Resume file: None

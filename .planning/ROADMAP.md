@@ -211,7 +211,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 2. Brain, FSM, and Follow      | 4/4 | Complete    | 2026-04-03 |
 | 3. Rendering                   | 4/4 | Complete    | 2026-04-03 |
 | 4. Combat and Progression      | 5/5 | Complete    | 2026-04-03 |
-| 5. UI and Controls             | 2/4 | In Progress|  |
+| 5. UI and Controls             | 3/4 | In Progress|  |
 | 6. Work Behaviors              | 0/4            | Not started | -         |
 | 7. Patrol and Mounting         | 0/4            | Not started | -         |
 | 8. Compatibility and Polish    | 0/3            | Not started | -         |
