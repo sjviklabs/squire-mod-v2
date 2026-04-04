@@ -97,7 +97,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 ### Mod Compatibility
 
-- [ ] **CMP-01**: MineColonies compatibility (prevent citizen/squire entity conflicts)
+- [x] **CMP-01**: MineColonies compatibility (prevent citizen/squire entity conflicts)
 - [ ] **CMP-02**: Jade/WAILA tooltip overlay showing squire status
 - [ ] **CMP-03**: Curios/Accessories API integration (soft dependency, mod functions without it)
 
@@ -222,7 +222,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | MNT-02      | Phase 7 | Pending     |
 | MNT-03      | Phase 7 | Complete |
 | MNT-04      | Phase 7 | Pending     |
-| CMP-01      | Phase 8 | Pending     |
+| CMP-01      | Phase 8 | Complete |
 | CMP-02      | Phase 8 | Pending     |
 | CMP-03      | Phase 8 | Pending     |
 
