@@ -197,15 +197,27 @@ public final class SquireCommand {
             ? squire.getCustomName().getString()
             : "Squire";
 
+        String tier = squire.getTier().name().charAt(0) + squire.getTier().name().substring(1).toLowerCase();
         source.sendSuccess(() -> Component.literal(String.format(
-            "%s — Lv.%d | XP: %d | HP: %.0f/%.0f | Mode: %s",
+            "%s — Lv.%d %s | XP: %d | HP: %.0f/%.0f | Mode: %s",
             name,
             squire.getLevel(),
+            tier,
             squire.getTotalXP(),
             squire.getHealth(),
             squire.getMaxHealth(),
             modeName(squire.getSquireMode())
         )), false);
+
+        // Show abilities
+        source.sendSuccess(() -> Component.literal("--- Abilities ---"), false);
+        var abilities = com.sjviklabs.squire.progression.ProgressionDataLoader.getAbilities();
+        for (var ability : abilities) {
+            String tierName = ability.unlockTier();
+            boolean unlocked = squire.getTier().ordinal() >= com.sjviklabs.squire.entity.SquireTier.valueOf(tierName.toUpperCase()).ordinal();
+            String status = unlocked ? "\u2714 " : "\u2718 Lv." + com.sjviklabs.squire.entity.SquireTier.valueOf(tierName.toUpperCase()).getMinLevel() + " ";
+            source.sendSuccess(() -> Component.literal(status + ability.id() + " — " + ability.description()), false);
+        }
 
         return 1;
     }

@@ -99,6 +99,9 @@ public class MiningHandler {
         this.repositionAttempts = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
 
+        // Equip best pickaxe from inventory before mining
+        equipBestTool();
+
         machine.forceState(SquireAIState.MINING_APPROACH);
     }
 
@@ -596,5 +599,47 @@ public class MiningHandler {
             }
         }
         return null;
+    }
+
+    /**
+     * Scan backpack for the best pickaxe and equip it in mainhand.
+     * Saves the previous mainhand item back to backpack.
+     */
+    private void equipBestTool() {
+        var handler = squire.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ENTITY);
+        if (handler == null) return;
+
+        int bestSlot = -1;
+        float bestSpeed = 0;
+        for (int i = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
+            ItemStack candidate = handler.getStackInSlot(i);
+            if (candidate.isEmpty()) continue;
+            if (candidate.getItem() instanceof net.minecraft.world.item.PickaxeItem) {
+                // Use destroy speed on stone as a benchmark
+                float speed = candidate.getDestroySpeed(net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+                if (speed > bestSpeed) {
+                    bestSpeed = speed;
+                    bestSlot = i;
+                }
+            }
+        }
+
+        if (bestSlot >= 0) {
+            // Swap: current mainhand → backpack, best pickaxe → mainhand
+            ItemStack currentMainhand = squire.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+            ItemStack pickaxe = handler.extractItem(bestSlot, 1, false);
+            squire.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, pickaxe);
+            if (!currentMainhand.isEmpty()) {
+                // Try to insert old mainhand back into backpack
+                ItemStack remainder = currentMainhand;
+                for (int i = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
+                    remainder = handler.insertItem(i, remainder, false);
+                    if (remainder.isEmpty()) break;
+                }
+                if (!remainder.isEmpty()) {
+                    squire.spawnAtLocation(remainder); // drop if backpack full
+                }
+            }
+        }
     }
 }
