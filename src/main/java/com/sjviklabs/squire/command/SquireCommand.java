@@ -278,9 +278,11 @@ public final class SquireCommand {
                 return 1;
             }
         }
-        // No area selected — scan nearby
-        squire.getSquireBrain().getFarmingHandler().tick(com.sjviklabs.squire.brain.SquireAIState.FARM_SCAN);
-        source.sendSuccess(() -> Component.literal("Squire farming nearby crops."), false);
+        // No area selected — create a 16x16 area around the squire
+        net.minecraft.core.BlockPos squirePos = squire.blockPosition();
+        squire.getSquireBrain().getFarmingHandler().setArea(
+                squirePos.offset(-8, 0, -8), squirePos.offset(8, 0, 8));
+        source.sendSuccess(() -> Component.literal("Squire farming 16x16 area around current position."), false);
         return 1;
     }
 
