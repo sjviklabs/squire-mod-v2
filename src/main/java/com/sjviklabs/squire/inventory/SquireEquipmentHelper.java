@@ -312,7 +312,17 @@ public final class SquireEquipmentHelper {
     public static boolean isMeleeWeapon(ItemStack stack) {
         if (stack.isEmpty()) return false;
         Item item = stack.getItem();
-        return item instanceof SwordItem || item instanceof AxeItem;
+        // Direct weapon types
+        if (item instanceof SwordItem || item instanceof AxeItem) return true;
+        // Modded weapons (multi-tools, paxels, etc.) — check for attack damage attribute
+        // but exclude armor, bows, shields, and block items to avoid equipping tools/blocks as weapons
+        if (item instanceof ArmorItem || item instanceof BowItem || item instanceof ShieldItem) return false;
+        if (item instanceof net.minecraft.world.item.BlockItem) return false;
+        // Check if item has attack damage > 0 via attributes
+        var attrs = stack.getAttributeModifiers();
+        if (attrs == null) return false;
+        return attrs.modifiers().stream().anyMatch(e ->
+                e.attribute().is(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE));
     }
 
     /**
