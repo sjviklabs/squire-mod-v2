@@ -165,6 +165,12 @@ public class SquireBrain {
         return mount;
     }
 
+    public MiningHandler getMiningHandler() { return mining; }
+    public PlacingHandler getPlacingHandler() { return placing; }
+    public FarmingHandler getFarmingHandler() { return farming; }
+    public FishingHandler getFishingHandler() { return fishing; }
+    public ChestHandler getChestHandler() { return chest; }
+
     // -------------------------------------------------------------------------
     // Task dispatch
     // -------------------------------------------------------------------------
@@ -245,6 +251,7 @@ public class SquireBrain {
         registerCombatTransitions();
         registerFollowTransitions();
         registerItemPickupTransitions();
+        registerWorkTransitions();
         registerPatrolTransitions();
         registerMountTransitions();
     }
@@ -488,7 +495,7 @@ public class SquireBrain {
         machine.addTransition(new AITransition(
                 SquireAIState.FOLLOWING_OWNER,
                 () -> !follow.shouldStop(),
-                follow::tick,
+                s -> { SquireAIState result = follow.tick(s); torch.tick(); return result; },
                 1, 31
         ));
     }
@@ -502,6 +509,82 @@ public class SquireBrain {
      * transitions then keep the FSM in the patrol loop until stopPatrol() is called
      * or combat preempts.
      *
+    /**
+     * WORK transitions (Phase 6):
+     * Priority 40-49 (work layer, below follow).
+     *
+     * Work handlers manage their own state via machine.forceState().
+     * These transitions just route per-tick calls when in a work state.
+     * TorchHandler is a side-effect called from FOLLOWING_OWNER tick, not a FSM state.
+     */
+    private void registerWorkTransitions() {
+        // MINING per-tick: delegates to MiningHandler which manages approach/break internally
+        machine.addTransition(new AITransition(
+                SquireAIState.MINING_APPROACH, () -> true,
+                s -> { mining.tick(SquireAIState.MINING_APPROACH); return machine.getCurrentState(); },
+                1, 40
+        ));
+        machine.addTransition(new AITransition(
+                SquireAIState.MINING_BREAK, () -> true,
+                s -> { mining.tick(SquireAIState.MINING_BREAK); return machine.getCurrentState(); },
+                1, 40
+        ));
+
+        // PLACING per-tick
+        machine.addTransition(new AITransition(
+                SquireAIState.PLACING_APPROACH, () -> true,
+                s -> { placing.tick(SquireAIState.PLACING_APPROACH); return machine.getCurrentState(); },
+                1, 40
+        ));
+        machine.addTransition(new AITransition(
+                SquireAIState.PLACING_BLOCK, () -> true,
+                s -> { placing.tick(SquireAIState.PLACING_BLOCK); return machine.getCurrentState(); },
+                1, 40
+        ));
+
+        // FARMING per-tick
+        machine.addTransition(new AITransition(
+                SquireAIState.FARM_SCAN, () -> true,
+                s -> { farming.tick(SquireAIState.FARM_SCAN); return machine.getCurrentState(); },
+                1, 42
+        ));
+        machine.addTransition(new AITransition(
+                SquireAIState.FARM_APPROACH, () -> true,
+                s -> { farming.tick(SquireAIState.FARM_APPROACH); return machine.getCurrentState(); },
+                1, 42
+        ));
+        machine.addTransition(new AITransition(
+                SquireAIState.FARM_WORK, () -> true,
+                s -> { farming.tick(SquireAIState.FARM_WORK); return machine.getCurrentState(); },
+                1, 42
+        ));
+
+        // FISHING per-tick
+        machine.addTransition(new AITransition(
+                SquireAIState.FISHING_APPROACH, () -> true,
+                s -> { fishing.tick(SquireAIState.FISHING_APPROACH); return machine.getCurrentState(); },
+                1, 43
+        ));
+        machine.addTransition(new AITransition(
+                SquireAIState.FISHING_IDLE, () -> true,
+                s -> { fishing.tick(SquireAIState.FISHING_IDLE); return machine.getCurrentState(); },
+                1, 43
+        ));
+
+        // CHEST per-tick
+        machine.addTransition(new AITransition(
+                SquireAIState.CHEST_APPROACH, () -> true,
+                s -> { chest.tick(SquireAIState.CHEST_APPROACH); return machine.getCurrentState(); },
+                1, 44
+        ));
+        machine.addTransition(new AITransition(
+                SquireAIState.CHEST_INTERACT, () -> true,
+                s -> { chest.tick(SquireAIState.CHEST_INTERACT); return machine.getCurrentState(); },
+                1, 44
+        ));
+    }
+
+    /**
      * Note: the global combat enter transition at priority 10 will preempt PATROL_WALK
      * because it has higher priority. onCombatStart/onCombatEnd subscriptions (wired
      * in the constructor) save and restore currentIndex transparently.
