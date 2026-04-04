@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 08-02-PLAN.md — JadeCompat @WailaPlugin tooltip, CuriosCompat slot accessor, builtin datapack JSON
-last_updated: "2026-04-04T03:34:57.822Z"
+stopped_at: Completed 08-03-PLAN.md — optional dep wiring, mods.toml declarations, compat startup logging
+last_updated: "2026-04-04T03:45:09.408Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 33
-  completed_plans: 30
+  completed_plans: 31
   percent: 0
 ---
 
@@ -82,6 +82,7 @@ _Updated after each plan completion_
 | Phase 07-patrol-mounting P04 | 11 | 1 tasks | 4 files |
 | Phase 08-compatibility-polish P01 | 4 | 2 tasks | 2 files |
 | Phase 08-compatibility-polish P02 | 11 | 2 tasks | 6 files |
+| Phase 08-compatibility-polish P03 | 5 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,8 @@ Recent decisions affecting current work:
 - [Phase 08-compatibility-polish]: getTier() used in JadeCompat tooltip — getSquireTier() does not exist in v2 SquireEntity
 - [Phase 08-compatibility-polish]: CuriosCompat.modPresent field package-private for clean reflection reset in unit tests
 - [Phase 08-compatibility-polish]: Jade @WailaPlugin on isolated compat class — never referenced from SquireMod or SquireRegistry to prevent ClassNotFoundException without Jade
+- [Phase 08-03]: Jade declared CLIENT-side optional dep only — it is a client-only HUD mod; BOTH would be incorrect
+- [Phase 08-03]: ATM10 smoke test deferred to user testing — compat classes are structurally correct and unit-tested
 
 ### Research Flags (for planning phases)
 
@@ -180,6 +183,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T03:34:57.819Z
-Stopped at: Completed 08-02-PLAN.md — JadeCompat @WailaPlugin tooltip, CuriosCompat slot accessor, builtin datapack JSON
+Last session: 2026-04-04T03:45:09.405Z
+Stopped at: Completed 08-03-PLAN.md — optional dep wiring, mods.toml declarations, compat startup logging
 Resume file: None

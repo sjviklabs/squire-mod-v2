@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: UI and Controls** - Inventory screen, radial menu, commands, Crest item — player can control and equip the squire (completed 2026-04-04)
 - [x] **Phase 6: Work Behaviors** - Mining, farming, fishing, torch placement, task queuing, personality — squire is a working companion, not just a bodyguard (completed 2026-04-04)
 - [x] **Phase 7: Patrol and Mounting** - Signpost waypoints, patrol routes, horse riding, mounted combat — squire handles advanced autonomous tasks (completed 2026-04-04)
-- [ ] **Phase 8: Compatibility and Polish** - MineColonies shim, Jade overlay, Curios slots, Oculus shader validation — squire coexists in ATM10's 449-mod environment
+- [x] **Phase 8: Compatibility and Polish** - MineColonies shim, Jade overlay, Curios slots, Oculus shader validation — squire coexists in ATM10's 449-mod environment (completed 2026-04-04)
 
 ## Phase Details
 
@@ -214,4 +214,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 5. UI and Controls             | 4/4 | Complete    | 2026-04-04 |
 | 6. Work Behaviors              | 3/4 | Complete    | 2026-04-04 |
 | 7. Patrol and Mounting         | 3/4 | Complete    | 2026-04-04 |
-| 8. Compatibility and Polish    | 2/3 | In Progress|  |
+| 8. Compatibility and Polish    | 3/3 | Complete   | 2026-04-04 |
