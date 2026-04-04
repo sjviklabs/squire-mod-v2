@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Completed 07-04-PLAN.md — mounted combat tickMountedCombat, MOUNTED_COMBAT FSM wiring, mountedMeleeReachBonus config
-last_updated: "2026-04-04T03:16:53.806Z"
+last_updated: "2026-04-04T03:17:33.761Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
