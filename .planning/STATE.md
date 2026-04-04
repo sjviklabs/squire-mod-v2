@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 05-04-PLAN.md — ItemHandler with junk filtering, PICKING_UP_ITEM FSM transitions
-last_updated: "2026-04-04T00:18:02.419Z"
+stopped_at: Completed 06-02-PLAN.md — FarmingHandler and FishingHandler with vanilla loot table fishing
+last_updated: "2026-04-04T00:43:01.257Z"
 last_activity: 2026-04-02 — Roadmap created, 72 requirements mapped across 8 phases
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 33
-  completed_plans: 22
+  completed_plans: 23
   percent: 0
 ---
 
@@ -74,6 +74,7 @@ _Updated after each plan completion_
 | Phase 05-ui-controls P01 | 39 | 2 tasks | 4 files |
 | Phase 05-ui-controls P03 | 25 | 2 tasks | 3 files |
 | Phase 05-ui-controls P04 | 8 | 1 tasks | 3 files |
+| Phase 06-work-behaviors P02 | 19 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,9 @@ Recent decisions affecting current work:
 - [Phase 05-ui-controls]: Bus.GAME deprecated in NeoForge 21.1.221 — @EventBusSubscriber without bus param defaults to GAME bus (correct forward-compatible pattern)
 - [Phase 05-ui-controls]: ItemHandler placed in brain/handler/ (not ai/handler/) — matching actual v2 project structure
 - [Phase 05-ui-controls]: itemPickupRange reused from existing SquireConfig; junkFilterList added with defineListAllowEmpty and 5 defaults
+- [Phase 06-work-behaviors]: FarmingHandler seed detection uses BlockItem.getBlock() instanceof CropBlock — no hardcoded wheat/potato/carrot list, handles modded crops
+- [Phase 06-work-behaviors]: FishingHandler rollFishingLoot uses LootContextParamSets.FISHING (not EMPTY) — fixes v0.5.0 wrong fish rate bug
+- [Phase 06-work-behaviors]: WORK_TASK_COMPLETE added to SquireEvent for handler-to-ChatHandler task completion signaling
 
 ### Research Flags (for planning phases)
 
@@ -151,6 +155,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-04T00:17:30.255Z
-Stopped at: Completed 05-04-PLAN.md — ItemHandler with junk filtering, PICKING_UP_ITEM FSM transitions
+Last session: 2026-04-04T00:43:01.254Z
+Stopped at: Completed 06-02-PLAN.md — FarmingHandler and FishingHandler with vanilla loot table fishing
 Resume file: None
