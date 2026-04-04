@@ -1,76 +1,51 @@
 # Phase 9: UI/Polish Pass - Context
 
 **Gathered:** 2026-04-04
-**Status:** Ready for planning
+**Status:** In progress — partially fixed, needs completion
 **Source:** In-game testing findings
 
-<domain>
-## Phase Boundary
+## What's Already Fixed (this session)
+- Name tag shortened to just name (no version/tier overflow)
+- Equipment slot strict validation (mainhand: sword/axe/bow/halberd only, offhand: shield only)
+- isMeleeWeapon tightened (no multi-tools)
+- Level-up: happy villager particles + sound. Tier advance: firework + totem particles + fanfare
+- Mining equips best pickaxe from backpack before starting
+- /squire info shows ability list with unlock status
+- Jade tooltip: removed duplicate version line
+- Crest recall removed — /squire recall command only
+- /squire godmode added (op-only, invulnerable + Champion)
+- ChatHandler wired to COMBAT_START, WORK_TASK_COMPLETE, LEVEL_UP, TIER_ADVANCE events
 
-Fix all UI, equipment, and celebration issues found during in-game testing. This is a polish pass — no new features, just making existing systems work correctly and feel good.
+## Remaining Issues
 
-</domain>
+### Critical (blocks playable)
+1. **Farming stops when no crops** — FarmingHandler returns to IDLE when scan finds nothing. Should loop with a rescan interval (e.g. every 100 ticks) while in farm mode, not go idle.
+2. **Equipment cleanup** — items already in wrong slots (from before validation fix) need ejection. Add a cleanup pass in runFullEquipCheck that moves non-weapon items out of mainhand and non-shield items out of offhand.
+3. **GUI layout cramped** — SquireScreen stats bar overflows. "Lv.0 Squire" + HP bar + "Satchel" + "Follow" + "0 XP" all overlap. Needs layout spacing fix.
 
-<decisions>
-## Issues to Fix (from in-game testing screenshots)
+### Important (blocks good)
+4. **Task queue** — WRK-08 code exists (SquireBrain.dispatch()), but no /squire queue command to enqueue multiple tasks. Need at minimum: `/squire queue mine <pos>`, `/squire queue farm`, etc.
+5. **Mount in-game test** — MNT-01/02/04 code exists (MountHandler, transitions wired). Never tested. `/squire mount` command exists.
+6. **Radial menu actions** — R key opens menu (ownerUUID sync fixed). Need to verify all 4 wedges (Follow/Guard/Stay/Inventory) actually send correct packets and change squire state.
 
-### 1. GUI Title Overflow
-- "Squire [Lv.0 Servant] v2.0.0" is too long for the inventory title bar
-- Fix: shorten to "Squire - Lv.0 Servant" in GUI title
-- Move version to Jade tooltip only (already there)
-- Stats bar (HP, XP, mode) is cramped — needs layout spacing
-
-### 2. Equipment Slot Validation
-- Multi-tools (pickaxes, hoes, shovels) equip in weapon/shield slots
-- ATM10 has paxels, multi-tools, modded tools that pass attack damage checks
-- Fix: equipment slots need STRICT type validation
-  - Mainhand: only SwordItem, AxeItem, BowItem, SquireHalberdItem
-  - Offhand: only ShieldItem, SquireShieldItem
-  - Armor: only ArmorItem matching the slot
-  - Everything else goes to backpack — no exceptions
-- Auto-equip (SquireEquipmentHelper) must enforce the same rules
-
-### 3. Mining Speed
-- Squire mines at base speed regardless of held tool
-- Fix: MiningHandler should read the tool's mining speed modifier
-- Should equip best pickaxe from inventory before mining (tool switching)
-
-### 4. Tool Visibility on Avatar
-- Tools don't render in squire's hand during work tasks
-- Fix: before mining, swap mainhand to best pickaxe
-- Before farming, swap to best hoe
-- Before combat, swap to best weapon
-- After task, swap back to combat weapon
-
-### 5. Level-Up Celebrations
-- No visual/audio feedback on level up
-- Fix: firework particle burst on level up
-- Bigger firework effect + sound on tier advance (Servant→Apprentice etc.)
-- Chat notification already exists (ChatHandler wired)
-
-### 6. Tier Ability Display
-- No way to see what abilities unlock at each tier
-- Fix: locked inventory rows show "Unlocks at Lv.X" tooltip
-- /squire info should list available abilities at current tier
-
-### 7. getDisplayName Too Long
-- Name tag shows "Squire [Lv.0 Servant] v2.0.0" — too much text
-- Fix: name tag shows "Squire" (or custom name) only
-- Level/tier/version in Jade tooltip only
-
-</decisions>
-
-<canonical_refs>
+### Polish
+7. **Bounding box renderer** — client-side wireframe for Crest-selected area. SquireAreaRenderer.java (new file in client/ package). Uses RenderLevelStageEvent.
+8. **Backpack visual** — works but subtle with placeholder geometry. Better art needed.
+9. **ARC-04** — structural split preference. SquireEntity ~650 lines. Skip — functional as-is.
 
 ## Files to Modify
 
-- `client/SquireScreen.java` — GUI layout, title, spacing
-- `inventory/SquireEquipmentHelper.java` — strict slot validation, tool switching
-- `inventory/SquireMenu.java` — equipment slot type validation
-- `brain/handler/MiningHandler.java` — tool speed modifier
-- `brain/handler/FarmingHandler.java` — hoe equip before farming
-- `progression/ProgressionHandler.java` — firework particles on level/tier
-- `entity/SquireEntity.java` — getDisplayName(), name tag
-- `command/SquireCommand.java` — /squire info ability list
+- `brain/handler/FarmingHandler.java` — rescan loop instead of idle on empty scan
+- `inventory/SquireEquipmentHelper.java` — cleanup pass for existing bad equipment
+- `client/SquireScreen.java` — layout spacing for stats bar
+- `command/SquireCommand.java` — /squire queue subcommands
+- `client/SquireAreaRenderer.java` — NEW, bounding box wireframe
+- `client/SquireClientEvents.java` — register area renderer
 
-</canonical_refs>
+## Key Files Reference
+
+- `.planning/REQUIREMENTS.md` — 67/72 checked, 5 remaining (WRK-08, MNT-01/02/04, ARC-04)
+- `src/main/java/com/sjviklabs/squire/brain/SquireBrain.java` — FSM transition hub, all handlers wired
+- `src/main/java/com/sjviklabs/squire/entity/SquireEntity.java` — 650+ lines, core entity
+- `src/main/java/com/sjviklabs/squire/client/SquireScreen.java` — inventory GUI
+- `src/main/java/com/sjviklabs/squire/brain/handler/FarmingHandler.java` — farming FSM
