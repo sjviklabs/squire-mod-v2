@@ -430,6 +430,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         if (this.progressionHandler != null) {
             this.progressionHandler.tick(); // ticks down undying cooldown
         }
+        // Auto-equip check every 40 ticks (~2 seconds)
+        if (!this.level().isClientSide && this.tickCount % 40 == 0) {
+            com.sjviklabs.squire.inventory.SquireEquipmentHelper.runFullEquipCheck(this);
+        }
         super.aiStep();
         // PathfinderMob does not call updateSwingTime() automatically (only Monster does).
         // Required for weapon swing animations to complete at the correct duration.
