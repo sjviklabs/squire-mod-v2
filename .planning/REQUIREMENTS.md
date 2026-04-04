@@ -51,7 +51,7 @@ Requirements for v1.0.0 release. Full parity with squire-mod v0.5.0 on a clean a
 
 - [x] **INV-01**: Squire has tiered inventory (9 slots at Servant, expanding to 36 at Champion)
 - [x] **INV-02**: Inventory implemented via IItemHandler capability (not SimpleContainer)
-- [ ] **INV-03**: Squire picks up nearby items (with junk filtering)
+- [x] **INV-03**: Squire picks up nearby items (with junk filtering)
 - [x] **INV-04**: Custom 4-piece armor set with tiered textures (visual changes per tier)
 - [ ] **INV-05**: Curios/Accessories integration for equipment slots (soft dependency)
 - [x] **INV-06**: Inventory accessible via GUI screen
@@ -205,7 +205,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | GUI-01      | Phase 5 | Complete |
 | GUI-02      | Phase 5 | Complete |
 | GUI-03      | Phase 5 | Complete |
-| INV-03      | Phase 5 | Pending     |
+| INV-03      | Phase 5 | Complete |
 | INV-05      | Phase 8 | Pending     |
 | WRK-01      | Phase 6 | Pending     |
 | WRK-02      | Phase 6 | Pending     |
