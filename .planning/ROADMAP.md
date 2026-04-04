@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Rendering** - Geckolib entity model, animations, skin variants, armor layers — squire looks like a squire (completed 2026-04-03)
 - [x] **Phase 4: Combat and Progression** - Melee, ranged, flee, auto-equip, 5-tier XP system, data-driven tactics — squire fights and grows (completed 2026-04-03)
 - [x] **Phase 5: UI and Controls** - Inventory screen, radial menu, commands, Crest item — player can control and equip the squire (completed 2026-04-04)
-- [ ] **Phase 6: Work Behaviors** - Mining, farming, fishing, torch placement, task queuing, personality — squire is a working companion, not just a bodyguard
+- [x] **Phase 6: Work Behaviors** - Mining, farming, fishing, torch placement, task queuing, personality — squire is a working companion, not just a bodyguard (completed 2026-04-04)
 - [ ] **Phase 7: Patrol and Mounting** - Signpost waypoints, patrol routes, horse riding, mounted combat — squire handles advanced autonomous tasks
 - [ ] **Phase 8: Compatibility and Polish** - MineColonies shim, Jade overlay, Curios slots, Oculus shader validation — squire coexists in ATM10's 449-mod environment
 
@@ -212,6 +212,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 3. Rendering                   | 4/4 | Complete    | 2026-04-03 |
 | 4. Combat and Progression      | 5/5 | Complete    | 2026-04-03 |
 | 5. UI and Controls             | 4/4 | Complete    | 2026-04-04 |
-| 6. Work Behaviors              | 3/4 | In Progress|  |
+| 6. Work Behaviors              | 3/4 | Complete    | 2026-04-04 |
 | 7. Patrol and Mounting         | 0/4            | Not started | -         |
 | 8. Compatibility and Polish    | 0/3            | Not started | -         |
