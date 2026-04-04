@@ -148,11 +148,8 @@ public class SquireCrestItem extends Item {
         // Check for existing squire across all dimensions
         SquireEntity existing = findPlayerSquire(serverLevel, serverPlayer);
         if (existing != null) {
-            // Recall requires sneak+right-click to prevent accidental despawn
-            if (player.isShiftKeyDown()) {
-                return recallSquire(serverPlayer, stack, existing);
-            }
-            player.sendSystemMessage(Component.literal("Sneak + right-click to recall your squire."));
+            // Recall is command-only (/squire recall) — Crest only summons
+            player.sendSystemMessage(Component.literal("Your squire is already active. Use /squire recall to dismiss."));
             return InteractionResultHolder.pass(stack);
         }
 

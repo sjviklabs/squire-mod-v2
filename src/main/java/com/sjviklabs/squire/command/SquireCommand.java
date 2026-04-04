@@ -90,6 +90,17 @@ public final class SquireCommand {
                 .executes(ctx -> dismountHorse(ctx.getSource()))
             )
 
+            // /squire recall — dismiss the squire (only way to recall)
+            .then(Commands.literal("recall")
+                .executes(ctx -> recallSquire(ctx.getSource()))
+            )
+
+            // /squire godmode — op-only, toggle invulnerable + max stats
+            .then(Commands.literal("godmode")
+                .requires(src -> src.hasPermission(2))
+                .executes(ctx -> toggleGodMode(ctx.getSource()))
+            )
+
             // /squire mode <follow|stay|guard> — change squire mode (no permission required)
             .then(Commands.literal("mode")
                 .then(Commands.argument("mode", StringArgumentType.word())
@@ -337,6 +348,42 @@ public final class SquireCommand {
         squire.getSquireBrain().getMountHandler().orderDismount(squire);
         squire.getSquireBrain().getMachine().forceState(com.sjviklabs.squire.brain.SquireAIState.IDLE);
         source.sendSuccess(() -> Component.literal("Squire dismounted."), false);
+        return 1;
+    }
+
+    private static int recallSquire(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        // Persist state to attachment before discarding
+        com.sjviklabs.squire.entity.SquireDataAttachment.SquireData data =
+                player.getData(com.sjviklabs.squire.SquireRegistry.SQUIRE_DATA.get());
+        player.setData(com.sjviklabs.squire.SquireRegistry.SQUIRE_DATA.get(),
+                data.withXP(squire.getTotalXP(), squire.getLevel())
+                    .withSquireUUID(java.util.Optional.empty()));
+        squire.releaseChunkLoading();
+        squire.discard();
+        source.sendSuccess(() -> Component.literal("Your squire returns to the Crest."), false);
+        return 1;
+    }
+
+    private static int toggleGodMode(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        boolean godMode = !squire.isInvulnerable();
+        squire.setInvulnerable(godMode);
+        if (godMode) {
+            squire.setHealth(squire.getMaxHealth());
+            squire.setLevel(30); // Champion
+            source.sendSuccess(() -> Component.literal("Squire GOD MODE enabled — invulnerable, Champion tier."), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("Squire GOD MODE disabled."), false);
+        }
         return 1;
     }
 

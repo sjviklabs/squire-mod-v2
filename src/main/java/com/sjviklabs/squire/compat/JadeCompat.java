@@ -66,9 +66,7 @@ class SquireTooltipProvider implements IEntityComponentProvider {
         tooltip.add(Component.literal(String.format("HP: %.0f/%.0f", hp, maxHp))
                 .withStyle(hpColor));
 
-        // Line 4: mod version
-        tooltip.add(Component.literal("Squire Mod v2.0.0")
-                .withStyle(ChatFormatting.DARK_GREEN));
+        // Version shown by Jade from mods.toml — no need to duplicate here
     }
 
     @Override
