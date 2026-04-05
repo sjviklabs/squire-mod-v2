@@ -5,7 +5,9 @@ import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
+import software.bernie.geckolib.renderer.layer.BlockAndItemGeoLayer;
 
 /**
  * Geckolib entity renderer for the squire.
@@ -25,7 +27,14 @@ public class SquireRenderer extends GeoEntityRenderer<SquireEntity> {
         super(context, new SquireModel());
         addRenderLayer(new SquireArmorLayer(this));
         addRenderLayer(new SquireBackpackLayer(this));
-        addRenderLayer(new SquireHeldItemLayer(this));
+        addRenderLayer(new BlockAndItemGeoLayer<>(this,
+                (bone, entity) -> switch (bone.getName()) {
+                    case "left_hand"  -> entity.getMainHandItem();
+                    case "right_hand" -> entity.getOffhandItem();
+                    default -> ItemStack.EMPTY;
+                },
+                (bone, entity) -> null
+        ));
     }
 
     @Override
