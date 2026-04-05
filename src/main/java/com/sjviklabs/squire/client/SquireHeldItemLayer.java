@@ -15,14 +15,14 @@ import software.bernie.geckolib.renderer.GeoRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 
 /**
- * Custom held-item render layer for the squire.
+ * Renders held items (weapon in mainhand, shield in offhand) on the squire's
+ * hand bones with correct orientation.
  *
- * Renders mainhand and offhand items at the correct position/scale on arm bones.
- * Cannot use BlockAndItemGeoLayer directly because arm bones are full-size —
- * items render at shoulder pivot at bone scale, producing oversized floating items.
- *
- * This layer manually renders items with proper translation to the hand tip,
- * correct scale, and appropriate rotation for weapons vs shields.
+ * Uses the cubeless right_hand/left_hand bones added to the .geo.json models
+ * as attachment points. These bones are positioned at the arm tips so items
+ * render at the correct location. This layer adds rotation so:
+ * - Weapons/tools point downward perpendicular to the body (like a player holding a sword)
+ * - Shields face outward away from the body (blocking stance)
  */
 public class SquireHeldItemLayer extends GeoRenderLayer<SquireEntity> {
 
@@ -36,11 +36,11 @@ public class SquireHeldItemLayer extends GeoRenderLayer<SquireEntity> {
                                VertexConsumer buffer, float partialTick,
                                int packedLight, int packedOverlay) {
         ItemStack stack;
-        boolean isLeft;
+        boolean isMainHand;
 
         switch (bone.getName()) {
-            case "left_arm" -> { stack = entity.getMainHandItem(); isLeft = true; }
-            case "right_arm" -> { stack = entity.getOffhandItem(); isLeft = false; }
+            case "left_hand"  -> { stack = entity.getMainHandItem(); isMainHand = true; }
+            case "right_hand" -> { stack = entity.getOffhandItem(); isMainHand = false; }
             default -> { return; }
         }
 
@@ -48,28 +48,20 @@ public class SquireHeldItemLayer extends GeoRenderLayer<SquireEntity> {
 
         poseStack.pushPose();
 
-        // Translate down the arm to the hand position (arm is ~10px / 0.625 blocks long)
-        poseStack.translate(0.0F, 0.5F, 0.0F);
-
-        // Scale down — items are rendered at 1:1 block scale by default
-        float scale = 0.5F;
-        poseStack.scale(scale, scale, scale);
-
         if (stack.getItem() instanceof ShieldItem) {
-            // Shield: rotate to face forward, offset to side
-            poseStack.mulPose(Axis.XP.rotationDegrees(90));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(isLeft ? -10 : 10));
-            poseStack.translate(0.0F, -0.2F, -0.5F);
+            // Shield: face outward (away from body), positioned at arm's side
+            poseStack.mulPose(Axis.XP.rotationDegrees(-90));  // flip to face outward
+            poseStack.mulPose(Axis.YP.rotationDegrees(180));  // face away from body
+            poseStack.translate(0.0F, 0.1F, -0.25F);
         } else {
-            // Weapon/tool: point downward, slight angle
-            poseStack.mulPose(Axis.XP.rotationDegrees(180));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(isLeft ? 10 : -10));
-            poseStack.translate(0.0F, -0.2F, 0.0F);
+            // Weapon/tool: hang downward, blade/head pointing to ground
+            poseStack.mulPose(Axis.XP.rotationDegrees(-90));  // rotate from arm-aligned to pointing down
+            poseStack.translate(0.0F, 0.1F, 0.0F);
         }
 
         Minecraft.getInstance().getItemRenderer().renderStatic(
                 stack,
-                isLeft ? ItemDisplayContext.THIRD_PERSON_LEFT_HAND : ItemDisplayContext.THIRD_PERSON_RIGHT_HAND,
+                isMainHand ? ItemDisplayContext.THIRD_PERSON_RIGHT_HAND : ItemDisplayContext.THIRD_PERSON_LEFT_HAND,
                 packedLight, packedOverlay,
                 poseStack, bufferSource, entity.level(), entity.getId());
 
