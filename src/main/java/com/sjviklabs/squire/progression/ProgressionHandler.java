@@ -109,28 +109,28 @@ public class ProgressionHandler {
      * Each tier's xpToNext is the cumulative XP required to advance past that tier.
      * Falls back to SquireTier enum minLevel boundaries if loader hasn't populated yet.
      */
+    // Hardcoded fallback XP thresholds per tier (used when datapack loader hasn't populated)
+    private static final int[] FALLBACK_XP = {500, 1000, 2000, 3000, 0};
+
     private void recalculateLevel() {
         int xpRemaining = totalXP;
         int newLevel = 0;
 
-        for (SquireTier tier : SquireTier.values()) {
+        SquireTier[] tiers = SquireTier.values();
+        for (int i = 0; i < tiers.length; i++) {
+            SquireTier tier = tiers[i];
             Optional<TierDefinition> def = ProgressionDataLoader.getTierDefinition(tier);
-            int xpToNext = def.map(TierDefinition::xpToNext).orElse(0);
+            int xpToNext = def.map(TierDefinition::xpToNext).orElse(FALLBACK_XP[i]);
             if (xpToNext > 0 && xpRemaining >= xpToNext) {
                 xpRemaining -= xpToNext;
-                // Advance to the start of the next tier's level range
-                int nextOrdinal = tier.ordinal() + 1;
-                SquireTier[] tiers = SquireTier.values();
-                if (nextOrdinal < tiers.length) {
-                    newLevel = tiers[nextOrdinal].getMinLevel();
+                if (i + 1 < tiers.length) {
+                    newLevel = tiers[i + 1].getMinLevel();
                 } else {
-                    // Already at or beyond CHAMPION — clamp to max
                     newLevel = SquireTier.CHAMPION.getMinLevel();
                 }
             }
         }
 
-        // Clamp to CHAMPION max level
         newLevel = Math.min(newLevel, SquireTier.CHAMPION.getMinLevel());
 
         if (newLevel != currentLevel) {

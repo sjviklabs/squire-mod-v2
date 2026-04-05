@@ -117,13 +117,6 @@ public class SquireBrain {
             suspendWorkIfActive();
         });
         bus.subscribe(SquireEvent.COMBAT_END,   s -> patrol.onCombatEnd());
-        // Award kill XP when combat ends with a dead target (not fled/lost)
-        bus.subscribe(SquireEvent.COMBAT_END, s -> {
-            net.minecraft.world.entity.LivingEntity target = s.getTarget();
-            if (target != null && !target.isAlive() && s.getProgressionHandler() != null) {
-                s.getProgressionHandler().addKillXP();
-            }
-        });
         // ChatHandler: personality lines on combat and work events
         bus.subscribe(SquireEvent.COMBAT_START, s -> {
             var owner = s.getOwner();
@@ -445,11 +438,17 @@ public class SquireBrain {
         ));
 
         // Exit combat when target dies or disappears (from any combat state)
+        // IMPORTANT: capture target BEFORE combat.stop() clears it via setTarget(null)
         machine.addTransition(new AITransition(
                 SquireAIState.COMBAT_APPROACH,
                 () -> squire.getTarget() == null || !squire.getTarget().isAlive(),
                 s -> {
+                    net.minecraft.world.entity.LivingEntity deadTarget = s.getTarget();
                     combat.stop();
+                    // Award kill XP if target was killed (not just lost/fled)
+                    if (deadTarget != null && !deadTarget.isAlive() && s.getProgressionHandler() != null) {
+                        s.getProgressionHandler().addKillXP();
+                    }
                     bus.publish(SquireEvent.COMBAT_END, s);
                     return SquireAIState.IDLE;
                 },
@@ -460,7 +459,11 @@ public class SquireBrain {
                 SquireAIState.COMBAT_RANGED,
                 () -> squire.getTarget() == null || !squire.getTarget().isAlive(),
                 s -> {
+                    net.minecraft.world.entity.LivingEntity deadTarget = s.getTarget();
                     combat.stop();
+                    if (deadTarget != null && !deadTarget.isAlive() && s.getProgressionHandler() != null) {
+                        s.getProgressionHandler().addKillXP();
+                    }
                     bus.publish(SquireEvent.COMBAT_END, s);
                     return SquireAIState.IDLE;
                 },

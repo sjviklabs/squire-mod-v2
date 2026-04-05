@@ -609,7 +609,7 @@ public class MiningHandler {
      * Saves the previous mainhand item back to backpack.
      */
     private void equipBestTool() {
-        var handler = squire.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.ENTITY);
+        var handler = squire.getItemHandler();
         if (handler == null) return;
 
         int bestSlot = -1;
@@ -630,7 +630,7 @@ public class MiningHandler {
         if (bestSlot >= 0) {
             // Swap: current mainhand → backpack, best pickaxe → mainhand
             ItemStack currentMainhand = squire.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
-            ItemStack pickaxe = handler.extractItem(bestSlot, 1, false);
+            ItemStack pickaxe = handler.extractItem(bestSlot, handler.getStackInSlot(bestSlot).getCount(), false);
             squire.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, pickaxe);
             if (!currentMainhand.isEmpty()) {
                 // Try to insert old mainhand back into backpack

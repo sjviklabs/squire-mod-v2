@@ -148,7 +148,9 @@ public class FollowHandler {
         double sprintThresh = SquireConfig.sprintDistance.get();
         boolean shouldSprint = distSq > sprintThresh * sprintThresh || owner.isSprinting();
         s.setSquireSprinting(shouldSprint);
-        double speed = shouldSprint ? 1.3D : 1.0D;
+        double speed = shouldSprint
+                ? SquireConfig.sprintSpeed.get()
+                : SquireConfig.walkSpeed.get();
 
         // Pathfinding navigation — the ONLY locomotion mechanism, no teleportation
         s.getNavigation().moveTo(owner, speed);
