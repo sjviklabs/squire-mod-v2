@@ -186,15 +186,15 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         super.setItemSlot(slot, stack);
     }
 
+    private final ItemStack[] armorCache = new ItemStack[4];
+
     @Override
     public Iterable<ItemStack> getArmorSlots() {
-        // Return armor from handler so rendering reads the correct source
-        java.util.List<ItemStack> armor = new java.util.ArrayList<>(4);
-        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_BOOTS));
-        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_LEGS));
-        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_CHEST));
-        armor.add(itemHandler.getStackInSlot(SquireItemHandler.SLOT_HELMET));
-        return armor;
+        armorCache[0] = itemHandler.getStackInSlot(SquireItemHandler.SLOT_BOOTS);
+        armorCache[1] = itemHandler.getStackInSlot(SquireItemHandler.SLOT_LEGS);
+        armorCache[2] = itemHandler.getStackInSlot(SquireItemHandler.SLOT_CHEST);
+        armorCache[3] = itemHandler.getStackInSlot(SquireItemHandler.SLOT_HELMET);
+        return java.util.Arrays.asList(armorCache);
     }
 
     @Override

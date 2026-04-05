@@ -278,6 +278,7 @@ public class FarmingHandler {
         List<BlockPos> plantable = new ArrayList<>();
         BlockPos closestHarvest = null;
         double closestHarvestDist = Double.MAX_VALUE;
+        boolean hasSeeds = hasSeedsInInventory(); // hoisted — one scan, not N
 
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
@@ -292,7 +293,7 @@ public class FarmingHandler {
                     double dist = squire.distanceToSqr(x + 0.5, y, z + 0.5);
                     if (dist < closestHarvestDist) {
                         closestHarvestDist = dist;
-                        closestHarvest = cropPos;  // target the crop block itself
+                        closestHarvest = cropPos;
                         currentAction = FarmAction.HARVEST;
                     }
                     continue;
@@ -306,7 +307,7 @@ public class FarmingHandler {
 
                 // Farmland with air above — plantable if squire has seeds
                 if (groundState.getBlock() instanceof FarmBlock) {
-                    if (cropState.isAir() && hasSeedsInInventory()) {
+                    if (cropState.isAir() && hasSeeds) {
                         plantable.add(groundPos);
                     }
                 }

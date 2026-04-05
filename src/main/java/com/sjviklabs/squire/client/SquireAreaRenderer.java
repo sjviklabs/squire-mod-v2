@@ -39,23 +39,12 @@ public class SquireAreaRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
-        // Check both hands for a Crest with area data
-        ItemStack mainHand = mc.player.getMainHandItem();
-        ItemStack offHand = mc.player.getOffhandItem();
+        // Check both hands for a Crest with area data (single copyTag call)
+        CompoundTag tag = getCrestCornersTag(mc.player.getMainHandItem());
+        if (tag == null) tag = getCrestCornersTag(mc.player.getOffhandItem());
+        if (tag == null) return;
 
-        ItemStack crest = null;
-        if (isCrestWithCorners(mainHand)) {
-            crest = mainHand;
-        } else if (isCrestWithCorners(offHand)) {
-            crest = offHand;
-        }
-        if (crest == null) return;
-
-        CompoundTag tag = crest.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-
-        boolean hasCorner1 = tag.contains("Corner1X");
         boolean hasCorner2 = tag.contains("Corner2X");
-        if (!hasCorner1) return;
 
         Vec3 cam = event.getCamera().getPosition();
         PoseStack poseStack = event.getPoseStack();
@@ -144,10 +133,11 @@ public class SquireAreaRenderer {
         buf.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a);
     }
 
-    private static boolean isCrestWithCorners(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        if (!(stack.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem)) return false;
+    @javax.annotation.Nullable
+    private static CompoundTag getCrestCornersTag(ItemStack stack) {
+        if (stack.isEmpty()) return null;
+        if (!(stack.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem)) return null;
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.contains("Corner1X");
+        return tag.contains("Corner1X") ? tag : null;
     }
 }

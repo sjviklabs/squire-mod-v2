@@ -13,6 +13,8 @@ import com.sjviklabs.squire.brain.handler.PatrolHandler;
 import com.sjviklabs.squire.brain.handler.PlacingHandler;
 import com.sjviklabs.squire.brain.handler.SurvivalHandler;
 import com.sjviklabs.squire.brain.handler.TorchHandler;
+
+import javax.annotation.Nullable;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -67,7 +69,7 @@ public class SquireBrain {
     private final TaskQueue taskQueue = new TaskQueue();
 
     // ── Work suspension: resume interrupted tasks after combat/follow ─────────
-    @javax.annotation.Nullable
+    @Nullable
     private SquireAIState suspendedWorkState = null;
 
     private int idleTicks;
@@ -221,7 +223,7 @@ public class SquireBrain {
      * we re-enter this state — the handler's internal state (blockQueue, area
      * corners, water target) is still alive so work continues where it left off.
      */
-    @javax.annotation.Nullable
+    @Nullable
     private static SquireAIState resumeStateFor(SquireAIState state) {
         return switch (state) {
             case MINING_APPROACH, MINING_BREAK     -> SquireAIState.MINING_APPROACH;

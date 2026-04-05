@@ -441,19 +441,6 @@ public final class SquireEquipmentHelper {
     }
 
     /**
-     * Insert a stack into the first available backpack slot (slots EQUIPMENT_SLOTS+).
-     * Loops until remainder is empty or no slot accepts it.
-     */
-    private static void insertIntoBackpack(IItemHandler handler, ItemStack stack) {
-        ItemStack remainder = stack.copy();
-        for (int i = SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots() && !remainder.isEmpty(); i++) {
-            remainder = handler.insertItem(i, remainder, false);
-        }
-        // Overflow is silently dropped — callers that have an entity reference
-        // should use insertIntoBackpackOrDrop() instead.
-    }
-
-    /**
      * Insert a stack into backpack; drop overflow at the squire's feet.
      * Preferred over insertIntoBackpack() when the squire entity is available.
      */

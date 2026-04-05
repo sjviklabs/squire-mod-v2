@@ -224,6 +224,21 @@ public final class SquireCommand {
     }
 
     /**
+     * Returns the player's squire, or null. Sends failure message if no squire or not a player.
+     */
+    @Nullable
+    private static SquireEntity requireSquire(CommandSourceStack source) {
+        if (!source.isPlayer()) return null;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return null;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) {
+            source.sendFailure(Component.literal("You have no active squire."));
+        }
+        return squire;
+    }
+
+    /**
      * Maps a squire mode byte to a display name.
      */
     private static String modeName(byte mode) {
@@ -290,18 +305,16 @@ public final class SquireCommand {
     // ================================================================
 
     private static int mineBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
         squire.getSquireBrain().getMiningHandler().setTarget(pos);
         source.sendSuccess(() -> Component.literal("Squire mining at " + pos.toShortString()), false);
         return 1;
     }
 
     private static int placeBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
         // Place uses whatever block item is in squire's mainhand
         net.minecraft.world.item.ItemStack mainhand = squire.getMainHandItem();
         if (mainhand.isEmpty() || !(mainhand.getItem() instanceof net.minecraft.world.item.BlockItem blockItem)) {
@@ -376,18 +389,16 @@ public final class SquireCommand {
     }
 
     private static int startFish(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
         squire.getSquireBrain().getFishingHandler().startFishing();
         source.sendSuccess(() -> Component.literal("Squire is fishing."), false);
         return 1;
     }
 
     private static int mountHorse(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
 
         // Find nearest saddled horse within 16 blocks of the squire
         var mountHandler = squire.getSquireBrain().getMountHandler();
@@ -423,9 +434,8 @@ public final class SquireCommand {
     }
 
     private static int dismountHorse(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
         squire.getSquireBrain().getMountHandler().orderDismount(squire);
         // Keep horse UUID — squire stays bonded for remounting
         squire.getSquireBrain().getMachine().forceState(com.sjviklabs.squire.brain.SquireAIState.IDLE);
@@ -457,9 +467,8 @@ public final class SquireCommand {
     }
 
     private static int toggleGodMode(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
 
         boolean godMode = !squire.isInvulnerable();
         squire.setInvulnerable(godMode);
@@ -606,9 +615,8 @@ public final class SquireCommand {
     }
 
     private static int storeItemsAt(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
         squire.getSquireBrain().getChestHandler().setDepositTarget(pos);
         source.sendSuccess(() -> Component.literal("Squire depositing items at " + pos.toShortString()), false);
         return 1;
@@ -628,9 +636,8 @@ public final class SquireCommand {
 
     private static int fetchItemsAt(CommandSourceStack source, net.minecraft.core.BlockPos pos,
                                      @Nullable net.minecraft.world.item.Item item, int amount) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
         squire.getSquireBrain().getChestHandler().setWithdrawTarget(pos, item, amount);
         source.sendSuccess(() -> Component.literal("Squire fetching items from " + pos.toShortString()), false);
         return 1;
@@ -699,9 +706,8 @@ public final class SquireCommand {
     }
 
     private static int stopPatrol(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
 
         var patrolField = getPatrolHandler(squire);
         if (patrolField != null) {
@@ -712,11 +718,7 @@ public final class SquireCommand {
         return 1;
     }
 
-    /**
-     * Access PatrolHandler from SquireBrain. Returns null if brain is null.
-     * PatrolHandler has no public accessor yet — use reflection or add one.
-     * For now, we add the accessor in SquireBrain.
-     */
+    /** Returns the PatrolHandler from SquireBrain, or null if brain is not yet initialized. */
     @Nullable
     private static com.sjviklabs.squire.brain.handler.PatrolHandler getPatrolHandler(SquireEntity squire) {
         var brain = squire.getSquireBrain();
@@ -728,9 +730,8 @@ public final class SquireCommand {
     // ================================================================
 
     private static int queueList(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
 
         var queue = squire.getSquireBrain().getTaskQueue();
         if (queue.isEmpty()) {
@@ -771,9 +772,8 @@ public final class SquireCommand {
     }
 
     private static int queueMineBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
 
         net.minecraft.nbt.CompoundTag p = new net.minecraft.nbt.CompoundTag();
         p.putInt("x", pos.getX()); p.putInt("y", pos.getY()); p.putInt("z", pos.getZ());
@@ -824,9 +824,8 @@ public final class SquireCommand {
     }
 
     private static int queueFish(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
 
         boolean ok = squire.getSquireBrain().getTaskQueue()
                 .enqueue(new com.sjviklabs.squire.brain.SquireTask("fish", new net.minecraft.nbt.CompoundTag()));
@@ -839,9 +838,8 @@ public final class SquireCommand {
     }
 
     private static int queueClear(CommandSourceStack source) {
-        if (!source.isPlayer()) return 0;
-        SquireEntity squire = findOwnedSquire((ServerPlayer) source.getEntity());
-        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
 
         squire.getSquireBrain().getTaskQueue().clear();
         source.sendSuccess(() -> Component.literal("Task queue cleared."), false);

@@ -54,6 +54,8 @@ public class SquireScreen extends AbstractContainerScreen<SquireMenu> {
     private static final int XP_BAR_FG        = 0xFF33CC33;
     private static final int LOCK_X_COLOR     = 0xFF5A5A5A;
 
+    private static final String[] TIER_NAMES = {"Satchel", "Pack", "Knapsack", "War Chest"};
+
     // ── Layout references (derived from SquireMenu constants) ─────────────────
 
     private static final int ENTITY_AREA_WIDTH = SquireMenu.ENTITY_AREA_WIDTH;
@@ -224,8 +226,7 @@ public class SquireScreen extends AbstractContainerScreen<SquireMenu> {
         int rightEdge = guiX + imageWidth - 4;
 
         int level = menu.getSquireLevel();
-        String[] tierNames = {"Satchel", "Pack", "Knapsack", "War Chest"};
-        String tierName = tierNames[Math.min(menu.getBackpackTier(), tierNames.length - 1)];
+        String tierName = TIER_NAMES[Math.min(menu.getBackpackTier(), TIER_NAMES.length - 1)];
 
         // ── Row 1: "Lv.X Squire" ── Mode (right-aligned) ──
         String nameStr = "Lv." + level + " " + tierName;
