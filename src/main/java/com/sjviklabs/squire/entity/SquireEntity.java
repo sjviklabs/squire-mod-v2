@@ -538,9 +538,20 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         if (this.progressionHandler != null) {
             this.progressionHandler.tick(); // ticks down undying cooldown
         }
-        // Auto-equip check every 40 ticks (~2 seconds)
-        if (!this.level().isClientSide && this.tickCount % 40 == 0) {
-            com.sjviklabs.squire.inventory.SquireEquipmentHelper.runFullEquipCheck(this);
+        // Auto-equip check every 40 ticks (~2 seconds) — skip during active work
+        // (mining equips pickaxes, farming equips hoes — cleanup pass would fight them)
+        if (!this.level().isClientSide && this.tickCount % 40 == 0 && this.squireBrain != null) {
+            var state = this.squireBrain.getCurrentState();
+            boolean isWorking = state == com.sjviklabs.squire.brain.SquireAIState.MINING_APPROACH
+                    || state == com.sjviklabs.squire.brain.SquireAIState.MINING_BREAK
+                    || state == com.sjviklabs.squire.brain.SquireAIState.FARM_SCAN
+                    || state == com.sjviklabs.squire.brain.SquireAIState.FARM_APPROACH
+                    || state == com.sjviklabs.squire.brain.SquireAIState.FARM_WORK
+                    || state == com.sjviklabs.squire.brain.SquireAIState.FISHING_APPROACH
+                    || state == com.sjviklabs.squire.brain.SquireAIState.FISHING_IDLE;
+            if (!isWorking) {
+                com.sjviklabs.squire.inventory.SquireEquipmentHelper.runFullEquipCheck(this);
+            }
         }
         super.aiStep();
         // PathfinderMob does not call updateSwingTime() automatically (only Monster does).
