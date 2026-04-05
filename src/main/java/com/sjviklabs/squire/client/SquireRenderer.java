@@ -33,8 +33,8 @@ public class SquireRenderer extends GeoEntityRenderer<SquireEntity> {
         // Held items — renders weapons/tools/shields in the squire's hands
         addRenderLayer(new BlockAndItemGeoLayer<>(this,
                 (bone, entity) -> switch (bone.getName()) {
-                    case "right_arm" -> entity.getMainHandItem();
-                    case "left_arm"  -> entity.getOffhandItem();
+                    case "right_arm" -> entity.getOffhandItem();
+                    case "left_arm"  -> entity.getMainHandItem();
                     default -> ItemStack.EMPTY;
                 },
                 (bone, entity) -> null
