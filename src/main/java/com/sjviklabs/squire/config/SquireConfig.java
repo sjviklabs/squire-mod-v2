@@ -105,6 +105,10 @@ public final class SquireConfig {
     public static final ModConfigSpec.IntValue autoPickupTickRate;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> junkFilterList;
 
+    // ── [work] ───────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.DoubleValue autoDepositThreshold;
+    public static final ModConfigSpec.IntValue idlePatrolRadius;
+
     // ── [rendering] ──────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue showNameTag;
     public static final ModConfigSpec.BooleanValue backpackVisual;
@@ -354,6 +358,16 @@ public final class SquireConfig {
                         List.of("minecraft:cobblestone", "minecraft:dirt", "minecraft:gravel",
                                 "minecraft:rotten_flesh", "minecraft:poisonous_potato"),
                         s -> s instanceof String str && str.contains(":"));
+        builder.pop();
+
+        // ── [work] ───────────────────────────────────────────────────────────
+        builder.push("work");
+        autoDepositThreshold = builder
+                .comment("Backpack fill fraction (0.1-1.0) that triggers auto-deposit to home chest. Default: 0.8")
+                .defineInRange("autoDepositThreshold", 0.8, 0.1, 1.0);
+        idlePatrolRadius = builder
+                .comment("Wander radius (blocks) when work role has no assigned area. Default: 8")
+                .defineInRange("idlePatrolRadius", 8, 4, 32);
         builder.pop();
 
         // ── [rendering] ──────────────────────────────────────────────────────

@@ -74,6 +74,11 @@ public class SquireBrain {
 
     private int idleTicks;
 
+    // ── Work role system (Wave 1) ───────────────────────────────────────────
+    private WorkRole activeRole = WorkRole.NONE;
+    @Nullable
+    private BlockPos homeChestPos = null;
+
     public SquireBrain(SquireEntity squire) {
         this.squire = squire;
 
@@ -106,6 +111,19 @@ public class SquireBrain {
         if (squire.pendingHorseUUID != null) {
             this.mount.setHorseUUID(squire.pendingHorseUUID);
             squire.pendingHorseUUID = null;
+        }
+
+        // Inject work role and home chest from NBT (Wave 1)
+        if (squire.pendingWorkRole > 0) {
+            WorkRole[] roles = WorkRole.values();
+            if (squire.pendingWorkRole < roles.length) {
+                this.activeRole = roles[squire.pendingWorkRole];
+            }
+            squire.pendingWorkRole = 0;
+        }
+        if (squire.pendingHomeChest != null) {
+            this.homeChestPos = squire.pendingHomeChest;
+            squire.pendingHomeChest = null;
         }
 
         // 3. Subscribe BEFORE registerTransitions() so no event fires into an empty handler.
@@ -145,6 +163,13 @@ public class SquireBrain {
 
     /** Called every server-side aiStep() from SquireEntity. */
     public void tick() {
+        // Auto-deposit check: if backpack is near-full and we have a home chest,
+        // suspend current work and go deposit. The resume mechanism will bring us back.
+        if (shouldAutoDeposit()) {
+            suspendWorkIfActive();
+            chest.setDepositTarget(homeChestPos);
+        }
+
         if (machine.getCurrentState() == SquireAIState.IDLE) {
             idleTicks++;
 
@@ -158,6 +183,10 @@ public class SquireBrain {
                 if (next != null) {
                     dispatch(next);
                 }
+            }
+            // Priority 3: role-based continuous work (re-enter handler if area still set)
+            else if (activeRole != WorkRole.NONE && tryRoleWork()) {
+                idleTicks = 0;
             }
         } else {
             idleTicks = 0;
@@ -202,6 +231,13 @@ public class SquireBrain {
     public FishingHandler getFishingHandler() { return fishing; }
     public ChestHandler getChestHandler() { return chest; }
     public PatrolHandler getPatrolHandler() { return patrol; }
+
+    // ── Work role accessors (Wave 1) ────────────────────────────────────────
+    public WorkRole getWorkRole() { return activeRole; }
+    public void setWorkRole(WorkRole role) { this.activeRole = role; }
+    @Nullable
+    public BlockPos getHomeChest() { return homeChestPos; }
+    public void setHomeChest(@Nullable BlockPos pos) { this.homeChestPos = pos; }
 
     // -------------------------------------------------------------------------
     // Work suspension / resume
@@ -273,6 +309,58 @@ public class SquireBrain {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Check if the squire should auto-deposit inventory to the home chest.
+     * Only triggers when actively working (not during chest trips or idle).
+     */
+    private boolean shouldAutoDeposit() {
+        if (homeChestPos == null) return false;
+        SquireAIState current = machine.getCurrentState();
+        // Don't trigger during chest operations or idle
+        if (current == SquireAIState.CHEST_APPROACH || current == SquireAIState.CHEST_INTERACT
+                || current == SquireAIState.IDLE) return false;
+        // Only trigger during work states
+        if (resumeStateFor(current) == null) return false;
+
+        var inv = squire.getItemHandler();
+        int backpackStart = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS;
+        int totalSlots = inv.getSlots() - backpackStart;
+        if (totalSlots <= 0) return false;
+        int usedSlots = 0;
+        for (int i = backpackStart; i < inv.getSlots(); i++) {
+            if (!inv.getStackInSlot(i).isEmpty()) usedSlots++;
+        }
+        return (double) usedSlots / totalSlots >= com.sjviklabs.squire.config.SquireConfig.autoDepositThreshold.get();
+    }
+
+    /**
+     * Attempt to re-enter work based on active role. Returns true if work was started.
+     * Called when IDLE with no suspended work and no queued tasks.
+     */
+    private boolean tryRoleWork() {
+        return switch (activeRole) {
+            case MINER -> {
+                if (mining.hasTarget() || mining.isAreaClearing()) {
+                    machine.forceState(SquireAIState.MINING_APPROACH);
+                    yield true;
+                }
+                yield false;
+            }
+            case FARMER -> {
+                if (farming.hasArea()) {
+                    machine.forceState(SquireAIState.FARM_SCAN);
+                    yield true;
+                }
+                yield false;
+            }
+            case FISHER -> {
+                machine.forceState(SquireAIState.FISHING_APPROACH);
+                yield true;
+            }
+            case NONE -> false;
+        };
     }
 
     // -------------------------------------------------------------------------

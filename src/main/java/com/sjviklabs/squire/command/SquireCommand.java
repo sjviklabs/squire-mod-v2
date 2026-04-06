@@ -178,6 +178,20 @@ public final class SquireCommand {
                 )
             )
 
+            // /squire role <miner|farmer|fisher|none> — set work role (Wave 1)
+            .then(Commands.literal("role")
+                .then(Commands.literal("miner").executes(ctx -> setRole(ctx.getSource(), com.sjviklabs.squire.brain.WorkRole.MINER)))
+                .then(Commands.literal("farmer").executes(ctx -> setRole(ctx.getSource(), com.sjviklabs.squire.brain.WorkRole.FARMER)))
+                .then(Commands.literal("fisher").executes(ctx -> setRole(ctx.getSource(), com.sjviklabs.squire.brain.WorkRole.FISHER)))
+                .then(Commands.literal("none").executes(ctx -> setRole(ctx.getSource(), com.sjviklabs.squire.brain.WorkRole.NONE)))
+            )
+
+            // /squire homechest — set home chest for auto-deposit (Wave 1)
+            .then(Commands.literal("homechest")
+                .executes(ctx -> setHomeChest(ctx.getSource()))
+                .then(Commands.literal("clear").executes(ctx -> clearHomeChest(ctx.getSource())))
+            )
+
             // /squire queue — task queue management
             .then(Commands.literal("queue")
                 // /squire queue list — show queued tasks
@@ -723,6 +737,50 @@ public final class SquireCommand {
     private static com.sjviklabs.squire.brain.handler.PatrolHandler getPatrolHandler(SquireEntity squire) {
         var brain = squire.getSquireBrain();
         return brain != null ? brain.getPatrolHandler() : null;
+    }
+
+    // ================================================================
+    // /squire role, homechest (Wave 1)
+    // ================================================================
+
+    private static int setRole(CommandSourceStack source, com.sjviklabs.squire.brain.WorkRole role) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        squire.getSquireBrain().setWorkRole(role);
+        source.sendSuccess(() -> Component.literal("Squire role set to: " + role.name().toLowerCase()), false);
+        return 1;
+    }
+
+    private static int setHomeChest(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        // Raycast to find looked-at block
+        net.minecraft.core.BlockPos pos = getLookedAtBlock(player);
+        if (pos != null) {
+            // Verify it's a container
+            var blockEntity = player.level().getBlockEntity(pos);
+            if (blockEntity instanceof net.minecraft.world.level.block.entity.BaseContainerBlockEntity) {
+                squire.getSquireBrain().setHomeChest(pos);
+                source.sendSuccess(() -> Component.literal("Home chest set at " + pos.toShortString()), false);
+                return 1;
+            }
+            source.sendFailure(Component.literal("Look at a chest or container."));
+            return 0;
+        }
+        source.sendFailure(Component.literal("Look at a chest to set it as home chest."));
+        return 0;
+    }
+
+    private static int clearHomeChest(CommandSourceStack source) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        squire.getSquireBrain().setHomeChest(null);
+        source.sendSuccess(() -> Component.literal("Home chest cleared."), false);
+        return 1;
     }
 
     // ================================================================

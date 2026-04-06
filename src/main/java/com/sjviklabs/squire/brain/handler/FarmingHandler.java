@@ -100,6 +100,11 @@ public class FarmingHandler {
      * @param cornerA one corner of the farm area (ground level Y required)
      * @param cornerB opposite corner of the farm area (Y ignored, cornerA.Y is used for scan)
      */
+    /** Returns true if the farm area corners are set (work can continue). */
+    public boolean hasArea() {
+        return cornerA != null && cornerB != null;
+    }
+
     public void setArea(BlockPos cornerA, BlockPos cornerB) {
         this.cornerA = cornerA;
         this.cornerB = cornerB;

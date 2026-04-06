@@ -122,6 +122,11 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     @Nullable
     public UUID pendingHorseUUID = null;
 
+    // ---- Pending work role + home chest (loaded from NBT, injected into SquireBrain on first tick — Wave 1) ----
+    public byte pendingWorkRole = 0;
+    @Nullable
+    public net.minecraft.core.BlockPos pendingHomeChest = null;
+
     // ================================================================
     // Constructor
     // ================================================================
@@ -595,6 +600,16 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         if (squireBrain != null && squireBrain.getMountHandler().getHorseUUID() != null) {
             tag.putUUID("HorseUUID", squireBrain.getMountHandler().getHorseUUID());
         }
+        // Work role + home chest (Wave 1)
+        if (squireBrain != null) {
+            tag.putByte("WorkRole", (byte) squireBrain.getWorkRole().ordinal());
+            if (squireBrain.getHomeChest() != null) {
+                net.minecraft.core.BlockPos hc = squireBrain.getHomeChest();
+                tag.putInt("HomeChestX", hc.getX());
+                tag.putInt("HomeChestY", hc.getY());
+                tag.putInt("HomeChestZ", hc.getZ());
+            }
+        }
     }
 
     @Override
@@ -629,6 +644,14 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         // Mount — stash horse UUID for MountHandler injection on first brain tick (MNT-04)
         if (tag.hasUUID("HorseUUID")) {
             this.pendingHorseUUID = tag.getUUID("HorseUUID");
+        }
+        // Work role + home chest (Wave 1)
+        if (tag.contains("WorkRole")) {
+            pendingWorkRole = tag.getByte("WorkRole");
+        }
+        if (tag.contains("HomeChestX")) {
+            pendingHomeChest = new net.minecraft.core.BlockPos(
+                    tag.getInt("HomeChestX"), tag.getInt("HomeChestY"), tag.getInt("HomeChestZ"));
         }
     }
 
