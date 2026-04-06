@@ -60,6 +60,9 @@ public final class SquireConfig {
     public static final ModConfigSpec.IntValue clearConfirmThreshold;
     public static final ModConfigSpec.IntValue miningTickRate;
     public static final ModConfigSpec.IntValue chunkLoadRadius;
+    public static final ModConfigSpec.IntValue torchIntervalBlocks;
+    public static final ModConfigSpec.IntValue shaftMaxDepth;
+    public static final ModConfigSpec.BooleanValue miningAutoTorch;
 
     // ── [placing] ────────────────────────────────────────────────────────────
     public static final ModConfigSpec.DoubleValue placingReach;
@@ -241,6 +244,15 @@ public final class SquireConfig {
         chunkLoadRadius = builder
                 .comment("Chunk radius to force-load during area clear (0 = no force loading)")
                 .defineInRange("chunkLoadRadius", 1, 0, 3);
+        torchIntervalBlocks = builder
+                .comment("Blocks between auto-placed torches during mining. Default: 8")
+                .defineInRange("torchIntervalBlocks", 8, 4, 16);
+        shaftMaxDepth = builder
+                .comment("Maximum shaft mining depth. Default: 64")
+                .defineInRange("shaftMaxDepth", 64, 8, 128);
+        miningAutoTorch = builder
+                .comment("Whether the squire auto-places torches during mining in dark areas. Default: true")
+                .define("miningAutoTorch", true);
         builder.pop();
 
         // ── [placing]

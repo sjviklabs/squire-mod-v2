@@ -21,6 +21,12 @@ import javax.annotation.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.TorchBlock;
+
 /**
  * Handles block breaking with proper break speed calculation, crack animation,
  * tool selection, arm swing, and drops deposited into squire's IItemHandler inventory.
@@ -57,6 +63,12 @@ public class MiningHandler {
 
     private final LinkedList<BlockPos> blockQueue = new LinkedList<>();
     private boolean areaClearing = false;
+    private boolean shaftMode = false;
+
+    // Auto-torch tracking for area mining
+    private int blocksMinedInRow;
+    private int rowLength;
+    private int blocksMinedInShaft;
 
     // Stuck detection state
     private int approachTicks;
@@ -140,18 +152,31 @@ public class MiningHandler {
 
         int maxBlocks = SquireConfig.areaMaxBlocks.get();
 
-        // Build layer by layer: top-down (Y desc), scanline order within each layer.
-        // Scanline: sweep Z rows front-to-back, X columns left-to-right within each row.
-        // Alternating X direction per Z row (boustrophedon) minimizes travel distance.
+        // Determine sweep origin: find the corner nearest to the squire's current position.
+        // This decides whether X sweeps +X or -X, and Z advances +Z or -Z.
+        BlockPos squirePos = squire.blockPosition();
+        boolean sweepXPositive = (Math.abs(squirePos.getX() - minX) <= Math.abs(squirePos.getX() - maxX));
+        boolean sweepZPositive = (Math.abs(squirePos.getZ() - minZ) <= Math.abs(squirePos.getZ() - maxZ));
+
+        int xStart = sweepXPositive ? minX : maxX;
+        int xEnd   = sweepXPositive ? maxX : minX;
+        int xStep  = sweepXPositive ? 1 : -1;
+
+        int zStart = sweepZPositive ? minZ : maxZ;
+        int zEnd   = sweepZPositive ? minZ - 1 : maxZ + 1; // sentinel for loop
+        int zStep  = sweepZPositive ? 1 : -1;
+
+        // Track row length for auto-torch placement
+        this.rowLength = Math.abs(maxX - minX) + 1;
+        this.blocksMinedInRow = 0;
+
+        // Build layer by layer: top-down (Y desc), unidirectional sweep within each layer.
+        // Every row sweeps X in the same direction (like reading a book), then advances Z.
+        // No direction reversal — predictable, clean pattern.
         outer:
         for (int y = maxY; y >= minY; y--) {
-            boolean reverseX = false;
-            for (int z = minZ; z <= maxZ; z++) {
-                int xStart = reverseX ? maxX : minX;
-                int xEnd   = reverseX ? minX : maxX;
-                int xStep  = reverseX ? -1 : 1;
-
-                for (int x = xStart; reverseX ? x >= xEnd : x <= xEnd; x += xStep) {
+            for (int z = zStart; sweepZPositive ? z <= maxZ : z >= minZ; z += zStep) {
+                for (int x = xStart; sweepXPositive ? x <= maxX : x >= minX; x += xStep) {
                     if (blockQueue.size() >= maxBlocks) break outer;
 
                     BlockPos pos = new BlockPos(x, y, z);
@@ -167,7 +192,6 @@ public class MiningHandler {
 
                     blockQueue.add(pos);
                 }
-                reverseX = !reverseX;
             }
         }
 
@@ -187,6 +211,84 @@ public class MiningHandler {
         }
 
         return blockQueue.size() + (targetPos != null ? 1 : 0);
+    }
+
+    /**
+     * Set a shaft mining target. Queues blocks in a vertical column from the squire's
+     * current Y position downward.
+     *
+     * @param center the center block position (top of shaft)
+     * @param width  1 = 1x2 shaft (center + center.north()), 2 = 2x2 shaft
+     * @param depth  how many Y levels to mine downward
+     */
+    public void setShaftTarget(BlockPos center, int width, int depth) {
+        // Auto-craft pickaxe if missing (Wave 1.5)
+        if (!hasPickaxe(squire)) {
+            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
+            if (!crafting.tryCraftIfMissing(squire,
+                    stack -> stack.getItem() instanceof net.minecraft.world.item.PickaxeItem, "pickaxe")) {
+                return; // No pickaxe and can't craft one — stay IDLE
+            }
+        }
+
+        // Clamp depth to configured max
+        int maxDepth = SquireConfig.shaftMaxDepth.get();
+        if (depth > maxDepth) depth = maxDepth;
+
+        blockQueue.clear();
+        areaClearing = true;
+        shaftMode = true;
+        blocksMinedInShaft = 0;
+
+        squire.ensureChunkLoaded();
+
+        int startY = center.getY();
+        int endY = startY - depth;
+        if (endY < squire.level().getMinBuildHeight()) {
+            endY = squire.level().getMinBuildHeight();
+        }
+
+        // Build queue: for each Y level (top-down), queue all blocks at that level
+        for (int y = startY; y > endY; y--) {
+            if (width == 1) {
+                // 1x2 shaft: center and center.north()
+                addShaftBlock(new BlockPos(center.getX(), y, center.getZ()));
+                addShaftBlock(new BlockPos(center.getX(), y, center.getZ() - 1));
+            } else {
+                // 2x2 shaft
+                addShaftBlock(new BlockPos(center.getX(), y, center.getZ()));
+                addShaftBlock(new BlockPos(center.getX() + 1, y, center.getZ()));
+                addShaftBlock(new BlockPos(center.getX(), y, center.getZ() + 1));
+                addShaftBlock(new BlockPos(center.getX() + 1, y, center.getZ() + 1));
+            }
+        }
+
+        // Pop the first block as the immediate target
+        if (!blockQueue.isEmpty()) {
+            BlockPos first = blockQueue.poll();
+            this.targetPos = first;
+            this.breakProgress = 0.0F;
+            this.lastCrackStage = -1;
+            this.approachTicks = 0;
+            this.stuckTicks = 0;
+            this.repositionAttempts = 0;
+            this.lastApproachDistSq = Double.MAX_VALUE;
+            equipBestTool();
+            machine.forceState(SquireAIState.MINING_APPROACH);
+        } else {
+            areaClearing = false;
+            shaftMode = false;
+        }
+    }
+
+    /** Helper: add a block to the shaft queue if it's breakable and not air. */
+    private void addShaftBlock(BlockPos pos) {
+        BlockState state = squire.level().getBlockState(pos);
+        if (state.isAir()) return;
+        if (state.getDestroySpeed(squire.level(), pos) < 0) return;
+        FluidState fluid = state.getFluidState();
+        if (!fluid.isEmpty() && state.getBlock().defaultBlockState().isAir()) return;
+        blockQueue.add(pos);
     }
 
     /**
@@ -213,6 +315,9 @@ public class MiningHandler {
         lastCrackStage = -1;
         blockQueue.clear();
         areaClearing = false;
+        shaftMode = false;
+        blocksMinedInRow = 0;
+        blocksMinedInShaft = 0;
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
@@ -416,6 +521,24 @@ public class MiningHandler {
                 LOGGER.debug("[Squire] Broke block at {}", posStr);
             }
 
+            // Auto-torch: place torch in dark areas after completing a row or shaft interval
+            if (areaClearing) {
+                blocksMinedInRow++;
+                if (shaftMode) {
+                    blocksMinedInShaft++;
+                    int interval = SquireConfig.torchIntervalBlocks.get();
+                    // In shaft mode, place torch every torchIntervalBlocks of depth
+                    // (each depth level has 2 or 4 blocks depending on width)
+                    if (blocksMinedInShaft >= interval) {
+                        placeTorchIfNeeded();
+                        blocksMinedInShaft = 0;
+                    }
+                } else if (rowLength > 0 && blocksMinedInRow >= rowLength) {
+                    placeTorchIfNeeded();
+                    blocksMinedInRow = 0;
+                }
+            }
+
             // Area clearing: chain to next block
             if (areaClearing) {
                 BlockPos next = popNextValid();
@@ -545,9 +668,90 @@ public class MiningHandler {
 
     private void finalizeAreaClear() {
         areaClearing = false;
+        shaftMode = false;
+        blocksMinedInRow = 0;
+        blocksMinedInShaft = 0;
         if (SquireConfig.activityLogging.get()) {
             LOGGER.debug("[Squire] Area clear complete");
         }
+    }
+
+    // ── Auto-torch during mining ───────────────────────────────────────────────
+
+    /**
+     * Place a torch at the squire's feet if the area is dark enough and the squire
+     * has torches in inventory. Mirrors TorchHandler's placement logic but without
+     * cooldown or level gating — mining torch placement is controlled by config only.
+     */
+    private void placeTorchIfNeeded() {
+        if (!SquireConfig.miningAutoTorch.get()) return;
+        if (!(squire.level() instanceof ServerLevel serverLevel)) return;
+
+        BlockPos pos = squire.blockPosition();
+        int blockLight = serverLevel.getBrightness(net.minecraft.world.level.LightLayer.BLOCK, pos);
+        if (blockLight >= 8) return; // bright enough, skip
+
+        // Find a torch in inventory
+        net.neoforged.neoforge.items.IItemHandler inv = squire.getItemHandler();
+        int torchSlot = -1;
+        for (int i = 0; i < inv.getSlots(); i++) {
+            ItemStack stack = inv.getStackInSlot(i);
+            if (!stack.isEmpty() && stack.is(Items.TORCH)) {
+                torchSlot = i;
+                break;
+            }
+        }
+        if (torchSlot < 0) return; // no torches
+
+        // Find a valid placement position (feet first, then adjacent)
+        BlockPos placePos = findTorchPlacePos(serverLevel, pos);
+        if (placePos == null) return;
+
+        serverLevel.setBlock(placePos, Blocks.TORCH.defaultBlockState(), 3);
+        inv.extractItem(torchSlot, 1, false);
+
+        serverLevel.playSound(null, placePos,
+                net.minecraft.sounds.SoundEvents.WOOD_PLACE,
+                net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
+
+        if (SquireConfig.activityLogging.get()) {
+            LOGGER.debug("[Squire] Mining auto-torch at {} (light was {})",
+                    placePos.toShortString(), blockLight);
+        }
+    }
+
+    /**
+     * Find a valid position for torch placement near the given position.
+     * Checks the position itself, then cardinal neighbors.
+     */
+    @Nullable
+    private BlockPos findTorchPlacePos(ServerLevel level, BlockPos feetPos) {
+        if (canPlaceTorchAt(level, feetPos)) return feetPos;
+        for (BlockPos adjacent : new BlockPos[]{
+                feetPos.north(), feetPos.south(), feetPos.east(), feetPos.west()}) {
+            if (canPlaceTorchAt(level, adjacent)) return adjacent;
+        }
+        return null;
+    }
+
+    /**
+     * Check if a torch can be placed at the given position:
+     * air block, solid below, no adjacent torches (prevents clusters).
+     */
+    private boolean canPlaceTorchAt(ServerLevel level, BlockPos pos) {
+        BlockState atPos = level.getBlockState(pos);
+        if (!atPos.isAir()) return false;
+        BlockState below = level.getBlockState(pos.below());
+        if (!below.isSolid()) return false;
+        // Prevent clusters
+        for (BlockPos neighbor : new BlockPos[]{
+                pos.north(), pos.south(), pos.east(), pos.west(),
+                pos.above(), pos.below()}) {
+            if (level.getBlockState(neighbor).getBlock() instanceof TorchBlock) {
+                return false;
+            }
+        }
+        return true;
     }
 
     // ── Tool helpers ──────────────────────────────────────────────────────────

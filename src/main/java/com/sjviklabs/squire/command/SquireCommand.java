@@ -58,6 +58,22 @@ public final class SquireCommand {
                 )
             )
 
+            // /squire shaft [depth] | /squire shaft 2x2 [depth] — dig vertical shaft
+            .then(Commands.literal("shaft")
+                .executes(ctx -> startShaft(ctx.getSource(), 1, 16))
+                .then(com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 128) != null ?
+                    Commands.argument("depth", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 128))
+                        .executes(ctx -> startShaft(ctx.getSource(), 1,
+                            com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "depth")))
+                    : Commands.literal("_"))
+                .then(Commands.literal("2x2")
+                    .executes(ctx -> startShaft(ctx.getSource(), 2, 16))
+                    .then(Commands.argument("depth2", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 128))
+                        .executes(ctx -> startShaft(ctx.getSource(), 2,
+                            com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "depth2"))))
+                )
+            )
+
             // /squire place <pos> — place a block at position (uses held block from squire inventory)
             .then(Commands.literal("place")
                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
@@ -317,6 +333,16 @@ public final class SquireCommand {
     // ================================================================
     // /squire mine, place, farm, fish, mount, dismount
     // ================================================================
+
+    private static int startShaft(CommandSourceStack source, int width, int depth) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        net.minecraft.core.BlockPos center = squire.blockPosition();
+        squire.getSquireBrain().getMiningHandler().setShaftTarget(center, width, depth);
+        String label = width == 2 ? "2x2" : "1x2";
+        source.sendSuccess(() -> Component.literal("Squire digging " + label + " shaft, depth " + depth), false);
+        return 1;
+    }
 
     private static int mineBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
         SquireEntity squire = requireSquire(source);
