@@ -2,6 +2,7 @@ package com.sjviklabs.squire.brain;
 
 import com.sjviklabs.squire.brain.handler.ChestHandler;
 import com.sjviklabs.squire.brain.handler.CombatHandler;
+import com.sjviklabs.squire.brain.handler.CraftingHandler;
 import com.sjviklabs.squire.brain.handler.DangerHandler;
 import com.sjviklabs.squire.brain.handler.FarmingHandler;
 import com.sjviklabs.squire.brain.handler.FishingHandler;
@@ -65,6 +66,9 @@ public class SquireBrain {
     private final ChestHandler chest;
     private final TorchHandler torch;
 
+    // ── Crafting utility (Wave 1.5) ─────────────────────────────────────────
+    private final CraftingHandler crafting;
+
     // ── Task queue (Phase 6) ─────────────────────────────────────────────────
     private final TaskQueue taskQueue = new TaskQueue();
 
@@ -101,6 +105,9 @@ public class SquireBrain {
         this.fishing = new FishingHandler(squire, machine);
         this.chest   = new ChestHandler(squire, machine);
         this.torch   = new TorchHandler(squire);
+
+        // Crafting utility (Wave 1.5) — stateless, no squire ref needed at construction
+        this.crafting = new CraftingHandler();
 
         // Patrol handler (Phase 7)
         this.patrol = new PatrolHandler();
@@ -230,6 +237,7 @@ public class SquireBrain {
     public FarmingHandler getFarmingHandler() { return farming; }
     public FishingHandler getFishingHandler() { return fishing; }
     public ChestHandler getChestHandler() { return chest; }
+    public CraftingHandler getCraftingHandler() { return crafting; }
     public PatrolHandler getPatrolHandler() { return patrol; }
 
     // ── Work role accessors (Wave 1) ────────────────────────────────────────

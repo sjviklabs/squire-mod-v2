@@ -24,7 +24,7 @@ public class ChatHandler {
     private static final Random RANDOM = new Random();
 
     public enum ChatEvent {
-        IDLE, COMBAT_START, LEVEL_UP, NEW_TIER
+        IDLE, COMBAT_START, LEVEL_UP, NEW_TIER, CRAFTED_TOOL, NEED_MATERIALS
     }
 
     // String pools by event, then by tier index (SquireTier.ordinal()).
@@ -61,6 +61,20 @@ public class ChatHandler {
             List.of("Squire rank earned."),
             List.of("Knight — this is what I was made for."),
             List.of("Champion. I won't forget who brought me here.")
+        ),
+        ChatEvent.CRAFTED_TOOL, List.of(
+            List.of("Made myself a new %s."),
+            List.of("Crafted a %s — back to work."),
+            List.of("New %s ready."),
+            List.of("Forged a replacement %s."),
+            List.of("A fresh %s. Nothing stops us.")
+        ),
+        ChatEvent.NEED_MATERIALS, List.of(
+            List.of("I need materials to make a %s."),
+            List.of("Can't craft a %s — no materials."),
+            List.of("I'm missing ingredients for a %s."),
+            List.of("No resources for a %s, I'm afraid."),
+            List.of("I require materials for a %s.")
         )
     );
 
@@ -88,6 +102,35 @@ public class ChatHandler {
         if (pool.isEmpty()) return;
 
         String line = pool.get(RANDOM.nextInt(pool.size()));
+        String squireName = squire.hasCustomName() && squire.getCustomName() != null
+            ? squire.getCustomName().getString()
+            : "Your squire";
+
+        owner.sendSystemMessage(Component.literal("[" + squireName + "] " + line));
+    }
+
+    /**
+     * Sends a random chat line with String.format substitution for parameterized messages.
+     * Used by CRAFTED_TOOL and NEED_MATERIALS events that include a tool name.
+     *
+     * @param squire  The squire entity (server-side)
+     * @param owner   The owning player (must be online and non-null)
+     * @param event   The triggering chat event
+     * @param args    Format arguments applied to the selected line via String.format
+     */
+    public static void sendFormattedLine(SquireEntity squire, Player owner, ChatEvent event, Object... args) {
+        if (owner == null || squire.level().isClientSide()) return;
+
+        SquireTier tier = SquireTier.fromLevel(squire.getLevel());
+        List<List<String>> byTier = LINES.get(event);
+        if (byTier == null) return;
+
+        int tierIdx = Math.min(tier.ordinal(), byTier.size() - 1);
+        List<String> pool = byTier.get(tierIdx);
+        if (pool.isEmpty()) return;
+
+        String template = pool.get(RANDOM.nextInt(pool.size()));
+        String line = String.format(template, args);
         String squireName = squire.hasCustomName() && squire.getCustomName() != null
             ? squire.getCustomName().getString()
             : "Your squire";

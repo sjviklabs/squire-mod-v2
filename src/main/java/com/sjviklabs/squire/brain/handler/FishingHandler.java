@@ -62,6 +62,14 @@ public class FishingHandler {
      * Sets state to FISHING_APPROACH.
      */
     public void startFishing(net.minecraft.core.BlockPos waterPos) {
+        // Auto-craft fishing rod if missing (Wave 1.5)
+        if (!hasFishingRod()) {
+            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
+            if (!crafting.tryCraftIfMissing(squire,
+                    stack -> stack.getItem() instanceof FishingRodItem, "fishing rod")) {
+                return; // No rod and can't craft one — stay IDLE
+            }
+        }
         this.waterTarget = waterPos;
         this.fishingTimer = 0;
         this.approachTicks = 0;
@@ -72,6 +80,14 @@ public class FishingHandler {
 
     /** Overload: start fishing without a specific target (auto-find nearest water). */
     public void startFishing() {
+        // Auto-craft fishing rod if missing (Wave 1.5)
+        if (!hasFishingRod()) {
+            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
+            if (!crafting.tryCraftIfMissing(squire,
+                    stack -> stack.getItem() instanceof FishingRodItem, "fishing rod")) {
+                return;
+            }
+        }
         // Phase 6: auto-discover nearest water target via world scan
         // For now, if no target set, transition state and let tick handle null target gracefully
         this.fishingTimer = 0;
@@ -79,6 +95,10 @@ public class FishingHandler {
         this.stuckTicks = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
         machine.forceState(SquireAIState.FISHING_APPROACH);
+    }
+
+    private boolean hasFishingRod() {
+        return squire.getMainHandItem().getItem() instanceof FishingRodItem;
     }
 
     /**

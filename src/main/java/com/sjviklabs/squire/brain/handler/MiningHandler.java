@@ -85,6 +85,15 @@ public class MiningHandler {
     public void setTarget(@Nullable BlockPos pos) {
         if (pos == null) return;
 
+        // Auto-craft pickaxe if missing (Wave 1.5)
+        if (!hasPickaxe(squire)) {
+            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
+            if (!crafting.tryCraftIfMissing(squire,
+                    stack -> stack.getItem() instanceof net.minecraft.world.item.PickaxeItem, "pickaxe")) {
+                return; // No pickaxe and can't craft one — stay IDLE
+            }
+        }
+
         this.targetPos = pos;
         this.breakProgress = 0.0F;
         this.lastCrackStage = -1;
@@ -107,6 +116,15 @@ public class MiningHandler {
      * @return total blocks queued (including the one set as immediate target)
      */
     public int setAreaTarget(BlockPos cornerA, BlockPos cornerB) {
+        // Auto-craft pickaxe if missing (Wave 1.5)
+        if (!hasPickaxe(squire)) {
+            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
+            if (!crafting.tryCraftIfMissing(squire,
+                    stack -> stack.getItem() instanceof net.minecraft.world.item.PickaxeItem, "pickaxe")) {
+                return 0; // No pickaxe and can't craft one — stay IDLE
+            }
+        }
+
         blockQueue.clear();
         areaClearing = true;
 
@@ -534,6 +552,14 @@ public class MiningHandler {
 
     // ── Tool helpers ──────────────────────────────────────────────────────────
 
+    /**
+     * Check if the squire has a pickaxe equipped in mainhand.
+     * Used by setTarget/setAreaTarget to decide whether auto-craft is needed.
+     */
+    private boolean hasPickaxe(SquireEntity squire) {
+        var mainHand = squire.getMainHandItem();
+        return mainHand.getItem() instanceof net.minecraft.world.item.PickaxeItem;
+    }
 
     // ── Repositioning ─────────────────────────────────────────────────────────
 

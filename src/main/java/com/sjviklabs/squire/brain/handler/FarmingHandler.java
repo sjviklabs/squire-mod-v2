@@ -106,6 +106,15 @@ public class FarmingHandler {
     }
 
     public void setArea(BlockPos cornerA, BlockPos cornerB) {
+        // Auto-craft hoe if missing (Wave 1.5)
+        if (!hasHoe(squire)) {
+            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
+            if (!crafting.tryCraftIfMissing(squire,
+                    stack -> stack.getItem() instanceof HoeItem, "hoe")) {
+                return; // No hoe and can't craft one — stay IDLE
+            }
+        }
+
         this.cornerA = cornerA;
         this.cornerB = cornerB;
         this.currentTarget = null;
@@ -391,6 +400,19 @@ public class FarmingHandler {
                 || block == Blocks.GRASS_BLOCK
                 || block == Blocks.DIRT_PATH
                 || block == Blocks.COARSE_DIRT;
+    }
+
+    /**
+     * Check if the squire has a hoe equipped in mainhand or anywhere in inventory.
+     * Used by setArea() to decide whether auto-craft is needed.
+     */
+    private boolean hasHoe(SquireEntity squire) {
+        if (squire.getMainHandItem().getItem() instanceof HoeItem) return true;
+        var handler = squire.getItemHandler();
+        for (int i = 0; i < handler.getSlots(); i++) {
+            if (handler.getStackInSlot(i).getItem() instanceof HoeItem) return true;
+        }
+        return false;
     }
 
     private boolean hasHoeInInventory() {
