@@ -4,7 +4,6 @@ import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.data.SquireTagKeys;
 import com.sjviklabs.squire.entity.SquireEntity;
-import com.sjviklabs.squire.entity.SquireTier;
 import com.sjviklabs.squire.item.SquireHalberdItem;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
@@ -82,12 +81,9 @@ public class CombatHandler {
 
     /**
      * Called when entering combat. Resets attack cooldown and selects tactic.
-     * Tier gate: SERVANT squires cannot engage in combat (unlocks at APPRENTICE).
+     * Combat is available from level 1 (SERVANT tier) — no tier gate.
      */
     public void start() {
-        // Tier gate: combat unlocks at Apprentice
-        if (squire.getTier() == SquireTier.SERVANT) return;
-
         squire.setSquireSprinting(false);
         ticksUntilNextAttack = 0;
         isFleeing = false;

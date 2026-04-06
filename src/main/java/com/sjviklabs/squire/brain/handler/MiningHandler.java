@@ -6,15 +6,10 @@ import com.sjviklabs.squire.brain.TickRateStateMachine;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
@@ -23,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -352,26 +346,14 @@ public class MiningHandler {
                 targetPos.getX() + 0.5, targetPos.getY() + 0.5, targetPos.getZ() + 0.5);
         squire.swing(InteractionHand.MAIN_HAND);
 
-        // Break speed formula — port unchanged from v0.5.0 RESEARCH.md
-        ItemStack tool = squire.getMainHandItem();
-        float toolSpeed = tool.getDestroySpeed(state);
-
-        // Efficiency enchantment bonus: level^2 + 1 (matches vanilla)
-        if (toolSpeed > 1.0F) {
-            int effLevel = getEfficiencyLevel(tool);
-            if (effLevel > 0) {
-                toolSpeed += (float) (effLevel * effLevel + 1);
-            }
-        }
-
+        // Level-based mining speed — ignores tool for speed, tool only matters for drops.
+        // Base rate ~iron pickaxe on stone (6.0/1.5/30 ≈ 0.133), scaling with level.
         float progressPerTick;
         if (destroySpeed == 0) {
             progressPerTick = 1.0F; // instant break (tall grass, etc.)
         } else {
-            boolean canHarvest = tool.isCorrectToolForDrops(state) || !state.requiresCorrectToolForDrops();
-            float divisor = canHarvest ? 30.0F : 100.0F;
             float levelBonus = 1.0F + (squire.getLevel() * SquireConfig.miningSpeedPerLevel.get().floatValue());
-            progressPerTick = (toolSpeed / (destroySpeed * divisor))
+            progressPerTick = (1.0F / (destroySpeed * 5.0F))
                     * SquireConfig.breakSpeedMultiplier.get().floatValue()
                     * levelBonus;
         }
@@ -552,21 +534,6 @@ public class MiningHandler {
 
     // ── Tool helpers ──────────────────────────────────────────────────────────
 
-    /**
-     * Extract the efficiency enchantment level from a tool stack.
-     * Returns 0 if the enchantment is not present.
-     */
-    private int getEfficiencyLevel(ItemStack stack) {
-        if (stack.isEmpty()) return 0;
-        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
-        for (var entry : enchantments.entrySet()) {
-            Holder<Enchantment> holder = entry.getKey();
-            if (holder.is(Enchantments.EFFICIENCY)) {
-                return entry.getIntValue();
-            }
-        }
-        return 0;
-    }
 
     // ── Repositioning ─────────────────────────────────────────────────────────
 
@@ -605,43 +572,57 @@ public class MiningHandler {
     }
 
     /**
-     * Scan backpack for the best pickaxe and equip it in mainhand.
+     * Scan backpack for the best tool for the target block and equip it in mainhand.
+     * Picks whichever tool has the highest destroy speed against the target block state.
+     * Falls back to any tool that isCorrectToolForDrops so drops aren't lost.
      * Saves the previous mainhand item back to backpack.
      */
     private void equipBestTool() {
         var handler = squire.getItemHandler();
-        if (handler == null) return;
+        if (handler == null || targetPos == null) return;
+
+        BlockState targetState = squire.level().getBlockState(targetPos);
+
+        // Check if current mainhand is already the right tool
+        ItemStack currentMainhand = squire.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+        if (!currentMainhand.isEmpty() && currentMainhand.isCorrectToolForDrops(targetState)) {
+            return; // already holding an appropriate tool
+        }
 
         int bestSlot = -1;
         float bestSpeed = 0;
+        int correctDropSlot = -1; // fallback: any tool that gets drops
+
         for (int i = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
             ItemStack candidate = handler.getStackInSlot(i);
             if (candidate.isEmpty()) continue;
-            if (candidate.getItem() instanceof net.minecraft.world.item.PickaxeItem) {
-                // Use destroy speed on stone as a benchmark
-                float speed = candidate.getDestroySpeed(net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
-                if (speed > bestSpeed) {
-                    bestSpeed = speed;
-                    bestSlot = i;
-                }
+            if (!(candidate.getItem() instanceof net.minecraft.world.item.DiggerItem)) continue;
+
+            float speed = candidate.getDestroySpeed(targetState);
+            if (speed > bestSpeed) {
+                bestSpeed = speed;
+                bestSlot = i;
+            }
+            if (correctDropSlot < 0 && candidate.isCorrectToolForDrops(targetState)) {
+                correctDropSlot = i;
             }
         }
 
-        if (bestSlot >= 0) {
-            // Swap: current mainhand → backpack, best pickaxe → mainhand
-            ItemStack currentMainhand = squire.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND);
-            ItemStack pickaxe = handler.extractItem(bestSlot, handler.getStackInSlot(bestSlot).getCount(), false);
-            squire.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, pickaxe);
-            if (!currentMainhand.isEmpty()) {
-                // Try to insert old mainhand back into backpack
-                ItemStack remainder = currentMainhand;
-                for (int i = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
-                    remainder = handler.insertItem(i, remainder, false);
-                    if (remainder.isEmpty()) break;
-                }
-                if (!remainder.isEmpty()) {
-                    squire.spawnAtLocation(remainder); // drop if backpack full
-                }
+        // Prefer fastest tool; fall back to one that at least gets drops
+        int slotToEquip = bestSpeed > 1.0F ? bestSlot : correctDropSlot;
+        if (slotToEquip < 0) return; // no suitable tool found
+
+        ItemStack tool = handler.extractItem(slotToEquip, handler.getStackInSlot(slotToEquip).getCount(), false);
+        squire.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, tool);
+        if (!currentMainhand.isEmpty()) {
+            // Try to insert old mainhand back into backpack
+            ItemStack remainder = currentMainhand;
+            for (int i = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
+                remainder = handler.insertItem(i, remainder, false);
+                if (remainder.isEmpty()) break;
+            }
+            if (!remainder.isEmpty()) {
+                squire.spawnAtLocation(remainder); // drop if backpack full
             }
         }
     }

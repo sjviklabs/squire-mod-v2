@@ -1,7 +1,7 @@
 [
   {
     "id": "COMBAT",
-    "unlock_tier": "apprentice",
+    "unlock_tier": "servant",
     "description": "Engage hostile mobs with melee weapons."
   },
   {
