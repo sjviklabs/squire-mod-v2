@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.the_crest",
+  "icon": "squire:squire_crest",
+  "category": "squire:getting_started",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.the_crest",
+      "text": "squire.entry.the_crest.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.the_crest.p2"
+    }
+  ]
+}

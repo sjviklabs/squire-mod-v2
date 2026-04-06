@@ -21,6 +21,8 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
+import com.sjviklabs.squire.compat.PatchouliCompat;
+
 import javax.annotation.Nullable;
 import java.util.Optional;
 
@@ -216,6 +218,11 @@ public class SquireCrestItem extends Item {
         level.sendParticles(ParticleTypes.SOUL,
                 spawnPos.x, spawnPos.y + 1.0, spawnPos.z,
                 30, 0.3, 0.5, 0.3, 0.05);
+
+        // Give Patchouli guidebook on first summon (soft dependency)
+        if (PatchouliCompat.isActive()) {
+            PatchouliCompat.giveBookIfAbsent(player);
+        }
 
         player.sendSystemMessage(Component.literal(data.customName() + " answers your call."));
         return InteractionResultHolder.success(stack);

@@ -1,0 +1,23 @@
+{
+  "name": "squire.entry.command_reference",
+  "icon": "minecraft:writable_book",
+  "category": "squire:commands",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.command_reference",
+      "text": "squire.entry.command_reference.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.command_reference.p2_title",
+      "text": "squire.entry.command_reference.p2"
+    },
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.command_reference.p3_title",
+      "text": "squire.entry.command_reference.p3"
+    }
+  ]
+}

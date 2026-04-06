@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.farming",
+  "icon": "minecraft:iron_hoe",
+  "category": "squire:work_roles",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.farming",
+      "text": "squire.entry.farming.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.farming.p2"
+    }
+  ]
+}

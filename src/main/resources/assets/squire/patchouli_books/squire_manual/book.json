@@ -1,0 +1,9 @@
+{
+  "name": "squire.book.title",
+  "landing_text": "squire.book.landing",
+  "version": "2.3.0",
+  "creative_tab": "squire:squire_tab",
+  "model": "patchouli:book_brown",
+  "book_texture": "patchouli:textures/gui/book_brown.png",
+  "use_resource_pack": true
+}

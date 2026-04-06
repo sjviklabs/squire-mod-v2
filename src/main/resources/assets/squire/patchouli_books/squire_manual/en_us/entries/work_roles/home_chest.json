@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.home_chest",
+  "icon": "minecraft:chest",
+  "category": "squire:work_roles",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.home_chest",
+      "text": "squire.entry.home_chest.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.home_chest.p2"
+    }
+  ]
+}

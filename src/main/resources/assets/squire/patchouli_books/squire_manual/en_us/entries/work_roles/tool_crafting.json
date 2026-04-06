@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.tool_crafting",
+  "icon": "minecraft:crafting_table",
+  "category": "squire:work_roles",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.tool_crafting",
+      "text": "squire.entry.tool_crafting.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.tool_crafting.p2"
+    }
+  ]
+}

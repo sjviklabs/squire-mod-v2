@@ -1,0 +1,21 @@
+{
+  "name": "squire.entry.mining",
+  "icon": "minecraft:iron_pickaxe",
+  "category": "squire:work_roles",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.mining",
+      "text": "squire.entry.mining.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.mining.p2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.mining.p3"
+    }
+  ]
+}

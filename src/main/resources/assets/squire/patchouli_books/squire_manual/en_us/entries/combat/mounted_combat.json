@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.mounted_combat",
+  "icon": "minecraft:saddle",
+  "category": "squire:combat",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.mounted_combat",
+      "text": "squire.entry.mounted_combat.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.mounted_combat.p2"
+    }
+  ]
+}

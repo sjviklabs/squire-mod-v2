@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.roles_overview",
+  "icon": "minecraft:iron_pickaxe",
+  "category": "squire:work_roles",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.roles_overview",
+      "text": "squire.entry.roles_overview.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.roles_overview.p2"
+    }
+  ]
+}

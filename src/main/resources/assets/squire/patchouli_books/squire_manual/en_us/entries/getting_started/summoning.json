@@ -1,0 +1,19 @@
+{
+  "name": "squire.entry.summoning",
+  "icon": "squire:squire_crest",
+  "category": "squire:getting_started",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.summoning",
+      "text": "squire.entry.summoning.p1"
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "squire:squire_crest",
+      "title": "squire.entry.summoning.crest_title",
+      "text": "squire.entry.summoning.p2"
+    }
+  ]
+}

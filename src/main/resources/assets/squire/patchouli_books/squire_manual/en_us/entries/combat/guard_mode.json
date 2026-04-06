@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.guard_mode",
+  "icon": "squire:squire_shield",
+  "category": "squire:combat",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.guard_mode",
+      "text": "squire.entry.guard_mode.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.guard_mode.p2"
+    }
+  ]
+}

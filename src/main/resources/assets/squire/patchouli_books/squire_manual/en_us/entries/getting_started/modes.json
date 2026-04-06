@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.modes",
+  "icon": "minecraft:shield",
+  "category": "squire:getting_started",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.modes",
+      "text": "squire.entry.modes.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.modes.p2"
+    }
+  ]
+}

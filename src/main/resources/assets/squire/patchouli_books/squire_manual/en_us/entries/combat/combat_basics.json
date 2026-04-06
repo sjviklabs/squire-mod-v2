@@ -1,0 +1,17 @@
+{
+  "name": "squire.entry.combat_basics",
+  "icon": "minecraft:iron_sword",
+  "category": "squire:combat",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.combat_basics",
+      "text": "squire.entry.combat_basics.p1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "squire.entry.combat_basics.p2"
+    }
+  ]
+}

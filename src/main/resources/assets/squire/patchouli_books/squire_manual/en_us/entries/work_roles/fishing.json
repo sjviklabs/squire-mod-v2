@@ -1,0 +1,13 @@
+{
+  "name": "squire.entry.fishing",
+  "icon": "minecraft:fishing_rod",
+  "category": "squire:work_roles",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "title": "squire.entry.fishing",
+      "text": "squire.entry.fishing.p1"
+    }
+  ]
+}
