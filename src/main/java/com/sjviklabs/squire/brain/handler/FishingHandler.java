@@ -16,8 +16,17 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.world.InteractionHand;
+
 import javax.annotation.Nullable;
+import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 
 /**
  * Simulated fishing behavior — walk to water target, idle-fish using the vanilla loot table.
@@ -39,8 +48,10 @@ public class FishingHandler {
     private final SquireEntity squire;
     private final TickRateStateMachine machine;
 
-    @Nullable private net.minecraft.core.BlockPos waterTarget;
+    @Nullable private BlockPos waterTarget;
+    @Nullable private BlockPos standPos = null;
     private int fishingTimer = 0;
+    private int lookTimer = 0;
 
     private static final int STUCK_TIMEOUT = 100;
     private static final int MAX_APPROACH_TICKS = 200;
@@ -61,7 +72,7 @@ public class FishingHandler {
      * Start fishing at the given water target position.
      * Sets state to FISHING_APPROACH.
      */
-    public void startFishing(net.minecraft.core.BlockPos waterPos) {
+    public void startFishing(BlockPos waterPos) {
         // Auto-craft fishing rod if missing (Wave 1.5)
         if (!hasFishingRod()) {
             CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
@@ -71,7 +82,9 @@ public class FishingHandler {
             }
         }
         this.waterTarget = waterPos;
+        this.standPos = findShorePosition(waterPos);
         this.fishingTimer = 0;
+        this.lookTimer = 0;
         this.approachTicks = 0;
         this.stuckTicks = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
@@ -88,9 +101,17 @@ public class FishingHandler {
                 return;
             }
         }
-        // Phase 6: auto-discover nearest water target via world scan
-        // For now, if no target set, transition state and let tick handle null target gracefully
+        // Auto-discover nearest water body
+        BlockPos waterPos = findNearestWater();
+        if (waterPos != null) {
+            this.standPos = findShorePosition(waterPos);
+            this.waterTarget = waterPos;
+        } else {
+            this.standPos = null;
+            this.waterTarget = null;
+        }
         this.fishingTimer = 0;
+        this.lookTimer = 0;
         this.approachTicks = 0;
         this.stuckTicks = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
@@ -107,7 +128,9 @@ public class FishingHandler {
      */
     public void stopFishing() {
         this.waterTarget = null;
+        this.standPos = null;
         this.fishingTimer = 0;
+        this.lookTimer = 0;
         squire.getNavigation().stop();
         machine.forceState(SquireAIState.IDLE);
         // Fire task complete event so ChatHandler can notify player
@@ -138,12 +161,14 @@ public class FishingHandler {
             return;
         }
 
-        double distSq = squire.distanceToSqr(
-                waterTarget.getX() + 0.5,
-                waterTarget.getY(),
-                waterTarget.getZ() + 0.5);
+        // Navigate to shore position if available, otherwise directly toward water
+        BlockPos navTarget = (standPos != null) ? standPos : waterTarget;
 
-        double reach = SquireConfig.fishingDurationTicks.get(); // reuse fishingReach from config
+        double distSq = squire.distanceToSqr(
+                navTarget.getX() + 0.5,
+                navTarget.getY(),
+                navTarget.getZ() + 0.5);
+
         // Use a fixed arrival threshold of 4.0 (within 2 blocks)
         if (distSq <= 4.0) {
             squire.getNavigation().stop();
@@ -151,14 +176,20 @@ public class FishingHandler {
             stuckTicks = 0;
             lastApproachDistSq = Double.MAX_VALUE;
             fishingTimer = 0;
+            lookTimer = 0;
+            // Face the water before transitioning to idle
+            squire.getLookControl().setLookAt(
+                    waterTarget.getX() + 0.5,
+                    waterTarget.getY() + 0.5,
+                    waterTarget.getZ() + 0.5);
             machine.forceState(SquireAIState.FISHING_IDLE);
             return;
         }
 
         squire.getNavigation().moveTo(
-                waterTarget.getX() + 0.5,
-                waterTarget.getY(),
-                waterTarget.getZ() + 0.5,
+                navTarget.getX() + 0.5,
+                navTarget.getY(),
+                navTarget.getZ() + 0.5,
                 1.0);
 
         approachTicks++;
@@ -174,6 +205,7 @@ public class FishingHandler {
                 LOGGER.debug("[FISH] Can't reach water at {}, giving up", waterTarget.toShortString());
             }
             waterTarget = null;
+            standPos = null;
             machine.forceState(SquireAIState.IDLE);
         }
     }
@@ -191,12 +223,29 @@ public class FishingHandler {
             return;
         }
 
-        // Face water target if known
-        if (waterTarget != null) {
+        // Idle look behavior — mostly face water, occasionally glance around
+        lookTimer++;
+        int lookCycle = lookTimer % 80; // 4-second cycle
+        if (lookCycle >= 60 && lookCycle < 80) {
+            // Glance in a pseudo-random direction for 20 ticks (1 second)
+            double angle = ((lookTimer / 80) * 137.5) % 360.0; // golden angle for varied directions
+            double radians = Math.toRadians(angle);
+            squire.getLookControl().setLookAt(
+                    squire.getX() + Math.cos(radians) * 5.0,
+                    squire.getEyeY(),
+                    squire.getZ() + Math.sin(radians) * 5.0);
+        } else if (waterTarget != null) {
+            // Face water target
             squire.getLookControl().setLookAt(
                     waterTarget.getX() + 0.5,
                     waterTarget.getY() + 0.5,
                     waterTarget.getZ() + 0.5);
+        }
+
+        // Arm swing animation at ~80% of fishing duration (simulates casting/reeling)
+        int castTick = (int) (SquireConfig.fishingDurationTicks.get() * 0.8);
+        if (fishingTimer == castTick) {
+            squire.swing(InteractionHand.MAIN_HAND);
         }
 
         // Increment timer; roll loot when duration reached
@@ -205,6 +254,114 @@ public class FishingHandler {
             fishingTimer = 0;
             performCatch(rod, (ServerLevel) squire.level());
         }
+    }
+
+    // ── Water discovery & shore positioning ────────────────────────────────
+
+    /**
+     * Scan outward in a spiral for the nearest water body meeting minimum size.
+     * Runs once on startFishing(), not per-tick.
+     */
+    @Nullable
+    private BlockPos findNearestWater() {
+        int radius = SquireConfig.waterScanRadius.get();
+        int minSize = SquireConfig.minWaterSize.get();
+        BlockPos center = squire.blockPosition();
+        BlockPos best = null;
+        double bestDist = Double.MAX_VALUE;
+
+        // Spiral scan outward — check perimeter at each radius
+        for (int r = 1; r <= radius; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.abs(dx) != r && Math.abs(dz) != r) continue; // perimeter only
+                    for (int dy = -3; dy <= 3; dy++) {
+                        BlockPos check = center.offset(dx, dy, dz);
+                        if (squire.level().getFluidState(check).is(FluidTags.WATER)) {
+                            int waterCount = countConnectedWater(check, minSize);
+                            if (waterCount >= minSize) {
+                                double dist = center.distSqr(check);
+                                if (dist < bestDist) {
+                                    bestDist = dist;
+                                    best = check;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (best != null) break; // Found water at this radius, stop expanding
+        }
+
+        if (best != null && SquireConfig.activityLogging.get()) {
+            LOGGER.debug("[FISH] Auto-discovered water at {}", best.toShortString());
+        }
+        return best;
+    }
+
+    /**
+     * Flood-fill count of connected water blocks, capped at limit for performance.
+     */
+    private int countConnectedWater(BlockPos start, int limit) {
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
+        queue.add(start);
+        int count = 0;
+        while (!queue.isEmpty() && count < limit) {
+            BlockPos pos = queue.poll();
+            if (visited.contains(pos)) continue;
+            visited.add(pos);
+            if (!squire.level().getFluidState(pos).is(FluidTags.WATER)) continue;
+            count++;
+            // Cardinal neighbors at same Y (surface check)
+            queue.add(pos.north());
+            queue.add(pos.south());
+            queue.add(pos.east());
+            queue.add(pos.west());
+        }
+        return count;
+    }
+
+    /**
+     * Find a solid shore position adjacent to the water block — air above, solid below.
+     * Checks cardinal directions and one block up (shore may be higher than water surface).
+     */
+    @Nullable
+    private BlockPos findShorePosition(BlockPos waterPos) {
+        Direction[] dirs = {
+            Direction.NORTH, Direction.SOUTH,
+            Direction.EAST, Direction.WEST
+        };
+        BlockPos best = null;
+        double bestDist = Double.MAX_VALUE;
+
+        for (Direction dir : dirs) {
+            BlockPos shore = waterPos.relative(dir);
+            // Need air at feet level and solid ground below
+            if (squire.level().getBlockState(shore).isAir()
+                    && squire.level().getBlockState(shore.below()).isSolid()) {
+                double dist = squire.blockPosition().distSqr(shore);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = shore;
+                }
+            }
+            // Also check one block up (shore might be higher than water)
+            BlockPos shoreUp = shore.above();
+            if (squire.level().getBlockState(shoreUp).isAir()
+                    && squire.level().getBlockState(shoreUp.below()).isSolid()) {
+                double dist = squire.blockPosition().distSqr(shoreUp);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    best = shoreUp;
+                }
+            }
+        }
+
+        if (best != null && SquireConfig.activityLogging.get()) {
+            LOGGER.debug("[FISH] Shore position at {}", best.toShortString());
+        }
+        return best;
     }
 
     private void performCatch(ItemStack rod, ServerLevel level) {

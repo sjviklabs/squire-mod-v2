@@ -81,6 +81,20 @@ public class FarmingHandler {
 
     private enum FarmAction { TILL, PLANT, HARVEST }
 
+    // Internal farm phases — runs WITHIN existing FSM states (FARM_SCAN / FARM_APPROACH)
+    private enum FarmPhase {
+        SCANNING,    // Looking for work (current FARM_SCAN logic)
+        WORKING,     // Approaching and performing action
+        PATROL_ROW,  // Walking along crop rows when nothing to do
+        INSPECT      // Stopped at a crop, looking down at it
+    }
+    private FarmPhase farmPhase = FarmPhase.SCANNING;
+
+    // Patrol fields
+    private List<BlockPos> patrolWaypoints = new ArrayList<>();
+    private int patrolIndex = 0;
+    private int inspectTimer = 0;
+
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public FarmingHandler(SquireEntity squire, TickRateStateMachine machine) {
@@ -122,6 +136,9 @@ public class FarmingHandler {
         this.stuckTicks = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
         this.rescanCooldown = 0;
+        this.farmPhase = FarmPhase.SCANNING;
+        this.patrolWaypoints.clear();
+        this.patrolIndex = 0;
         machine.forceState(SquireAIState.FARM_SCAN);
     }
 
@@ -163,6 +180,7 @@ public class FarmingHandler {
 
         BlockPos next = findNextTask();
         if (next != null) {
+            farmPhase = FarmPhase.WORKING;
             currentTarget = next;
             approachTicks = 0;
             stuckTicks = 0;
@@ -172,7 +190,23 @@ public class FarmingHandler {
             return;
         }
 
-        // Nothing to do right now — crops still growing. Wait and rescan.
+        // Nothing to do right now — crops still growing.
+        // If idle patrol is enabled, walk the rows instead of standing still.
+        if (SquireConfig.idlePatrolEnabled.get()) {
+            generatePatrolWaypoints();
+            if (!patrolWaypoints.isEmpty()) {
+                farmPhase = FarmPhase.PATROL_ROW;
+                patrolIndex = 0;
+                if (SquireConfig.activityLogging.get()) {
+                    LOGGER.debug("[FARM] No work found — starting patrol ({} waypoints)", patrolWaypoints.size());
+                }
+                // Use FARM_APPROACH state to navigate to first waypoint
+                machine.forceState(SquireAIState.FARM_APPROACH);
+                return;
+            }
+        }
+
+        // Fallback: no patrol waypoints or patrol disabled — wait and rescan.
         rescanCooldown = RESCAN_INTERVAL;
         if (SquireConfig.activityLogging.get()) {
             LOGGER.debug("[FARM] Area scan complete — no work found, rescanning in {} ticks", RESCAN_INTERVAL);
@@ -181,9 +215,20 @@ public class FarmingHandler {
 
     /**
      * FARM_APPROACH: pathfind toward currentTarget within farmingReach.
+     * Also handles PATROL_ROW and INSPECT phases when no real work exists.
      * Stuck detection: if no movement improvement for STUCK_TIMEOUT ticks, skip to next task.
      */
     private void tickApproach() {
+        // Handle patrol/inspect phases before normal approach logic
+        if (farmPhase == FarmPhase.PATROL_ROW) {
+            tickPatrol();
+            return;
+        }
+        if (farmPhase == FarmPhase.INSPECT) {
+            tickInspect();
+            return;
+        }
+
         if (currentTarget == null) {
             machine.forceState(SquireAIState.FARM_SCAN);
             return;
@@ -267,6 +312,7 @@ public class FarmingHandler {
         }
 
         currentTarget = null;
+        farmPhase = FarmPhase.SCANNING;
         machine.forceState(SquireAIState.FARM_SCAN);
     }
 
@@ -389,7 +435,126 @@ public class FarmingHandler {
             squire.getProgressionHandler().addHarvestXP();
         }
 
+        // Auto-replant: immediately plant on the farmland below if enabled
+        if (SquireConfig.autoReplant.get()) {
+            BlockPos farmlandPos = pos.below();
+            performPlant(level, farmlandPos);
+        }
+
         return true;
+    }
+
+    // ── Patrol / Inspect ───────────────────────────────────────────────────────
+
+    /**
+     * PATROL_ROW tick: walk along crop rows when no real farm work exists.
+     * Uses FARM_APPROACH FSM state for movement. Every 3rd waypoint, pause to inspect.
+     */
+    private void tickPatrol() {
+        if (patrolWaypoints.isEmpty() || patrolIndex >= patrolWaypoints.size()) {
+            // Patrol loop complete — rescan for real work
+            farmPhase = FarmPhase.SCANNING;
+            rescanCooldown = 0; // immediate rescan after full patrol
+            machine.forceState(SquireAIState.FARM_SCAN);
+            if (SquireConfig.activityLogging.get()) {
+                LOGGER.debug("[FARM] Patrol complete — returning to scan");
+            }
+            return;
+        }
+
+        // Check if real work appeared mid-patrol (opportunistic rescan)
+        BlockPos task = findNextTask();
+        if (task != null) {
+            farmPhase = FarmPhase.WORKING;
+            currentTarget = task;
+            approachTicks = 0;
+            stuckTicks = 0;
+            lastApproachDistSq = Double.MAX_VALUE;
+            workTicksRemaining = SquireConfig.farmingTickRate.get();
+            if (SquireConfig.activityLogging.get()) {
+                LOGGER.debug("[FARM] Found work during patrol — switching to {}", currentAction);
+            }
+            // Stay in FARM_APPROACH; normal approach logic handles it next tick
+            return;
+        }
+
+        BlockPos waypoint = patrolWaypoints.get(patrolIndex);
+        double distSq = squire.distanceToSqr(
+                waypoint.getX() + 0.5,
+                waypoint.getY(),
+                waypoint.getZ() + 0.5);
+
+        if (distSq <= 4.0) { // within 2 blocks
+            patrolIndex++;
+            // Every 3rd waypoint, stop and inspect
+            if (patrolIndex % 3 == 0 && patrolIndex < patrolWaypoints.size()) {
+                farmPhase = FarmPhase.INSPECT;
+                inspectTimer = SquireConfig.inspectDurationTicks.get();
+                if (SquireConfig.activityLogging.get()) {
+                    LOGGER.debug("[FARM] Inspecting crops at waypoint {}", patrolIndex);
+                }
+            }
+            return;
+        }
+
+        // Navigate toward current waypoint
+        squire.getNavigation().moveTo(
+                waypoint.getX() + 0.5,
+                waypoint.getY(),
+                waypoint.getZ() + 0.5,
+                0.8); // slower patrol speed — looks deliberate, not frantic
+    }
+
+    /**
+     * INSPECT tick: squire stops and looks down at nearby crops.
+     * When timer expires, returns to PATROL_ROW and continues walking.
+     */
+    private void tickInspect() {
+        inspectTimer--;
+
+        // Look down at the nearest crop block (ground level + 1)
+        if (cornerA != null) {
+            int y = cornerA.getY(); // ground level
+            BlockPos feetPos = squire.blockPosition();
+            BlockPos cropLookTarget = new BlockPos(feetPos.getX(), y + 1, feetPos.getZ());
+            squire.getLookControl().setLookAt(
+                    cropLookTarget.getX() + 0.5,
+                    cropLookTarget.getY(),
+                    cropLookTarget.getZ() + 0.5);
+        }
+
+        // Stop moving while inspecting
+        squire.getNavigation().stop();
+
+        if (inspectTimer <= 0) {
+            farmPhase = FarmPhase.PATROL_ROW;
+            if (SquireConfig.activityLogging.get()) {
+                LOGGER.debug("[FARM] Inspect complete — resuming patrol at waypoint {}", patrolIndex);
+            }
+        }
+    }
+
+    /**
+     * Generate patrol waypoints along the farm area rows.
+     * Walks Z-rows at ground level, alternating between min-X and max-X edges.
+     * Every other row to avoid overly dense waypoints.
+     */
+    private void generatePatrolWaypoints() {
+        patrolWaypoints.clear();
+        patrolIndex = 0;
+        if (cornerA == null || cornerB == null) return;
+
+        int minX = Math.min(cornerA.getX(), cornerB.getX());
+        int maxX = Math.max(cornerA.getX(), cornerB.getX());
+        int minZ = Math.min(cornerA.getZ(), cornerB.getZ());
+        int maxZ = Math.max(cornerA.getZ(), cornerB.getZ());
+        int y = cornerA.getY(); // ground level
+
+        // Walk along each Z row (every other row to avoid dense waypoints)
+        for (int z = minZ; z <= maxZ; z += 2) {
+            patrolWaypoints.add(new BlockPos(minX, y, z));
+            patrolWaypoints.add(new BlockPos(maxX, y, z));
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -76,11 +76,15 @@ public final class SquireConfig {
     public static final ModConfigSpec.DoubleValue farmingReach;
     public static final ModConfigSpec.IntValue farmingTickRate;
     public static final ModConfigSpec.BooleanValue autoReplant;
+    public static final ModConfigSpec.BooleanValue idlePatrolEnabled;
+    public static final ModConfigSpec.IntValue inspectDurationTicks;
 
     // ── [fishing] ────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue fishingDurationTicks;
     public static final ModConfigSpec.IntValue fishingTickRate;
     public static final ModConfigSpec.IntValue fishingLootRolls;
+    public static final ModConfigSpec.IntValue waterScanRadius;
+    public static final ModConfigSpec.IntValue minWaterSize;
 
     // ── [patrol] ─────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue patrolDefaultWait;
@@ -286,6 +290,12 @@ public final class SquireConfig {
         autoReplant = builder
                 .comment("Squire automatically replants seeds after harvesting")
                 .define("autoReplant", true);
+        idlePatrolEnabled = builder
+                .comment("Whether the squire patrols crop rows when nothing to tend. Default: true")
+                .define("idlePatrolEnabled", true);
+        inspectDurationTicks = builder
+                .comment("How long (ticks) the squire inspects a crop during patrol. Default: 50")
+                .defineInRange("inspectDurationTicks", 50, 20, 100);
         builder.pop();
 
         // ── [fishing] ────────────────────────────────────────────────────────
@@ -299,6 +309,12 @@ public final class SquireConfig {
         fishingLootRolls = builder
                 .comment("Number of loot table rolls per catch (higher = more items)")
                 .defineInRange("fishingLootRolls", 1, 1, 5);
+        waterScanRadius = builder
+                .comment("Radius (blocks) to scan for water when auto-discovering fishing spots. Default: 16")
+                .defineInRange("waterScanRadius", 16, 4, 32);
+        minWaterSize = builder
+                .comment("Minimum connected water blocks for a valid fishing spot. Default: 9")
+                .defineInRange("minWaterSize", 9, 4, 25);
         builder.pop();
 
         // ── [patrol] ─────────────────────────────────────────────────────────
