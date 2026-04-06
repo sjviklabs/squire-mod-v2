@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Validate tag matches gradle version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          GRADLE_VERSION="$(grep '^mod_version=' gradle.properties | cut -d= -f2)"
+          if [ "$TAG_VERSION" != "$GRADLE_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match gradle.properties ($GRADLE_VERSION)"
+            exit 1
+          fi
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/libs/*.jar
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
