@@ -60,7 +60,11 @@ public class SquireHeldItemLayer extends BlockAndItemGeoLayer<SquireEntity> {
         poseStack.mulPose(Axis.XP.rotationDegrees(-90f));
 
         if (stack.getItem() instanceof ShieldItem) {
-            poseStack.translate(0, 0.125, -0.25);
+            // 90° Y turns shield from sideways to forward-facing (plate out).
+            // Vanilla's BlockEntityWithoutLevelRenderer already applies scale(1,-1,-1)
+            // internally, so 90° here — not 180° — gets the plate facing enemies.
+            poseStack.mulPose(Axis.YP.rotationDegrees(90f));
+            poseStack.translate(0, 0.125, -0.1875);
         }
 
         super.renderStackForBone(poseStack, bone, stack, entity, bufferSource,

@@ -2,7 +2,8 @@ package com.sjviklabs.squire.brain.handler;
 
 import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.brain.SquireEvent;
-import com.sjviklabs.squire.brain.TickRateStateMachine;
+import com.sjviklabs.squire.brain.StateController;
+import com.sjviklabs.squire.brain.WorkHandler;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.core.BlockPos;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Farming behavior: till dirt, plant seeds, harvest mature crops, replant automatically.
@@ -48,7 +50,7 @@ import java.util.List;
  *
  * Package: com.sjviklabs.squire.brain.handler
  */
-public class FarmingHandler {
+public class FarmingHandler implements WorkHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FarmingHandler.class);
 
@@ -57,7 +59,7 @@ public class FarmingHandler {
     private static final int MAX_APPROACH_TICKS = 200;   // 10 seconds
 
     private final SquireEntity squire;
-    private final TickRateStateMachine machine;
+    private final StateController stateController;
 
     // Farm area bounds (Y of cornerA = ground/farmland level per Y-level contract)
     @Nullable private BlockPos cornerA;
@@ -97,9 +99,9 @@ public class FarmingHandler {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    public FarmingHandler(SquireEntity squire, TickRateStateMachine machine) {
+    public FarmingHandler(SquireEntity squire, StateController stateController) {
         this.squire = squire;
-        this.machine = machine;
+        this.stateController = stateController;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -139,7 +141,7 @@ public class FarmingHandler {
         this.farmPhase = FarmPhase.SCANNING;
         this.patrolWaypoints.clear();
         this.patrolIndex = 0;
-        machine.forceState(SquireAIState.FARM_SCAN);
+        stateController.forceState(SquireAIState.FARM_SCAN);
     }
 
     /**
@@ -167,7 +169,7 @@ public class FarmingHandler {
      */
     private void tickScan() {
         if (cornerA == null || cornerB == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
         if (squire.level().isClientSide) return;
@@ -186,7 +188,7 @@ public class FarmingHandler {
             stuckTicks = 0;
             lastApproachDistSq = Double.MAX_VALUE;
             workTicksRemaining = SquireConfig.farmingTickRate.get();
-            machine.forceState(SquireAIState.FARM_APPROACH);
+            stateController.forceState(SquireAIState.FARM_APPROACH);
             return;
         }
 
@@ -201,7 +203,7 @@ public class FarmingHandler {
                     LOGGER.debug("[FARM] No work found — starting patrol ({} waypoints)", patrolWaypoints.size());
                 }
                 // Use FARM_APPROACH state to navigate to first waypoint
-                machine.forceState(SquireAIState.FARM_APPROACH);
+                stateController.forceState(SquireAIState.FARM_APPROACH);
                 return;
             }
         }
@@ -230,7 +232,7 @@ public class FarmingHandler {
         }
 
         if (currentTarget == null) {
-            machine.forceState(SquireAIState.FARM_SCAN);
+            stateController.forceState(SquireAIState.FARM_SCAN);
             return;
         }
 
@@ -246,7 +248,7 @@ public class FarmingHandler {
             stuckTicks = 0;
             lastApproachDistSq = Double.MAX_VALUE;
             workTicksRemaining = SquireConfig.farmingTickRate.get();
-            machine.forceState(SquireAIState.FARM_WORK);
+            stateController.forceState(SquireAIState.FARM_WORK);
             return;
         }
 
@@ -273,7 +275,7 @@ public class FarmingHandler {
             approachTicks = 0;
             stuckTicks = 0;
             lastApproachDistSq = Double.MAX_VALUE;
-            machine.forceState(SquireAIState.FARM_SCAN);
+            stateController.forceState(SquireAIState.FARM_SCAN);
         }
     }
 
@@ -283,7 +285,7 @@ public class FarmingHandler {
      */
     private void tickWork() {
         if (currentTarget == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
         if (squire.level().isClientSide) return;
@@ -313,7 +315,7 @@ public class FarmingHandler {
 
         currentTarget = null;
         farmPhase = FarmPhase.SCANNING;
-        machine.forceState(SquireAIState.FARM_SCAN);
+        stateController.forceState(SquireAIState.FARM_SCAN);
     }
 
     // ── Area scan ─────────────────────────────────────────────────────────────
@@ -455,7 +457,7 @@ public class FarmingHandler {
             // Patrol loop complete — rescan for real work
             farmPhase = FarmPhase.SCANNING;
             rescanCooldown = 0; // immediate rescan after full patrol
-            machine.forceState(SquireAIState.FARM_SCAN);
+            stateController.forceState(SquireAIState.FARM_SCAN);
             if (SquireConfig.activityLogging.get()) {
                 LOGGER.debug("[FARM] Patrol complete — returning to scan");
             }
@@ -682,5 +684,27 @@ public class FarmingHandler {
             }
         }
         return best;
+    }
+
+    // ── WorkHandler interface ────────────────────────────────────────────────
+
+    @Override
+    public Set<SquireAIState> ownedStates() {
+        return Set.of(SquireAIState.FARM_SCAN, SquireAIState.FARM_APPROACH, SquireAIState.FARM_WORK);
+    }
+
+    @Override
+    public SquireAIState resumeState() {
+        return SquireAIState.FARM_SCAN;
+    }
+
+    @Override
+    public boolean hasActiveWork() {
+        return hasArea();
+    }
+
+    @Override
+    public int priority() {
+        return 42;
     }
 }

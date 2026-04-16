@@ -2,7 +2,8 @@ package com.sjviklabs.squire.brain.handler;
 
 import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.brain.SquireEvent;
-import com.sjviklabs.squire.brain.TickRateStateMachine;
+import com.sjviklabs.squire.brain.StateController;
+import com.sjviklabs.squire.brain.WorkHandler;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.core.BlockPos;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
@@ -31,7 +33,7 @@ import net.minecraft.world.level.block.TorchBlock;
  * Handles block breaking with proper break speed calculation, crack animation,
  * tool selection, arm swing, and drops deposited into squire's IItemHandler inventory.
  *
- * Single block: setTarget(BlockPos) → machine.forceState(MINING_APPROACH) → MINING_BREAK → drops → IDLE
+ * Single block: setTarget(BlockPos) → stateController.forceState(MINING_APPROACH) → MINING_BREAK → drops → IDLE
  * Area clear:   setAreaTarget(cornerA, cornerB) → queues blocks top-down → chains through queue → IDLE when empty
  *
  * Break speed formula (port unchanged from v0.5.0 RESEARCH.md):
@@ -50,12 +52,12 @@ import net.minecraft.world.level.block.TorchBlock;
  * WRK-01: Squire mines single blocks on command.
  * WRK-02: Squire performs area clear (multi-block mining).
  */
-public class MiningHandler {
+public class MiningHandler implements WorkHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MiningHandler.class);
 
     private final SquireEntity squire;
-    private final TickRateStateMachine machine;
+    private final StateController stateController;
 
     @Nullable private BlockPos targetPos;
     private float breakProgress;      // 0.0 to 1.0
@@ -83,9 +85,9 @@ public class MiningHandler {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    public MiningHandler(SquireEntity squire, TickRateStateMachine machine) {
+    public MiningHandler(SquireEntity squire, StateController stateController) {
         this.squire = squire;
-        this.machine = machine;
+        this.stateController = stateController;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -117,7 +119,7 @@ public class MiningHandler {
         // Equip best pickaxe from inventory before mining
         equipBestTool();
 
-        machine.forceState(SquireAIState.MINING_APPROACH);
+        stateController.forceState(SquireAIState.MINING_APPROACH);
     }
 
     /**
@@ -205,7 +207,7 @@ public class MiningHandler {
             this.stuckTicks = 0;
             this.repositionAttempts = 0;
             this.lastApproachDistSq = Double.MAX_VALUE;
-            machine.forceState(SquireAIState.MINING_APPROACH);
+            stateController.forceState(SquireAIState.MINING_APPROACH);
         } else {
             areaClearing = false;
         }
@@ -274,7 +276,7 @@ public class MiningHandler {
             this.repositionAttempts = 0;
             this.lastApproachDistSq = Double.MAX_VALUE;
             equipBestTool();
-            machine.forceState(SquireAIState.MINING_APPROACH);
+            stateController.forceState(SquireAIState.MINING_APPROACH);
         } else {
             areaClearing = false;
             shaftMode = false;
@@ -347,7 +349,7 @@ public class MiningHandler {
      */
     private void tickApproach() {
         if (targetPos == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -363,7 +365,7 @@ public class MiningHandler {
                 finalizeAreaClear();
             }
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -375,7 +377,7 @@ public class MiningHandler {
 
         if (isInRange()) {
             squire.getNavigation().stop();
-            machine.forceState(SquireAIState.MINING_BREAK);
+            stateController.forceState(SquireAIState.MINING_BREAK);
             return;
         }
 
@@ -425,7 +427,7 @@ public class MiningHandler {
                 finalizeAreaClear();
             }
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
         }
     }
 
@@ -435,19 +437,19 @@ public class MiningHandler {
      */
     private void tickBreak() {
         if (targetPos == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
         if (!(squire.level() instanceof ServerLevel serverLevel)) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
         BlockState state = serverLevel.getBlockState(targetPos);
         if (state.isAir()) {
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -455,12 +457,12 @@ public class MiningHandler {
         if (destroySpeed < 0) {
             // Unbreakable (bedrock, etc.)
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
         if (!isInRange()) {
-            machine.forceState(SquireAIState.MINING_APPROACH);
+            stateController.forceState(SquireAIState.MINING_APPROACH);
             return;
         }
 
@@ -549,7 +551,7 @@ public class MiningHandler {
                 finalizeAreaClear();
             }
 
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
 
             // Fire task complete event
             if (squire.getSquireBrain() != null) {
@@ -855,5 +857,27 @@ public class MiningHandler {
                 squire.spawnAtLocation(remainder); // drop if backpack full
             }
         }
+    }
+
+    // ── WorkHandler interface ────────────────────────────────────────────────
+
+    @Override
+    public Set<SquireAIState> ownedStates() {
+        return Set.of(SquireAIState.MINING_APPROACH, SquireAIState.MINING_BREAK);
+    }
+
+    @Override
+    public SquireAIState resumeState() {
+        return SquireAIState.MINING_APPROACH;
+    }
+
+    @Override
+    public boolean hasActiveWork() {
+        return hasTarget() || isAreaClearing();
+    }
+
+    @Override
+    public int priority() {
+        return 40;
     }
 }

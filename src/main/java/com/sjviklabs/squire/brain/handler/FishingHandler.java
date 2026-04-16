@@ -2,7 +2,8 @@ package com.sjviklabs.squire.brain.handler;
 
 import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.brain.SquireEvent;
-import com.sjviklabs.squire.brain.TickRateStateMachine;
+import com.sjviklabs.squire.brain.StateController;
+import com.sjviklabs.squire.brain.WorkHandler;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.server.level.ServerLevel;
@@ -41,12 +42,12 @@ import java.util.Set;
  * Package: com.sjviklabs.squire.brain.handler
  * Parallel to FarmingHandler — no file overlap with 06-01 plans.
  */
-public class FishingHandler {
+public class FishingHandler implements WorkHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FishingHandler.class);
 
     private final SquireEntity squire;
-    private final TickRateStateMachine machine;
+    private final StateController stateController;
 
     @Nullable private BlockPos waterTarget;
     @Nullable private BlockPos standPos = null;
@@ -61,9 +62,9 @@ public class FishingHandler {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    public FishingHandler(SquireEntity squire, TickRateStateMachine machine) {
+    public FishingHandler(SquireEntity squire, StateController stateController) {
         this.squire = squire;
-        this.machine = machine;
+        this.stateController = stateController;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ public class FishingHandler {
         this.approachTicks = 0;
         this.stuckTicks = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
-        machine.forceState(SquireAIState.FISHING_APPROACH);
+        stateController.forceState(SquireAIState.FISHING_APPROACH);
     }
 
     /** Overload: start fishing without a specific target (auto-find nearest water). */
@@ -115,7 +116,7 @@ public class FishingHandler {
         this.approachTicks = 0;
         this.stuckTicks = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
-        machine.forceState(SquireAIState.FISHING_APPROACH);
+        stateController.forceState(SquireAIState.FISHING_APPROACH);
     }
 
     private boolean hasFishingRod() {
@@ -132,7 +133,7 @@ public class FishingHandler {
         this.fishingTimer = 0;
         this.lookTimer = 0;
         squire.getNavigation().stop();
-        machine.forceState(SquireAIState.IDLE);
+        stateController.forceState(SquireAIState.IDLE);
         // Fire task complete event so ChatHandler can notify player
         squire.getSquireBrain().getBus().publish(SquireEvent.WORK_TASK_COMPLETE, squire);
     }
@@ -157,7 +158,7 @@ public class FishingHandler {
     private void tickApproach() {
         if (waterTarget == null) {
             // No target — fall back to IDLE
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -182,7 +183,7 @@ public class FishingHandler {
                     waterTarget.getX() + 0.5,
                     waterTarget.getY() + 0.5,
                     waterTarget.getZ() + 0.5);
-            machine.forceState(SquireAIState.FISHING_IDLE);
+            stateController.forceState(SquireAIState.FISHING_IDLE);
             return;
         }
 
@@ -206,7 +207,7 @@ public class FishingHandler {
             }
             waterTarget = null;
             standPos = null;
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
         }
     }
 
@@ -219,7 +220,7 @@ public class FishingHandler {
             if (SquireConfig.activityLogging.get()) {
                 LOGGER.debug("[FISH] No fishing rod in inventory — stopping");
             }
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -484,5 +485,27 @@ public class FishingHandler {
      */
     public SquireEntity getSquire() {
         return squire;
+    }
+
+    // ── WorkHandler interface ────────────────────────────────────────────────
+
+    @Override
+    public Set<SquireAIState> ownedStates() {
+        return Set.of(SquireAIState.FISHING_APPROACH, SquireAIState.FISHING_IDLE);
+    }
+
+    @Override
+    public SquireAIState resumeState() {
+        return SquireAIState.FISHING_APPROACH;
+    }
+
+    @Override
+    public boolean hasActiveWork() {
+        return waterTarget != null;
+    }
+
+    @Override
+    public int priority() {
+        return 43;
     }
 }

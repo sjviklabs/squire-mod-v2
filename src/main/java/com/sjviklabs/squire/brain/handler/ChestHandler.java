@@ -2,7 +2,8 @@ package com.sjviklabs.squire.brain.handler;
 
 import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.brain.SquireEvent;
-import com.sjviklabs.squire.brain.TickRateStateMachine;
+import com.sjviklabs.squire.brain.StateController;
+import com.sjviklabs.squire.brain.WorkHandler;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.core.BlockPos;
@@ -16,11 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 
 /**
  * Handles chest deposit and withdraw operations.
  *
- * Flow (deposit): setDepositTarget(pos) → machine.forceState(CHEST_APPROACH) → CHEST_INTERACT → IDLE
+ * Flow (deposit): setDepositTarget(pos) → stateController.forceState(CHEST_APPROACH) → CHEST_INTERACT → IDLE
  * Flow (withdraw): setWithdrawTarget(pos, item, amount) → CHEST_APPROACH → CHEST_INTERACT → IDLE
  *
  * Container interaction uses dual-path access:
@@ -40,14 +42,14 @@ import javax.annotation.Nullable;
  *
  * WRK-07: Squire interacts with containers (deposit/withdraw) with vanilla + modded fallback.
  */
-public class ChestHandler {
+public class ChestHandler implements WorkHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ChestHandler.class);
 
     public enum Mode { DEPOSIT, WITHDRAW }
 
     private final SquireEntity squire;
-    private final TickRateStateMachine machine;
+    private final StateController stateController;
 
     @Nullable private BlockPos targetPos;
     @Nullable private Mode mode;
@@ -67,9 +69,9 @@ public class ChestHandler {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    public ChestHandler(SquireEntity squire, TickRateStateMachine machine) {
+    public ChestHandler(SquireEntity squire, StateController stateController) {
         this.squire = squire;
-        this.machine = machine;
+        this.stateController = stateController;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -90,7 +92,7 @@ public class ChestHandler {
         this.requestedAmount = 0;
         resetApproachState();
 
-        machine.forceState(SquireAIState.CHEST_APPROACH);
+        stateController.forceState(SquireAIState.CHEST_APPROACH);
     }
 
     /**
@@ -113,7 +115,7 @@ public class ChestHandler {
         this.requestedAmount = Math.max(1, amount);
         resetApproachState();
 
-        machine.forceState(SquireAIState.CHEST_APPROACH);
+        stateController.forceState(SquireAIState.CHEST_APPROACH);
     }
 
     /**
@@ -153,7 +155,7 @@ public class ChestHandler {
      */
     private void tickApproach() {
         if (targetPos == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -161,7 +163,7 @@ public class ChestHandler {
         if (squire.level().getBlockEntity(targetPos) == null) {
             LOGGER.warn("[Squire] CHEST_APPROACH: no block entity at {}, aborting", targetPos.toShortString());
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -174,7 +176,7 @@ public class ChestHandler {
         if (isInRange()) {
             squire.getNavigation().stop();
             squire.playSound(SoundEvents.CHEST_OPEN, 0.5F, 1.0F);
-            machine.forceState(SquireAIState.CHEST_INTERACT);
+            stateController.forceState(SquireAIState.CHEST_INTERACT);
             return;
         }
 
@@ -215,7 +217,7 @@ public class ChestHandler {
                         targetPos.toShortString(), repositionAttempts);
             }
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
         }
     }
 
@@ -230,7 +232,7 @@ public class ChestHandler {
      */
     private void tickInteract() {
         if (targetPos == null || mode == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -238,7 +240,7 @@ public class ChestHandler {
         if (blockEntity == null) {
             LOGGER.warn("[Squire] CHEST_INTERACT: block entity gone at {}", targetPos.toShortString());
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -263,7 +265,7 @@ public class ChestHandler {
                 LOGGER.warn("[Squire] CHEST_INTERACT: {} has no container or IItemHandler capability",
                         targetPos.toShortString());
                 clearTarget();
-                machine.forceState(SquireAIState.IDLE);
+                stateController.forceState(SquireAIState.IDLE);
                 return;
             }
         }
@@ -279,7 +281,7 @@ public class ChestHandler {
         }
 
         clearTarget();
-        machine.forceState(SquireAIState.IDLE);
+        stateController.forceState(SquireAIState.IDLE);
         fireTaskComplete();
     }
 
@@ -511,5 +513,27 @@ public class ChestHandler {
             }
         }
         return null;
+    }
+
+    // ── WorkHandler interface ────────────────────────────────────────────────
+
+    @Override
+    public Set<SquireAIState> ownedStates() {
+        return Set.of(SquireAIState.CHEST_APPROACH, SquireAIState.CHEST_INTERACT);
+    }
+
+    @Override
+    public SquireAIState resumeState() {
+        return SquireAIState.CHEST_APPROACH;
+    }
+
+    @Override
+    public boolean hasActiveWork() {
+        return hasTarget();
+    }
+
+    @Override
+    public int priority() {
+        return 44;
     }
 }

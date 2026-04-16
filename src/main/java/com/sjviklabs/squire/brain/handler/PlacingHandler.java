@@ -2,7 +2,8 @@ package com.sjviklabs.squire.brain.handler;
 
 import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.brain.SquireEvent;
-import com.sjviklabs.squire.brain.TickRateStateMachine;
+import com.sjviklabs.squire.brain.StateController;
+import com.sjviklabs.squire.brain.WorkHandler;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.core.BlockPos;
@@ -19,11 +20,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 
 /**
  * Handles block placement from squire inventory at a target position.
  *
- * Flow: setTarget(pos, blockItem) → machine.forceState(PLACING_APPROACH) → PLACING_BLOCK → IDLE
+ * Flow: setTarget(pos, blockItem) → stateController.forceState(PLACING_APPROACH) → PLACING_BLOCK → IDLE
  *
  * Key design: slot index is cached at setTarget() time via a single inventory scan.
  * No per-tick scan — the slot is re-validated in PLACING_BLOCK but only confirmed,
@@ -37,12 +39,12 @@ import javax.annotation.Nullable;
  *
  * WRK-06: Squire places a targeted block from its inventory at a specified position on command.
  */
-public class PlacingHandler {
+public class PlacingHandler implements WorkHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PlacingHandler.class);
 
     private final SquireEntity squire;
-    private final TickRateStateMachine machine;
+    private final StateController stateController;
 
     @Nullable private BlockPos targetPos;
     @Nullable private Item targetBlockItem;
@@ -62,9 +64,9 @@ public class PlacingHandler {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    public PlacingHandler(SquireEntity squire, TickRateStateMachine machine) {
+    public PlacingHandler(SquireEntity squire, StateController stateController) {
         this.squire = squire;
-        this.machine = machine;
+        this.stateController = stateController;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -101,7 +103,7 @@ public class PlacingHandler {
         this.repositionAttempts = 0;
         this.lastApproachDistSq = Double.MAX_VALUE;
 
-        machine.forceState(SquireAIState.PLACING_APPROACH);
+        stateController.forceState(SquireAIState.PLACING_APPROACH);
     }
 
     /**
@@ -143,7 +145,7 @@ public class PlacingHandler {
      */
     private void tickApproach() {
         if (targetPos == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -153,7 +155,7 @@ public class PlacingHandler {
                 LOGGER.debug("[Squire] PLACING_APPROACH: target {} occupied, task complete", targetPos.toShortString());
             }
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             fireTaskComplete();
             return;
         }
@@ -166,7 +168,7 @@ public class PlacingHandler {
 
         if (isInRange()) {
             squire.getNavigation().stop();
-            machine.forceState(SquireAIState.PLACING_BLOCK);
+            stateController.forceState(SquireAIState.PLACING_BLOCK);
             return;
         }
 
@@ -207,7 +209,7 @@ public class PlacingHandler {
                         targetPos.toShortString(), repositionAttempts);
             }
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
         }
     }
 
@@ -220,11 +222,11 @@ public class PlacingHandler {
      */
     private void tickPlace() {
         if (targetPos == null) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
         if (!(squire.level() instanceof ServerLevel serverLevel)) {
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             return;
         }
 
@@ -234,7 +236,7 @@ public class PlacingHandler {
                 LOGGER.debug("[Squire] PLACING_BLOCK: target {} occupied, task complete", targetPos.toShortString());
             }
             clearTarget();
-            machine.forceState(SquireAIState.IDLE);
+            stateController.forceState(SquireAIState.IDLE);
             fireTaskComplete();
             return;
         }
@@ -248,7 +250,7 @@ public class PlacingHandler {
             if (newSlot < 0) {
                 LOGGER.warn("[Squire] PLACING_BLOCK: {} no longer in inventory, aborting", targetBlockItem);
                 clearTarget();
-                machine.forceState(SquireAIState.IDLE);
+                stateController.forceState(SquireAIState.IDLE);
                 return;
             }
             inventorySlot = newSlot;
@@ -276,7 +278,7 @@ public class PlacingHandler {
         }
 
         clearTarget();
-        machine.forceState(SquireAIState.IDLE);
+        stateController.forceState(SquireAIState.IDLE);
         fireTaskComplete();
     }
 
@@ -342,5 +344,27 @@ public class PlacingHandler {
             }
         }
         return null;
+    }
+
+    // ── WorkHandler interface ────────────────────────────────────────────────
+
+    @Override
+    public Set<SquireAIState> ownedStates() {
+        return Set.of(SquireAIState.PLACING_APPROACH, SquireAIState.PLACING_BLOCK);
+    }
+
+    @Override
+    public SquireAIState resumeState() {
+        return SquireAIState.PLACING_APPROACH;
+    }
+
+    @Override
+    public boolean hasActiveWork() {
+        return hasTarget();
+    }
+
+    @Override
+    public int priority() {
+        return 40;
     }
 }

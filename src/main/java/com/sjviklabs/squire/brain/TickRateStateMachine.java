@@ -19,7 +19,7 @@ import java.util.List;
  * 2. Current-state transitions, sorted by priority
  * 3. First matching transition (condition returns true) fires
  */
-public class TickRateStateMachine {
+public class TickRateStateMachine implements StateController {
 
     private SquireAIState currentState = SquireAIState.IDLE;
     private final List<AITransition> transitions = new ArrayList<>();

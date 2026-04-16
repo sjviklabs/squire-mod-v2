@@ -24,6 +24,9 @@ import net.minecraft.world.entity.Pose;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Central brain for a squire — owns the FSM, event bus, and behavior handlers.
  *
@@ -72,9 +75,12 @@ public class SquireBrain {
     // ── Task queue (Phase 6) ─────────────────────────────────────────────────
     private final TaskQueue taskQueue = new TaskQueue();
 
+    // ── Work handler registry (v3.0.0 — Ousterhout refactor) ──────────────────
+    private final List<WorkHandler> workHandlers = new ArrayList<>();
+
     // ── Work suspension: resume interrupted tasks after combat/follow ─────────
     @Nullable
-    private SquireAIState suspendedWorkState = null;
+    private WorkHandler suspendedWorkHandler = null;
 
     private int idleTicks;
 
@@ -98,13 +104,20 @@ public class SquireBrain {
         this.danger = new DangerHandler(squire);
         this.item = new ItemHandler(squire);
 
-        // Work handlers (Phase 6) — machine reference passed so handlers can forceState()
+        // Work handlers (Phase 6) — StateController reference for sub-state transitions
         this.mining  = new MiningHandler(squire, machine);
         this.placing = new PlacingHandler(squire, machine);
         this.farming = new FarmingHandler(squire, machine);
         this.fishing = new FishingHandler(squire, machine);
         this.chest   = new ChestHandler(squire, machine);
         this.torch   = new TorchHandler(squire);
+
+        // Register work handlers — adding a new work type = add one line here
+        workHandlers.add(mining);
+        workHandlers.add(placing);
+        workHandlers.add(farming);
+        workHandlers.add(fishing);
+        workHandlers.add(chest);
 
         // Crafting utility (Wave 1.5) — stateless, no squire ref needed at construction
         this.crafting = new CraftingHandler();
@@ -252,68 +265,48 @@ public class SquireBrain {
     // -------------------------------------------------------------------------
 
     /**
-     * Returns the resume-entry state for a given work state, or null if the
-     * state is not a resumable work state.
-     *
-     * When a work state is interrupted by combat or follow, we save the resume
-     * state here. When the interruption ends and the squire returns to IDLE,
-     * we re-enter this state — the handler's internal state (blockQueue, area
-     * corners, water target) is still alive so work continues where it left off.
+     * Find the WorkHandler that owns the given state, or null if not a work state.
+     * Replaces the old resumeStateFor() switch — no manual updates needed for new work types.
      */
     @Nullable
-    private static SquireAIState resumeStateFor(SquireAIState state) {
-        return switch (state) {
-            case MINING_APPROACH, MINING_BREAK     -> SquireAIState.MINING_APPROACH;
-            case FARM_SCAN, FARM_APPROACH, FARM_WORK -> SquireAIState.FARM_SCAN;
-            case FISHING_APPROACH, FISHING_IDLE     -> SquireAIState.FISHING_APPROACH;
-            case PLACING_APPROACH, PLACING_BLOCK   -> SquireAIState.PLACING_APPROACH;
-            case CHEST_APPROACH, CHEST_INTERACT    -> SquireAIState.CHEST_APPROACH;
-            default -> null;
-        };
+    private WorkHandler findWorkHandler(SquireAIState state) {
+        for (WorkHandler h : workHandlers) {
+            if (h.ownedStates().contains(state)) return h;
+        }
+        return null;
     }
 
     /**
      * Called before entering combat or follow-catchup. Saves the current work
-     * state so it can be resumed after the interruption ends.
+     * handler so it can be resumed after the interruption ends.
      */
     private void suspendWorkIfActive() {
-        SquireAIState current = machine.getCurrentState();
-        SquireAIState resume = resumeStateFor(current);
-        if (resume != null) {
-            suspendedWorkState = resume;
+        WorkHandler handler = findWorkHandler(machine.getCurrentState());
+        if (handler != null) {
+            suspendedWorkHandler = handler;
             if (com.sjviklabs.squire.config.SquireConfig.activityLogging.get()) {
-                LOGGER.debug("[Squire] Suspending work state {} — will resume as {}", current, resume);
+                LOGGER.debug("[Squire] Suspending work — will resume via {}", handler.getClass().getSimpleName());
             }
         }
     }
 
     /**
-     * Called when the squire reaches IDLE. If a suspended work state exists and
-     * the handler still has work to do, resume it instead of polling the task queue.
+     * Called when the squire reaches IDLE. If a suspended work handler exists and
+     * still has active work, resume it instead of polling the task queue.
      *
-     * @return true if work was resumed, false if no suspended state or handler is done.
+     * @return true if work was resumed, false if no suspended handler or work is done.
      */
     private boolean tryResumeWork() {
-        if (suspendedWorkState == null) return false;
+        if (suspendedWorkHandler == null) return false;
 
-        SquireAIState resume = suspendedWorkState;
-        suspendedWorkState = null;
+        WorkHandler handler = suspendedWorkHandler;
+        suspendedWorkHandler = null;
 
-        // Verify the handler still has active work before resuming
-        boolean hasWork = switch (resume) {
-            case MINING_APPROACH -> mining.hasTarget() || mining.isAreaClearing();
-            case FARM_SCAN       -> true; // farming rescans continuously while area is set
-            case FISHING_APPROACH -> true; // fishing handler manages its own water target
-            case PLACING_APPROACH -> true; // placing handler checks its own target
-            case CHEST_APPROACH  -> true;  // chest handler checks its own target
-            default -> false;
-        };
-
-        if (hasWork) {
+        if (handler.hasActiveWork()) {
             if (com.sjviklabs.squire.config.SquireConfig.activityLogging.get()) {
-                LOGGER.debug("[Squire] Resuming suspended work state: {}", resume);
+                LOGGER.debug("[Squire] Resuming suspended work via {}", handler.getClass().getSimpleName());
             }
-            machine.forceState(resume);
+            machine.forceState(handler.resumeState());
             return true;
         }
         return false;
@@ -326,11 +319,11 @@ public class SquireBrain {
     private boolean shouldAutoDeposit() {
         if (homeChestPos == null) return false;
         SquireAIState current = machine.getCurrentState();
-        // Don't trigger during chest operations or idle
-        if (current == SquireAIState.CHEST_APPROACH || current == SquireAIState.CHEST_INTERACT
-                || current == SquireAIState.IDLE) return false;
-        // Only trigger during work states
-        if (resumeStateFor(current) == null) return false;
+        if (current == SquireAIState.IDLE) return false;
+
+        // Only trigger during work states, but not during chest operations themselves
+        WorkHandler handler = findWorkHandler(current);
+        if (handler == null || handler == chest) return false;
 
         var inv = squire.getItemHandler();
         int backpackStart = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS;
@@ -724,80 +717,24 @@ public class SquireBrain {
      * and forces the machine into PATROL_WALK via machine.forceState(). The per-tick
      * transitions then keep the FSM in the patrol loop until stopPatrol() is called
      * or combat preempts.
-     *
+     */
+
     /**
-     * WORK transitions (Phase 6):
-     * Priority 40-49 (work layer, below follow).
-     *
-     * Work handlers manage their own state via machine.forceState().
-     * These transitions just route per-tick calls when in a work state.
-     * TorchHandler is a side-effect called from FOLLOWING_OWNER tick, not a FSM state.
+     * WORK transitions (v3.0.0 — Ousterhout refactor):
+     * Registers per-tick transitions for every state owned by every WorkHandler.
+     * Adding a new work type = implement WorkHandler + add to workHandlers list.
+     * Zero changes needed here.
      */
     private void registerWorkTransitions() {
-        // MINING per-tick: delegates to MiningHandler which manages approach/break internally
-        machine.addTransition(new AITransition(
-                SquireAIState.MINING_APPROACH, () -> true,
-                s -> { mining.tick(SquireAIState.MINING_APPROACH); return machine.getCurrentState(); },
-                1, 40
-        ));
-        machine.addTransition(new AITransition(
-                SquireAIState.MINING_BREAK, () -> true,
-                s -> { mining.tick(SquireAIState.MINING_BREAK); return machine.getCurrentState(); },
-                1, 40
-        ));
-
-        // PLACING per-tick
-        machine.addTransition(new AITransition(
-                SquireAIState.PLACING_APPROACH, () -> true,
-                s -> { placing.tick(SquireAIState.PLACING_APPROACH); return machine.getCurrentState(); },
-                1, 40
-        ));
-        machine.addTransition(new AITransition(
-                SquireAIState.PLACING_BLOCK, () -> true,
-                s -> { placing.tick(SquireAIState.PLACING_BLOCK); return machine.getCurrentState(); },
-                1, 40
-        ));
-
-        // FARMING per-tick
-        machine.addTransition(new AITransition(
-                SquireAIState.FARM_SCAN, () -> true,
-                s -> { farming.tick(SquireAIState.FARM_SCAN); return machine.getCurrentState(); },
-                1, 42
-        ));
-        machine.addTransition(new AITransition(
-                SquireAIState.FARM_APPROACH, () -> true,
-                s -> { farming.tick(SquireAIState.FARM_APPROACH); return machine.getCurrentState(); },
-                1, 42
-        ));
-        machine.addTransition(new AITransition(
-                SquireAIState.FARM_WORK, () -> true,
-                s -> { farming.tick(SquireAIState.FARM_WORK); return machine.getCurrentState(); },
-                1, 42
-        ));
-
-        // FISHING per-tick
-        machine.addTransition(new AITransition(
-                SquireAIState.FISHING_APPROACH, () -> true,
-                s -> { fishing.tick(SquireAIState.FISHING_APPROACH); return machine.getCurrentState(); },
-                1, 43
-        ));
-        machine.addTransition(new AITransition(
-                SquireAIState.FISHING_IDLE, () -> true,
-                s -> { fishing.tick(SquireAIState.FISHING_IDLE); return machine.getCurrentState(); },
-                1, 43
-        ));
-
-        // CHEST per-tick
-        machine.addTransition(new AITransition(
-                SquireAIState.CHEST_APPROACH, () -> true,
-                s -> { chest.tick(SquireAIState.CHEST_APPROACH); return machine.getCurrentState(); },
-                1, 44
-        ));
-        machine.addTransition(new AITransition(
-                SquireAIState.CHEST_INTERACT, () -> true,
-                s -> { chest.tick(SquireAIState.CHEST_INTERACT); return machine.getCurrentState(); },
-                1, 44
-        ));
+        for (WorkHandler handler : workHandlers) {
+            for (SquireAIState state : handler.ownedStates()) {
+                machine.addTransition(new AITransition(
+                        state, () -> true,
+                        s -> { handler.tick(state); return machine.getCurrentState(); },
+                        1, handler.priority()
+                ));
+            }
+        }
     }
 
     /**
