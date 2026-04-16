@@ -4,8 +4,11 @@ import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
+import net.minecraft.ResourceLocationException;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 
@@ -25,6 +28,8 @@ import java.util.Set;
  * Transition condition: (IDLE or FOLLOWING_OWNER) AND items nearby AND inventory has space.
  */
 public class ItemHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ItemHandler.class);
 
     private final SquireEntity squire;
 
@@ -186,8 +191,10 @@ public class ItemHandler {
             for (String entry : configList) {
                 try {
                     junkCache.add(ResourceLocation.parse(entry));
-                } catch (Exception ignored) {
-                    // Malformed entries are silently skipped — operator error, not crash-worthy
+                } catch (ResourceLocationException e) {
+                    // Malformed entries: operator error, not crash-worthy — but log so the
+                    // operator can see why their config entry was ignored.
+                    LOGGER.warn("[SquireMod] Skipping malformed junk-filter entry '{}': {}", entry, e.getMessage());
                 }
             }
         }

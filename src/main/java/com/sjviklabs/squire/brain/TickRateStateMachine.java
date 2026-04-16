@@ -38,13 +38,11 @@ public class TickRateStateMachine implements StateController {
         return currentState;
     }
 
-    public void setCurrentState(SquireAIState state) {
-        this.currentState = state;
-    }
-
     /**
      * Force the machine into a specific state immediately.
-     * Used by debug commands (/squire mine, /squire place) to override normal transitions.
+     * Used by debug commands (/squire mine, /squire place) to override normal transitions,
+     * and by WorkHandlers via the StateController narrow interface to transition
+     * between their own sub-states without coupling to the full FSM.
      */
     public void forceState(SquireAIState state) {
         this.currentState = state;

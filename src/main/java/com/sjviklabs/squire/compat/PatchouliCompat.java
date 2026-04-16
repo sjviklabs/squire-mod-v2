@@ -45,7 +45,9 @@ public final class PatchouliCompat {
             Object api = getMethod.invoke(null);
             Method bookMethod = api.getClass().getMethod("getBookStack", ResourceLocation.class);
             return (ItemStack) bookMethod.invoke(api, BOOK_ID);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException | NullPointerException | ClassCastException e) {
+            // Reflection path: Class/Method lookup failures (Patchouli absent or API changed),
+            // invocation errors, null API instance, or unexpected return type from getBookStack.
             LOGGER.warn("[Squire] Failed to get Patchouli book stack: {}", e.getMessage());
             return ItemStack.EMPTY;
         }

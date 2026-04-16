@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.sjviklabs.squire.entity.SquireTier;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -83,8 +84,8 @@ public class ProgressionDataLoader extends SimpleJsonResourceReloadListener {
                 obj.has("description") ? obj.get("description").getAsString() : ""
             );
             TIER_DATA.put(squireTier, def);
-        } catch (Exception e) {
-            LOGGER.error("[SquireMod] Failed to load tier file '{}': {}", fileName, e.getMessage());
+        } catch (JsonParseException | ClassCastException | IllegalStateException | NumberFormatException | NullPointerException e) {
+            LOGGER.error("[SquireMod] Failed to load tier file '{}': malformed JSON or missing field: {}", fileName, e.getMessage());
         }
     }
 
@@ -101,8 +102,8 @@ public class ProgressionDataLoader extends SimpleJsonResourceReloadListener {
                 );
                 ABILITY_DATA.put(id, def);
             }
-        } catch (Exception e) {
-            LOGGER.error("[SquireMod] Failed to load abilities.json: {}", e.getMessage());
+        } catch (JsonParseException | ClassCastException | IllegalStateException | NumberFormatException | NullPointerException e) {
+            LOGGER.error("[SquireMod] Failed to load abilities.json: malformed JSON or missing field: {}", e.getMessage());
         }
     }
 

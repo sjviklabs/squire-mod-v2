@@ -40,8 +40,9 @@ public final class MineColoniesCompat {
         if (modPresent == null) {
             try {
                 modPresent = ModList.get().isLoaded(MODID);
-            } catch (Exception e) {
-                // ModList not available in JUnit / early bootstrap — treat as absent
+            } catch (IllegalStateException | NullPointerException e) {
+                // ModList not available in JUnit / early bootstrap — treat as absent.
+                // IllegalStateException: FML not yet initialized. NPE: ModList.get() returned null.
                 modPresent = false;
             }
         }

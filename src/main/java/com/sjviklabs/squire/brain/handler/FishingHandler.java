@@ -422,7 +422,10 @@ public class FishingHandler implements WorkHandler {
                     .create(LootContextParamSets.FISHING);
 
             return table.getRandomItems(params);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
+            // LootTable internals can throw IllegalArgumentException, NPE, or registry-related
+            // RuntimeExceptions if the loot table is malformed, missing, or parameters invalid.
+            // Not a reason to crash the tick — log and return empty drops.
             LOGGER.warn("[FISH] Loot table roll failed: {}", e.getMessage());
             return List.of();
         }
@@ -454,8 +457,9 @@ public class FishingHandler implements WorkHandler {
                     .create(LootContextParamSets.FISHING);
 
             return table.getRandomItems(params);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             // Expected in unit test environment — server registry not available
+            // (IllegalStateException when registries not bootstrapped, NPE on null registry lookup).
             return List.of();
         }
     }
