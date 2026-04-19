@@ -53,6 +53,7 @@ public class SquireClientEvents {
             // RegisterMenuScreensEvent is the NeoForge 1.21.1 replacement for
             // MenuScreens.register() which has private access in vanilla.
             SquireScreen.register(event);
+            SquirePostScreen.register(event);
         }
     }
 

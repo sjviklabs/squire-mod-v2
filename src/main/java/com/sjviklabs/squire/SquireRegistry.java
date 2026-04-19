@@ -5,6 +5,7 @@ import com.sjviklabs.squire.block.entity.SquirePostBlockEntity;
 import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
+import com.sjviklabs.squire.inventory.SquirePostMenu;
 import com.sjviklabs.squire.item.SquireCrestItem;
 import com.sjviklabs.squire.item.SquirePostItem;
 import com.sjviklabs.squire.network.SquireCommandPayload;
@@ -152,6 +153,11 @@ public final class SquireRegistry {
                     }
                     return null;
                 }));
+
+    /** Squire Post menu (v3.1.3) — slotless, carries post BlockPos + bound squire name. */
+    public static final DeferredHolder<MenuType<?>, MenuType<SquirePostMenu>> SQUIRE_POST_MENU =
+            MENU_TYPES.register("squire_post_menu", () ->
+                IMenuTypeExtension.create(SquirePostMenu::new));
 
     // ---- Private constructor ----
 
