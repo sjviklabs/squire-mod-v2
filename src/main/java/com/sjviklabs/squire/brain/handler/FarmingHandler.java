@@ -122,13 +122,10 @@ public class FarmingHandler implements WorkHandler {
     }
 
     public void setArea(BlockPos cornerA, BlockPos cornerB) {
-        // Auto-craft hoe if missing (Wave 1.5)
+        // v3.1.1 — no auto-craft; squire asks for a hoe and stays IDLE until one is provided
         if (!hasHoe(squire)) {
-            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
-            if (!crafting.tryCraftIfMissing(squire,
-                    stack -> stack.getItem() instanceof HoeItem, "hoe")) {
-                return; // No hoe and can't craft one — stay IDLE
-            }
+            com.sjviklabs.squire.entity.ChatHandler.askForTool(squire, "hoe");
+            return;
         }
 
         this.cornerA = cornerA;

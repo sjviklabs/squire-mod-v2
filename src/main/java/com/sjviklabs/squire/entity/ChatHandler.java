@@ -70,11 +70,12 @@ public class ChatHandler {
             List.of("A fresh %s. Nothing stops us.")
         ),
         ChatEvent.NEED_MATERIALS, List.of(
-            List.of("I need materials to make a %s."),
-            List.of("Can't craft a %s — no materials."),
-            List.of("I'm missing ingredients for a %s."),
-            List.of("No resources for a %s, I'm afraid."),
-            List.of("I require materials for a %s.")
+            // v3.1.1 — squire no longer crafts. These lines ask the player for a tool.
+            List.of("I need a %s, if you have one."),
+            List.of("Could you hand me a %s?"),
+            List.of("A %s would help me work."),
+            List.of("I require a %s to continue."),
+            List.of("A %s, my liege — and I'll be about it.")
         )
     );
 
@@ -136,6 +137,36 @@ public class ChatHandler {
             : "Your squire";
 
         owner.sendSystemMessage(Component.literal("[" + squireName + "] " + line));
+    }
+
+    // ── Cooldown map for askForTool (v3.1.1) ────────────────────────────────
+    // Per-squire-per-tool last-ask gameTime, so the squire doesn't spam chat
+    // every tick while waiting for the player to hand over a missing tool.
+    private static final java.util.Map<String, Long> LAST_ASK = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long ASK_COOLDOWN_TICKS = 200L; // 10 seconds
+
+    /**
+     * Ask the owner for a missing tool. Uses NEED_MATERIALS chat pool, rate-limited to
+     * one ask per 10 seconds per (squire, tool) pair so it doesn't spam while waiting.
+     *
+     * v3.1.1 — replaces the old CraftingHandler auto-craft behavior. The squire no
+     * longer makes its own tools; it requests them from the player.
+     *
+     * @param squire   The squire entity (server-side)
+     * @param toolName Human-readable tool name, e.g. "pickaxe"
+     */
+    public static void askForTool(SquireEntity squire, String toolName) {
+        if (squire.level().isClientSide()) return;
+        Player owner = squire.getOwner();
+        if (owner == null) return;
+
+        String key = squire.getUUID() + ":" + toolName;
+        long now = squire.level().getGameTime();
+        Long last = LAST_ASK.get(key);
+        if (last != null && now - last < ASK_COOLDOWN_TICKS) return;
+        LAST_ASK.put(key, now);
+
+        sendFormattedLine(squire, owner, ChatEvent.NEED_MATERIALS, toolName);
     }
 
     // Private constructor — static utility class

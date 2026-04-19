@@ -113,8 +113,6 @@ public final class SquireConfig {
     // ── [work] ───────────────────────────────────────────────────────────────
     public static final ModConfigSpec.DoubleValue autoDepositThreshold;
     public static final ModConfigSpec.IntValue idlePatrolRadius;
-    public static final ModConfigSpec.BooleanValue autoCraftTools;
-    public static final ModConfigSpec.ConfigValue<String> maxCraftTier;
 
     // ── [rendering] ──────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue showNameTag;
@@ -390,12 +388,6 @@ public final class SquireConfig {
         idlePatrolRadius = builder
                 .comment("Wander radius (blocks) when work role has no assigned area. Default: 8")
                 .defineInRange("idlePatrolRadius", 8, 4, 32);
-        autoCraftTools = builder
-                .comment("Whether the squire auto-crafts replacement tools from inventory materials. Default: true")
-                .define("autoCraftTools", true);
-        maxCraftTier = builder
-                .comment("Highest tier the squire will auto-craft (wooden, stone, iron, diamond). Default: stone")
-                .define("maxCraftTier", "stone");
         builder.pop();
 
         // ── [rendering] ──────────────────────────────────────────────────────

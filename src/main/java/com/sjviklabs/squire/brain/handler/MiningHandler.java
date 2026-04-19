@@ -99,13 +99,10 @@ public class MiningHandler implements WorkHandler {
     public void setTarget(@Nullable BlockPos pos) {
         if (pos == null) return;
 
-        // Auto-craft pickaxe if missing (Wave 1.5)
+        // v3.1.1 — no auto-craft; squire asks for a pickaxe and stays IDLE until one is provided
         if (!hasPickaxe(squire)) {
-            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
-            if (!crafting.tryCraftIfMissing(squire,
-                    stack -> stack.getItem() instanceof net.minecraft.world.item.PickaxeItem, "pickaxe")) {
-                return; // No pickaxe and can't craft one — stay IDLE
-            }
+            com.sjviklabs.squire.entity.ChatHandler.askForTool(squire, "pickaxe");
+            return;
         }
 
         this.targetPos = pos;
@@ -130,13 +127,10 @@ public class MiningHandler implements WorkHandler {
      * @return total blocks queued (including the one set as immediate target)
      */
     public int setAreaTarget(BlockPos cornerA, BlockPos cornerB) {
-        // Auto-craft pickaxe if missing (Wave 1.5)
+        // v3.1.1 — no auto-craft; squire asks for a pickaxe and stays IDLE until one is provided
         if (!hasPickaxe(squire)) {
-            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
-            if (!crafting.tryCraftIfMissing(squire,
-                    stack -> stack.getItem() instanceof net.minecraft.world.item.PickaxeItem, "pickaxe")) {
-                return 0; // No pickaxe and can't craft one — stay IDLE
-            }
+            com.sjviklabs.squire.entity.ChatHandler.askForTool(squire, "pickaxe");
+            return 0;
         }
 
         blockQueue.clear();
@@ -224,13 +218,10 @@ public class MiningHandler implements WorkHandler {
      * @param depth  how many Y levels to mine downward
      */
     public void setShaftTarget(BlockPos center, int width, int depth) {
-        // Auto-craft pickaxe if missing (Wave 1.5)
+        // v3.1.1 — no auto-craft; squire asks for a pickaxe and stays IDLE until one is provided
         if (!hasPickaxe(squire)) {
-            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
-            if (!crafting.tryCraftIfMissing(squire,
-                    stack -> stack.getItem() instanceof net.minecraft.world.item.PickaxeItem, "pickaxe")) {
-                return; // No pickaxe and can't craft one — stay IDLE
-            }
+            com.sjviklabs.squire.entity.ChatHandler.askForTool(squire, "pickaxe");
+            return;
         }
 
         // Clamp depth to configured max

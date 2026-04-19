@@ -74,13 +74,10 @@ public class FishingHandler implements WorkHandler {
      * Sets state to FISHING_APPROACH.
      */
     public void startFishing(BlockPos waterPos) {
-        // Auto-craft fishing rod if missing (Wave 1.5)
+        // v3.1.1 — no auto-craft; squire asks for a fishing rod and stays IDLE until one is provided
         if (!hasFishingRod()) {
-            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
-            if (!crafting.tryCraftIfMissing(squire,
-                    stack -> stack.getItem() instanceof FishingRodItem, "fishing rod")) {
-                return; // No rod and can't craft one — stay IDLE
-            }
+            com.sjviklabs.squire.entity.ChatHandler.askForTool(squire, "fishing rod");
+            return;
         }
         this.waterTarget = waterPos;
         this.standPos = findShorePosition(waterPos);
@@ -94,13 +91,10 @@ public class FishingHandler implements WorkHandler {
 
     /** Overload: start fishing without a specific target (auto-find nearest water). */
     public void startFishing() {
-        // Auto-craft fishing rod if missing (Wave 1.5)
+        // v3.1.1 — no auto-craft; squire asks for a fishing rod and stays IDLE until one is provided
         if (!hasFishingRod()) {
-            CraftingHandler crafting = squire.getSquireBrain().getCraftingHandler();
-            if (!crafting.tryCraftIfMissing(squire,
-                    stack -> stack.getItem() instanceof FishingRodItem, "fishing rod")) {
-                return;
-            }
+            com.sjviklabs.squire.entity.ChatHandler.askForTool(squire, "fishing rod");
+            return;
         }
         // Auto-discover nearest water body
         BlockPos waterPos = findNearestWater();

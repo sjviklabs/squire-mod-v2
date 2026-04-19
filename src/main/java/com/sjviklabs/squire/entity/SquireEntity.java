@@ -127,6 +127,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     @Nullable
     public net.minecraft.core.BlockPos pendingHomeChest = null;
 
+    // ---- Pending task queue (loaded from NBT, injected into SquireBrain on first brain init — v3.1.1) ----
+    @Nullable
+    public CompoundTag pendingTaskQueue = null;
+
     // ================================================================
     // Constructor
     // ================================================================
@@ -609,6 +613,9 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
                 tag.putInt("HomeChestY", hc.getY());
                 tag.putInt("HomeChestZ", hc.getZ());
             }
+            // Task queue (v3.1.1) — persist so the squire resumes what they were doing
+            // after world reload / chunk unload / combat interruption.
+            tag.put("TaskQueue", squireBrain.getTaskQueue().save());
         }
     }
 
@@ -652,6 +659,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         if (tag.contains("HomeChestX")) {
             pendingHomeChest = new net.minecraft.core.BlockPos(
                     tag.getInt("HomeChestX"), tag.getInt("HomeChestY"), tag.getInt("HomeChestZ"));
+        }
+        // Task queue (v3.1.1) — injected into brain on first brain init
+        if (tag.contains("TaskQueue")) {
+            pendingTaskQueue = tag.getCompound("TaskQueue");
         }
     }
 

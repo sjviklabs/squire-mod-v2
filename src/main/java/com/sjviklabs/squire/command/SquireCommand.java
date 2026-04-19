@@ -377,11 +377,18 @@ public final class SquireCommand {
         net.minecraft.world.item.ItemStack held = player.getMainHandItem();
         if (held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
             net.minecraft.core.BlockPos[] area = com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
-            if (area != null) {
-                int count = squire.getSquireBrain().getMiningHandler().setAreaTarget(area[0], area[1]);
-                com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
-                source.sendSuccess(() -> Component.literal("Squire mining area: " + count + " blocks."), false);
-                return 1;
+            if (area != null && squire.getSquireBrain() != null) {
+                try {
+                    int count = squire.getSquireBrain().getMiningHandler().setAreaTarget(area[0], area[1]);
+                    com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
+                    source.sendSuccess(() -> Component.literal("Squire mining area: " + count + " blocks."), false);
+                    return 1;
+                } catch (RuntimeException e) {
+                    // Defensive: any unexpected failure surfaces as a clean command error,
+                    // not a crash. v3.1.1 — "breaks easily on accidental crest command" fix.
+                    source.sendFailure(Component.literal("Could not start mining: " + e.getMessage()));
+                    return 0;
+                }
             }
         }
         source.sendFailure(Component.literal("Select an area first: right-click two blocks with the Crest."));
@@ -399,19 +406,33 @@ public final class SquireCommand {
         net.minecraft.world.item.ItemStack held = player.getMainHandItem();
         if (held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
             net.minecraft.core.BlockPos[] area = com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
-            if (area != null) {
-                squire.getSquireBrain().getFarmingHandler().setArea(area[0], area[1]);
-                com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
-                source.sendSuccess(() -> Component.literal("Squire farming the selected area."), false);
-                return 1;
+            if (area != null && squire.getSquireBrain() != null) {
+                try {
+                    squire.getSquireBrain().getFarmingHandler().setArea(area[0], area[1]);
+                    com.sjviklabs.squire.item.SquireCrestItem.clearSelection(held);
+                    source.sendSuccess(() -> Component.literal("Squire farming the selected area."), false);
+                    return 1;
+                } catch (RuntimeException e) {
+                    source.sendFailure(Component.literal("Could not start farming: " + e.getMessage()));
+                    return 0;
+                }
             }
         }
         // No area selected — create a 16x16 area around the squire
-        net.minecraft.core.BlockPos squirePos = squire.blockPosition();
-        squire.getSquireBrain().getFarmingHandler().setArea(
-                squirePos.offset(-8, 0, -8), squirePos.offset(8, 0, 8));
-        source.sendSuccess(() -> Component.literal("Squire farming 16x16 area around current position."), false);
-        return 1;
+        if (squire.getSquireBrain() == null) {
+            source.sendFailure(Component.literal("Squire is not ready yet — try again in a moment."));
+            return 0;
+        }
+        try {
+            net.minecraft.core.BlockPos squirePos = squire.blockPosition();
+            squire.getSquireBrain().getFarmingHandler().setArea(
+                    squirePos.offset(-8, 0, -8), squirePos.offset(8, 0, 8));
+            source.sendSuccess(() -> Component.literal("Squire farming 16x16 area around current position."), false);
+            return 1;
+        } catch (RuntimeException e) {
+            source.sendFailure(Component.literal("Could not start farming: " + e.getMessage()));
+            return 0;
+        }
     }
 
     private static int clearSelection(CommandSourceStack source) {
