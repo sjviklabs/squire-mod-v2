@@ -305,6 +305,13 @@ public final class SquireCommand {
             ? squire.getCustomName().getString()
             : "Squire";
 
+        // Version header so players can verify in-game which jar they're running.
+        String modVersion = net.neoforged.fml.ModList.get()
+            .getModContainerById(com.sjviklabs.squire.SquireMod.MODID)
+            .map(c -> c.getModInfo().getVersion().toString())
+            .orElse("unknown");
+        source.sendSuccess(() -> Component.literal("=== Squire Mod v" + modVersion + " ==="), false);
+
         String tier = squire.getTier().name().charAt(0) + squire.getTier().name().substring(1).toLowerCase();
         source.sendSuccess(() -> Component.literal(String.format(
             "%s — Lv.%d %s | XP: %d | HP: %.0f/%.0f | Mode: %s",
