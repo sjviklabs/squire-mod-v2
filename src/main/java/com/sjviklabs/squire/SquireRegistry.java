@@ -6,6 +6,7 @@ import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
 import com.sjviklabs.squire.item.SquireCrestItem;
+import com.sjviklabs.squire.item.SquirePostItem;
 import com.sjviklabs.squire.network.SquireCommandPayload;
 import com.sjviklabs.squire.network.SquireModePayload;
 import net.minecraft.core.registries.Registries;
@@ -13,7 +14,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -116,8 +116,8 @@ public final class SquireRegistry {
     public static final DeferredHolder<Item, SquireCrestItem> CREST =
             ITEMS.register("squire_crest", () -> new SquireCrestItem(new Item.Properties().stacksTo(1)));
 
-    public static final DeferredHolder<Item, BlockItem> SQUIRE_POST_ITEM =
-            ITEMS.register("squire_post", () -> new BlockItem(
+    public static final DeferredHolder<Item, SquirePostItem> SQUIRE_POST_ITEM =
+            ITEMS.register("squire_post", () -> new SquirePostItem(
                     SQUIRE_POST_BLOCK.get(),
                     new Item.Properties().stacksTo(1)
             ));
