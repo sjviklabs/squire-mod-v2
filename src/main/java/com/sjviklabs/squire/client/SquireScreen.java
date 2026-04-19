@@ -37,22 +37,24 @@ import javax.annotation.Nullable;
 public class SquireScreen extends AbstractContainerScreen<SquireMenu> {
 
     // ── Color palette ─────────────────────────────────────────────────────────
+    // Heraldic brand — Ink/Brass/Vellum + Claret/Moss for state.
+    // See docs/design/handoff/BRAND.md for tokens.
 
-    private static final int BG_COLOR         = 0xC0101010;
-    private static final int BG_HEADER        = 0xC0181818;
-    private static final int BORDER_COLOR     = 0xFF404040;
-    private static final int SEPARATOR_COLOR  = 0xFF606060;
-    private static final int SLOT_OUTER       = 0xFF373737;
-    private static final int SLOT_INNER       = 0xFF8B8B8B;
-    private static final int SLOT_LOCKED_OUTER = 0xFF2A2A2A;
-    private static final int SLOT_LOCKED_INNER = 0xFF4A4A4A;
-    private static final int LABEL_COLOR      = 0xFFE0E0E0;
-    private static final int LABEL_DIM        = 0xFF808080;
-    private static final int HP_BAR_BG        = 0xFF3A1010;
-    private static final int HP_BAR_FG        = 0xFFCC3333;
-    private static final int XP_BAR_BG        = 0xFF103A10;
-    private static final int XP_BAR_FG        = 0xFF33CC33;
-    private static final int LOCK_X_COLOR     = 0xFF5A5A5A;
+    private static final int BG_COLOR         = 0xE60F0E0B;  // Ink, 90% opaque
+    private static final int BG_HEADER        = 0xFF252119;  // Slate
+    private static final int BORDER_COLOR     = 0xFFB89558;  // Brass
+    private static final int SEPARATOR_COLOR  = 0xFFB89558;  // Brass hairlines
+    private static final int SLOT_OUTER       = 0xFF1A1712;  // Deep Ink
+    private static final int SLOT_INNER       = 0xFF3C372E;  // Warm dark Slate
+    private static final int SLOT_LOCKED_OUTER = 0xFF14110D;
+    private static final int SLOT_LOCKED_INNER = 0xFF2A2720;
+    private static final int LABEL_COLOR      = 0xFFE8DFC9;  // Vellum
+    private static final int LABEL_DIM        = 0xFF8F8573;  // Muted Vellum
+    private static final int HP_BAR_BG        = 0xFF2A1212;  // Claret shadow
+    private static final int HP_BAR_FG        = 0xFF7A2A2A;  // Claret
+    private static final int XP_BAR_BG        = 0xFF1F2418;  // Moss shadow
+    private static final int XP_BAR_FG        = 0xFF4B5A3E;  // Moss
+    private static final int LOCK_X_COLOR     = 0xFF5A5246;  // Warm lock gray
 
     private static final String[] TIER_NAMES = {"Satchel", "Pack", "Knapsack", "War Chest"};
 
