@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "squire",
+  "pattern": [
+    "OIO",
+    "OCO",
+    "OOO"
+  ],
+  "key": {
+    "O": { "item": "minecraft:oak_planks" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "C": { "item": "squire:squire_crest" }
+  },
+  "result": {
+    "id": "squire:squire_post",
+    "count": 1
+  }
+}

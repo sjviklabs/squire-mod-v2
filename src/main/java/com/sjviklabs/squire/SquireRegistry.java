@@ -1,5 +1,7 @@
 package com.sjviklabs.squire;
 
+import com.sjviklabs.squire.block.SquirePostBlock;
+import com.sjviklabs.squire.block.entity.SquirePostBlockEntity;
 import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
@@ -11,8 +13,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
@@ -52,6 +60,12 @@ public final class SquireRegistry {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, SquireMod.MODID);
 
+    public static final DeferredRegister<Block> BLOCKS =
+            DeferredRegister.create(Registries.BLOCK, SquireMod.MODID);
+
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
+            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, SquireMod.MODID);
+
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(Registries.ITEM, SquireMod.MODID);
 
@@ -74,12 +88,39 @@ public final class SquireRegistry {
                     .clientTrackingRange(10)
                     .build(SquireMod.MODID + ":squire"));
 
+    // ---- Blocks ----
+    // v3.1.3 — the Squire Post is the mod's first block: a placed anchor for a bound squire
+    // that exposes status + task queue + settings via a GUI. See the v3.1.3 plan.
+
+    public static final DeferredHolder<Block, SquirePostBlock> SQUIRE_POST_BLOCK =
+            BLOCKS.register("squire_post", () -> new SquirePostBlock(
+                    BlockBehaviour.Properties.of()
+                            .mapColor(MapColor.WOOD)
+                            .strength(2.5F)
+                            .sound(SoundType.WOOD)
+                            .noOcclusion()
+            ));
+
+    // ---- Block Entity Types ----
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SquirePostBlockEntity>> SQUIRE_POST_BE =
+            BLOCK_ENTITY_TYPES.register("squire_post",
+                    () -> BlockEntityType.Builder
+                            .of(SquirePostBlockEntity::new, SQUIRE_POST_BLOCK.get())
+                            .build(null));
+
     // ---- Items ----
-    // Two custom items remain: the Crest (mandatory — summon + area selection)
-    // and the Guidebook (Patchouli onboarding tome).
+    // Three custom items: the Crest (mandatory — summon + area selection),
+    // the Guidebook (Patchouli onboarding tome), and the Squire Post (placed block, v3.1.3).
 
     public static final DeferredHolder<Item, SquireCrestItem> CREST =
             ITEMS.register("squire_crest", () -> new SquireCrestItem(new Item.Properties().stacksTo(1)));
+
+    public static final DeferredHolder<Item, BlockItem> SQUIRE_POST_ITEM =
+            ITEMS.register("squire_post", () -> new BlockItem(
+                    SQUIRE_POST_BLOCK.get(),
+                    new Item.Properties().stacksTo(1)
+            ));
 
     // ---- Attachment Types ----
 
@@ -95,6 +136,7 @@ public final class SquireRegistry {
                     .icon(() -> CREST.get().getDefaultInstance())
                     .displayItems((params, output) -> {
                         output.accept(CREST.get());
+                        output.accept(SQUIRE_POST_ITEM.get());
                     })
                     .build());
 
@@ -121,6 +163,8 @@ public final class SquireRegistry {
 
     public static void register(IEventBus modEventBus) {
         ENTITY_TYPES.register(modEventBus);
+        BLOCKS.register(modEventBus);              // must run before ITEMS (BlockItem references block)
+        BLOCK_ENTITY_TYPES.register(modEventBus);
         ITEMS.register(modEventBus);
         ATTACHMENT_TYPES.register(modEventBus);
         MENU_TYPES.register(modEventBus);

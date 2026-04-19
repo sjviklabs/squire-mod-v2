@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "particle": "squire:block/squire_post_side",
+    "top":      "squire:block/squire_post_top",
+    "bottom":   "squire:block/squire_post_bottom",
+    "side":     "squire:block/squire_post_side"
+  }
+}
