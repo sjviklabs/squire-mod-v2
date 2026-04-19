@@ -274,13 +274,18 @@ public class CombatHandler {
             // Guard mode: hold position and keep fighting regardless of leash
         }
 
-        // ---- Follow range — give up if target too far ----
+        // ---- Follow range — stop pathing if target too far, but DON'T clear the target. ----
+        // v3.1.5 fix: clearing the target here caused a race with vanilla
+        // NearestAttackableTargetGoal (which re-targets on its own cadence), producing
+        // a "scream every 5 ticks, never swing" loop. Target lifecycle is now owned by
+        // the combat-exit transition and by the eventual v3.2.0 SquireTargetSuggestionGoal.
+        // This check just stops the chase when the target is unreachably far; if the
+        // target moves back into range next tick, we resume.
         double followRange = s.getAttributeValue(Attributes.FOLLOW_RANGE);
         if (s.distanceToSqr(target) > followRange * followRange) {
-            s.setTarget(null);
             s.getNavigation().stop();
             shieldUpTicks = 0;
-            return SquireAIState.IDLE;
+            return SquireAIState.COMBAT_APPROACH;
         }
 
         // ---- Update shield state every tick ----

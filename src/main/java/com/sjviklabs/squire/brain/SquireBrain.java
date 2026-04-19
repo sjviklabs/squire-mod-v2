@@ -152,14 +152,20 @@ public class SquireBrain {
             suspendWorkIfActive();
         });
         bus.subscribe(SquireEvent.COMBAT_END,   s -> patrol.onCombatEnd());
-        // ChatHandler: personality lines on combat and work events
+        // ChatHandler: personality lines on combat and work events.
+        // v3.1.5 — COMBAT_START and WORK_TASK_COMPLETE use cooldowns as defense-in-depth:
+        // even if a state bug causes an event storm, the owner's chat stays sane.
+        // One-shot events (LEVEL_UP, NEW_TIER) don't need a cooldown — they fire once
+        // per level/tier transition.
         bus.subscribe(SquireEvent.COMBAT_START, s -> {
             var owner = s.getOwner();
-            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLine(s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.COMBAT_START);
+            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLineWithCooldown(
+                    s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.COMBAT_START, 40L);
         });
         bus.subscribe(SquireEvent.WORK_TASK_COMPLETE, s -> {
             var owner = s.getOwner();
-            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLine(s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.IDLE);
+            if (owner != null) com.sjviklabs.squire.entity.ChatHandler.sendLineWithCooldown(
+                    s, owner, com.sjviklabs.squire.entity.ChatHandler.ChatEvent.IDLE, 60L);
         });
         bus.subscribe(SquireEvent.LEVEL_UP, s -> {
             var owner = s.getOwner();

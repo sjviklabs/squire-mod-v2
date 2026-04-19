@@ -145,6 +145,31 @@ public class ChatHandler {
     private static final java.util.Map<String, Long> LAST_ASK = new java.util.concurrent.ConcurrentHashMap<>();
     private static final long ASK_COOLDOWN_TICKS = 200L; // 10 seconds
 
+    // ── Per-event cooldown (v3.1.5) ─────────────────────────────────────────
+    // Defense-in-depth against state-loop bugs that re-publish events on a 5-tick
+    // cycle. Key = squire UUID + ":" + event name. askForTool keeps its own map
+    // above because its key includes the tool name.
+    private static final java.util.Map<String, Long> LAST_EVENT = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Rate-limited variant of sendLine. Drops the call if this (squire, event) pair fired
+     * within cooldownTicks of the current game time. Intended for events that might be
+     * published on a tight loop — COMBAT_START especially.
+     *
+     * cooldownTicks == 0 means "no limit" (for one-shot events like LEVEL_UP / NEW_TIER).
+     */
+    public static void sendLineWithCooldown(SquireEntity squire, Player owner, ChatEvent event, long cooldownTicks) {
+        if (owner == null || squire.level().isClientSide()) return;
+        if (cooldownTicks > 0) {
+            String key = squire.getUUID() + ":" + event.name();
+            long now = squire.level().getGameTime();
+            Long last = LAST_EVENT.get(key);
+            if (last != null && now - last < cooldownTicks) return;
+            LAST_EVENT.put(key, now);
+        }
+        sendLine(squire, owner, event);
+    }
+
     /**
      * Ask the owner for a missing tool. Uses NEED_MATERIALS chat pool, rate-limited to
      * one ask per 10 seconds per (squire, tool) pair so it doesn't spam while waiting.
