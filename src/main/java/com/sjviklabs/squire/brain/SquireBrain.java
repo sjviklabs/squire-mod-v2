@@ -458,11 +458,20 @@ public class SquireBrain {
      * - Combat exit → IDLE when target is null/dead (priority 10, tickRate 5)
      */
     private void registerCombatTransitions() {
-        // Enter COMBAT_APPROACH (global — any non-sitting state when target exists)
+        // Enter COMBAT_APPROACH (global — any non-sitting, non-combat state when target exists)
+        // Guard against re-entry: if already in a combat state, skip this transition so
+        // combat.start() and the COMBAT_START event don't re-fire every 5 ticks (Bug A/B v3.1.2).
         machine.addTransition(new AITransition(
                 null,
                 () -> {
                     if (squire.isOrderedToSit()) return false;
+                    SquireAIState cur = machine.getCurrentState();
+                    if (cur == SquireAIState.COMBAT_APPROACH
+                            || cur == SquireAIState.COMBAT_ATTACK
+                            || cur == SquireAIState.COMBAT_RANGED
+                            || cur == SquireAIState.FLEEING) {
+                        return false;
+                    }
                     LivingEntity target = squire.getTarget();
                     if (target == null || !target.isAlive()) return false;
                     // MineColonies friendly-fire guard

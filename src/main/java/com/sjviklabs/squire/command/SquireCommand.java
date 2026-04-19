@@ -803,7 +803,20 @@ public final class SquireCommand {
         // Raycast to find looked-at block
         net.minecraft.core.BlockPos pos = getLookedAtBlock(player);
         if (pos != null) {
-            // Verify it's a container
+            // v3.1.2 — accept any block that exposes an ItemHandler capability.
+            // Was limited to BaseContainerBlockEntity, which excluded most modded storage
+            // (Iron Chests, Sophisticated Storage, Storage Drawers, Refined Storage, AE2, etc.).
+            // ChestHandler's deposit path already uses the capability API; the command was the only gate.
+            if (player.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+                var handler = serverLevel.getCapability(
+                        net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK, pos, null);
+                if (handler != null) {
+                    squire.getSquireBrain().setHomeChest(pos);
+                    source.sendSuccess(() -> Component.literal("Home chest set at " + pos.toShortString()), false);
+                    return 1;
+                }
+            }
+            // Vanilla fallback for non-capability containers
             var blockEntity = player.level().getBlockEntity(pos);
             if (blockEntity instanceof net.minecraft.world.level.block.entity.BaseContainerBlockEntity) {
                 squire.getSquireBrain().setHomeChest(pos);

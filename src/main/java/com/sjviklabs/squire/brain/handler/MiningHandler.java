@@ -201,6 +201,9 @@ public class MiningHandler implements WorkHandler {
             this.stuckTicks = 0;
             this.repositionAttempts = 0;
             this.lastApproachDistSq = Double.MAX_VALUE;
+            // v3.1.2 — equip best pickaxe from backpack before starting area clear.
+            // Was missing; single-block setTarget had it but setAreaTarget didn't.
+            equipBestTool();
             stateController.forceState(SquireAIState.MINING_APPROACH);
         } else {
             areaClearing = false;
@@ -750,12 +753,24 @@ public class MiningHandler implements WorkHandler {
     // ── Tool helpers ──────────────────────────────────────────────────────────
 
     /**
-     * Check if the squire has a pickaxe equipped in mainhand.
-     * Used by setTarget/setAreaTarget to decide whether auto-craft is needed.
+     * Check if the squire has a pickaxe accessible — mainhand OR anywhere in the backpack.
+     * v3.1.2 — Bug C fix: the owner hands the squire a pickaxe via right-click / inventory,
+     * which stores it in the backpack slots. If we only checked mainhand, commands would fail
+     * with "ask for pickaxe" even though the squire has one. equipBestTool() will move it
+     * to mainhand before mining starts.
      */
     private boolean hasPickaxe(SquireEntity squire) {
         var mainHand = squire.getMainHandItem();
-        return mainHand.getItem() instanceof net.minecraft.world.item.PickaxeItem;
+        if (mainHand.getItem() instanceof net.minecraft.world.item.PickaxeItem) return true;
+        var handler = squire.getItemHandler();
+        if (handler == null) return false;
+        for (int i = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
+            ItemStack stack = handler.getStackInSlot(i);
+            if (!stack.isEmpty() && stack.getItem() instanceof net.minecraft.world.item.PickaxeItem) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ── Repositioning ─────────────────────────────────────────────────────────
