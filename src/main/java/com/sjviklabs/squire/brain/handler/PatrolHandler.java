@@ -1,35 +1,29 @@
 package com.sjviklabs.squire.brain.handler;
 
-import com.sjviklabs.squire.block.SignpostBlockEntity;
 import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.entity.SquireEntity;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
 
 /**
- * Handles patrol behavior — walking between signpost waypoints in a defined loop,
+ * Handles patrol behavior — walking between waypoints in a defined loop,
  * pausing at each waypoint, and resuming after combat.
  *
  * Implements PTR-02: named route walking, wait-at-waypoint, post-combat resume,
  * stuck recovery.
  *
  * Design notes:
- * - Patrol is foot-only. startPatrol() calls MountHandler.orderDismount() if mounted.
+ * - Patrol is foot-only. startPatrol() should be preceded by dismount orders.
  * - currentIndex is saved on COMBAT_START (savedIndex) and restored on COMBAT_END
  *   so patrol resumes from where it was interrupted, not from the top.
- * - buildRouteFromSignpost() has a package-private overload that accepts a
- *   Function<BlockPos, BlockEntity> resolver for headless unit testing.
  *
- * Phase 7 plan 07-02.
+ * v3.1.0 — Route source changed from signpost-chain (removed block) to
+ * crest-area perimeter. The squire walks the four corners of the area the
+ * player marked with their Squire's Crest. Same tick/wait/resume logic,
+ * different route builder.
  */
 public class PatrolHandler {
 
@@ -48,9 +42,7 @@ public class PatrolHandler {
     /**
      * Begin patrolling the given route.
      * Guard: if route is empty, returns immediately.
-     * Foot-only: if squire is mounted, dismount is ordered via MountHandler (Phase 7-03).
-     * Since MountHandler may not exist yet in this wave, the dismount call is guarded
-     * by a null check and left as a TODO comment for MountHandler wiring.
+     * Foot-only: caller is responsible for dismount orders.
      */
     public void startPatrol(List<BlockPos> newRoute) {
         if (newRoute == null || newRoute.isEmpty()) return;
@@ -59,9 +51,6 @@ public class PatrolHandler {
         this.savedIndex = 0;
         this.waitTimer = 0;
         this.patrolling = true;
-
-        // Patrol is foot-only — Phase 7-03 MountHandler wires the dismount call here.
-        // When MountHandler is present: if (mountHandler.isMounted()) mountHandler.orderDismount();
     }
 
     /** Stop patrolling and reset all state. */
@@ -167,66 +156,34 @@ public class PatrolHandler {
     // ── Route building ────────────────────────────────────────────────────────
 
     /**
-     * Build a patrol route by following the linked signpost chain starting at
-     * the given position in the world.
+     * Build a patrol route from a crest-area selection — the squire will walk
+     * the four corners of the rectangular zone defined by the two corner blocks.
      *
-     * Uses loop detection via a visited HashSet so circular routes terminate
-     * cleanly (A→B→C→A produces [A, B, C] and stops when A is revisited).
+     * Clockwise order from the SW corner:
+     *   (minX, minZ) → (maxX, minZ) → (maxX, maxZ) → (minX, maxZ) → loop.
      *
-     * Delegates to the package-private two-arg overload for testability.
+     * Y coordinate is taken from corner1. If the two corners are at different
+     * Y levels the perimeter is flat at corner1's Y; the squire's pathfinding
+     * will handle small vertical offsets naturally.
+     *
+     * @param corner1 one corner of the area (from Crest selection)
+     * @param corner2 the opposite corner
+     * @return 4 waypoints, or empty list if corners are null
      */
-    public static List<BlockPos> buildRouteFromSignpost(Level level, BlockPos start) {
-        return buildRouteFromSignpost(
-                pos -> level.getBlockEntity(pos) instanceof SignpostBlockEntity,
-                pos -> {
-                    BlockEntity be = level.getBlockEntity(pos);
-                    return be instanceof SignpostBlockEntity sp ? sp.getLinkedSignpost() : null;
-                },
-                start
-        );
-    }
-
-    /**
-     * Package-private overload for unit testing.
-     *
-     * Two-predicate design cleanly separates "is there a signpost here?" from
-     * "what does it link to?" — avoiding the ambiguity of null meaning both
-     * "no signpost" and "end of chain" in a single-function design.
-     *
-     * Tests supply both from a simple Map&lt;BlockPos, BlockPos&gt; without
-     * instantiating any BlockEntity — consistent with the writeTag/readTag
-     * headless-test pattern established in 07-01.
-     *
-     * Visited HashSet provides O(1) loop detection; max route length is capped
-     * at SquireConfig.patrolMaxRouteLength.
-     *
-     * @param isSignpost  returns true if pos has a valid signpost block entity
-     * @param getNext     returns the linked BlockPos, or null if end of chain
-     * @param start       starting position
-     */
-    static List<BlockPos> buildRouteFromSignpost(
-            java.util.function.Predicate<BlockPos> isSignpost,
-            Function<BlockPos, BlockPos> getNext,
-            BlockPos start) {
-
+    public static List<BlockPos> buildRouteFromCrestArea(BlockPos corner1, BlockPos corner2) {
         List<BlockPos> waypoints = new ArrayList<>();
-        Set<BlockPos> visited = new HashSet<>();
-        BlockPos current = start;
-        int maxRoute = SquireConfig.patrolMaxRouteLength.get();
+        if (corner1 == null || corner2 == null) return waypoints;
 
-        while (current != null && waypoints.size() < maxRoute) {
-            if (visited.contains(current)) {
-                // Loop detected — route is complete
-                break;
-            }
-            if (!isSignpost.test(current)) {
-                // No signpost at this position — broken chain or non-signpost start
-                break;
-            }
-            visited.add(current);
-            waypoints.add(current);
-            current = getNext.apply(current); // null = end of linear chain
-        }
+        int minX = Math.min(corner1.getX(), corner2.getX());
+        int maxX = Math.max(corner1.getX(), corner2.getX());
+        int minZ = Math.min(corner1.getZ(), corner2.getZ());
+        int maxZ = Math.max(corner1.getZ(), corner2.getZ());
+        int y = corner1.getY();
+
+        waypoints.add(new BlockPos(minX, y, minZ));  // SW
+        waypoints.add(new BlockPos(maxX, y, minZ));  // SE
+        waypoints.add(new BlockPos(maxX, y, maxZ));  // NE
+        waypoints.add(new BlockPos(minX, y, maxZ));  // NW
 
         return waypoints;
     }

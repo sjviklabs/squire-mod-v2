@@ -331,10 +331,10 @@ public final class SquireEquipmentHelper {
     public static boolean isMeleeWeapon(ItemStack stack) {
         if (stack.isEmpty()) return false;
         Item item = stack.getItem();
-        // Strict weapon types only — no multi-tools, no pickaxes, no hoes
+        // Strict weapon types only — no multi-tools, no pickaxes, no hoes.
+        // Vanilla + modded swords and axes only; modded weapons should extend these.
         return item instanceof SwordItem
-            || item instanceof AxeItem
-            || item instanceof com.sjviklabs.squire.item.SquireHalberdItem;
+            || item instanceof AxeItem;
     }
 
     /**

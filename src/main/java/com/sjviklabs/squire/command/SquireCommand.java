@@ -694,54 +694,49 @@ public final class SquireCommand {
         SquireEntity squire = findOwnedSquire(player);
         if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
 
-        // Find nearest signpost within 16 blocks of the squire
-        net.minecraft.core.BlockPos squirePos = squire.blockPosition();
-        net.minecraft.core.BlockPos nearestSignpost = null;
-        double nearestDist = Double.MAX_VALUE;
-        int range = 16;
-
-        for (int x = -range; x <= range; x++) {
-            for (int y = -4; y <= 4; y++) {
-                for (int z = -range; z <= range; z++) {
-                    net.minecraft.core.BlockPos candidate = squirePos.offset(x, y, z);
-                    if (squire.level().getBlockEntity(candidate)
-                            instanceof com.sjviklabs.squire.block.SignpostBlockEntity) {
-                        double dist = candidate.distSqr(squirePos);
-                        if (dist < nearestDist) {
-                            nearestDist = dist;
-                            nearestSignpost = candidate;
-                        }
-                    }
-                }
-            }
+        // v3.1.0 — patrol route is built from the Crest's area selection.
+        // Player must be holding their Squire's Crest with a completed area marked.
+        net.minecraft.world.item.ItemStack mainHand = player.getMainHandItem();
+        net.minecraft.world.item.ItemStack offHand = player.getOffhandItem();
+        net.minecraft.world.item.ItemStack crestStack = null;
+        if (mainHand.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
+            crestStack = mainHand;
+        } else if (offHand.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem) {
+            crestStack = offHand;
         }
-
-        if (nearestSignpost == null) {
-            source.sendFailure(Component.literal("No signpost found within 16 blocks."));
+        if (crestStack == null) {
+            source.sendFailure(Component.literal(
+                    "Hold your Squire's Crest with a marked area before patrolling."));
             return 0;
         }
 
-        // Build route from signpost chain
+        net.minecraft.core.BlockPos[] corners =
+                com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(crestStack);
+        if (corners == null) {
+            source.sendFailure(Component.literal(
+                    "Mark an area first: right-click two blocks with the Crest to define the patrol zone."));
+            return 0;
+        }
+
         java.util.List<net.minecraft.core.BlockPos> route =
                 com.sjviklabs.squire.brain.handler.PatrolHandler
-                        .buildRouteFromSignpost(squire.level(), nearestSignpost);
+                        .buildRouteFromCrestArea(corners[0], corners[1]);
 
         if (route.isEmpty()) {
-            source.sendFailure(Component.literal("Signpost has no linked route."));
+            source.sendFailure(Component.literal("Patrol route could not be built from the selected area."));
             return 0;
         }
 
         squire.getSquireBrain().getMachine().forceState(
                 com.sjviklabs.squire.brain.SquireAIState.PATROL_WALK);
 
-        // Get patrol handler from brain — it's package-private, so access via method
         var patrolField = getPatrolHandler(squire);
         if (patrolField != null) {
             patrolField.startPatrol(route);
         }
 
         source.sendSuccess(() -> Component.literal(
-                "Squire patrolling " + route.size() + " waypoints."), false);
+                "Squire patrolling " + route.size() + "-corner perimeter."), false);
         return 1;
     }
 

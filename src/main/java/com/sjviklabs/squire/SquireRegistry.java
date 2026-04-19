@@ -1,14 +1,9 @@
 package com.sjviklabs.squire;
 
-import com.sjviklabs.squire.block.SignpostBlock;
-import com.sjviklabs.squire.block.SignpostBlockEntity;
 import com.sjviklabs.squire.entity.SquireDataAttachment;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireMenu;
-import com.sjviklabs.squire.item.SquireArmorItem;
 import com.sjviklabs.squire.item.SquireCrestItem;
-import com.sjviklabs.squire.item.SquireHalberdItem;
-import com.sjviklabs.squire.item.SquireShieldItem;
 import com.sjviklabs.squire.network.SquireCommandPayload;
 import com.sjviklabs.squire.network.SquireModePayload;
 import net.minecraft.core.registries.Registries;
@@ -16,13 +11,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterials;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
@@ -31,7 +21,6 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -49,6 +38,12 @@ import java.util.function.Supplier;
  * 2. ITEMS (Crest item may reference entity type for spawn egg)
  * 3. ATTACHMENT_TYPES (must exist before entity lifecycle events use SQUIRE_DATA)
  * 4. MENU_TYPES (menu type must be registered before opening menus)
+ *
+ * v3.1.0 — mod simplified to vanilla equipment only. The squire accepts any
+ * vanilla or modded armor/weapon via its equipment slots. Custom armor items
+ * (helmet/chest/leggings/boots), custom weapons (halberd/shield), and the
+ * signpost patrol block have been removed. Patrol now uses the Crest's
+ * area-selection mechanic — the squire walks the perimeter of a marked zone.
  */
 public final class SquireRegistry {
 
@@ -69,12 +64,6 @@ public final class SquireRegistry {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, SquireMod.MODID);
 
-    public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(Registries.BLOCK, SquireMod.MODID);
-
-    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
-            DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, SquireMod.MODID);
-
     // ---- Entity Types ----
 
     public static final DeferredHolder<EntityType<?>, EntityType<SquireEntity>> SQUIRE =
@@ -86,65 +75,17 @@ public final class SquireRegistry {
                     .build(SquireMod.MODID + ":squire"));
 
     // ---- Items ----
+    // Two custom items remain: the Crest (mandatory — summon + area selection)
+    // and the Guidebook (Patchouli onboarding tome).
 
     public static final DeferredHolder<Item, SquireCrestItem> CREST =
             ITEMS.register("squire_crest", () -> new SquireCrestItem(new Item.Properties().stacksTo(1)));
-
-    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_HELMET =
-            ITEMS.register("squire_helmet",
-                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.HELMET,
-                    new Item.Properties().stacksTo(1)));
-
-    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_CHESTPLATE =
-            ITEMS.register("squire_chestplate",
-                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.CHESTPLATE,
-                    new Item.Properties().stacksTo(1)));
-
-    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_LEGGINGS =
-            ITEMS.register("squire_leggings",
-                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.LEGGINGS,
-                    new Item.Properties().stacksTo(1)));
-
-    public static final DeferredHolder<Item, SquireArmorItem> SQUIRE_BOOTS =
-            ITEMS.register("squire_boots",
-                () -> new SquireArmorItem(ArmorMaterials.IRON, ArmorItem.Type.BOOTS,
-                    new Item.Properties().stacksTo(1)));
-
-    public static final DeferredHolder<Item, SquireHalberdItem> HALBERD =
-            ITEMS.register("squire_halberd", SquireHalberdItem::new);
-
-    public static final DeferredHolder<Item, SquireShieldItem> SHIELD =
-            ITEMS.register("squire_shield", SquireShieldItem::new);
 
     // ---- Attachment Types ----
 
     public static final Supplier<AttachmentType<SquireDataAttachment.SquireData>> SQUIRE_DATA =
             ATTACHMENT_TYPES.register("squire_data",
                     SquireDataAttachment::buildAttachmentType);
-
-    // ---- Blocks ----
-
-    public static final DeferredHolder<Block, SignpostBlock> SIGNPOST_BLOCK =
-            BLOCKS.register("signpost",
-                    () -> new SignpostBlock(Block.Properties.of()
-                            .strength(2.0f)
-                            .requiresCorrectToolForDrops()));
-
-    // ---- Block Entity Types ----
-    // SIGNPOST_BLOCK.get() is safe here because BLOCKS.register(modBus) is called before
-    // BLOCK_ENTITY_TYPES.register(modBus) in register() — see registration order comment.
-
-    public static final Supplier<BlockEntityType<SignpostBlockEntity>> SIGNPOST_BLOCK_ENTITY =
-            BLOCK_ENTITY_TYPES.register("signpost",
-                    () -> BlockEntityType.Builder
-                            .of(SignpostBlockEntity::new, SIGNPOST_BLOCK.get())
-                            .build(null));
-
-    // ---- Block Items (declared after BLOCKS so SIGNPOST_BLOCK.get() resolves) ----
-
-    public static final DeferredHolder<Item, BlockItem> SIGNPOST_ITEM =
-            ITEMS.register("signpost",
-                    () -> new BlockItem(SIGNPOST_BLOCK.get(), new Item.Properties()));
 
     // ---- Creative Tab ----
 
@@ -154,13 +95,6 @@ public final class SquireRegistry {
                     .icon(() -> CREST.get().getDefaultInstance())
                     .displayItems((params, output) -> {
                         output.accept(CREST.get());
-                        output.accept(SQUIRE_HELMET.get());
-                        output.accept(SQUIRE_CHESTPLATE.get());
-                        output.accept(SQUIRE_LEGGINGS.get());
-                        output.accept(SQUIRE_BOOTS.get());
-                        output.accept(HALBERD.get());
-                        output.accept(SHIELD.get());
-                        output.accept(SIGNPOST_ITEM.get());
                     })
                     .build());
 
@@ -170,7 +104,6 @@ public final class SquireRegistry {
             MENU_TYPES.register("squire_menu", () ->
                 IMenuTypeExtension.create((windowId, inv, data) -> {
                     // Client-side factory — locate squire entity by network ID sent from server
-                    // Full client Screen registered in Phase 5; this stub handles entity lookup
                     int entityId = data.readInt();
                     if (inv.player.level().getEntity(entityId) instanceof SquireEntity squire) {
                         return new SquireMenu(windowId, inv, squire);
@@ -191,17 +124,10 @@ public final class SquireRegistry {
         ITEMS.register(modEventBus);
         ATTACHMENT_TYPES.register(modEventBus);
         MENU_TYPES.register(modEventBus);
-        // BLOCKS must be registered before BLOCK_ENTITY_TYPES — BlockEntityType constructor
-        // calls SIGNPOST_BLOCK.get() which requires the block holder to be resolved first.
-        BLOCKS.register(modEventBus);
-        BLOCK_ENTITY_TYPES.register(modEventBus);
         CREATIVE_TABS.register(modEventBus);
 
         // Register mod-bus event handlers (attribute creation, capabilities)
         modEventBus.register(SquireRegistry.class);
-
-        // Register game-bus event handlers (player logout — cleans stale PENDING_LINKS)
-        NeoForge.EVENT_BUS.addListener(SquireRegistry::onPlayerLogout);
     }
 
     // ================================================================
@@ -214,20 +140,8 @@ public final class SquireRegistry {
     }
 
     /**
-     * Registers IItemHandler capabilities on the squire entity.
-     *
-     * ENTITY       — accessed by the GUI and direct capability queries.
-     * ENTITY_AUTOMATION — accessed by hoppers, pipes, and other automation (INV-02).
-     *
-     * Both return the same SquireItemHandler so automation sees the same inventory as the GUI.
-     */
-    /**
      * Registers network payloads on the MOD event bus.
      * Both payloads use StreamCodec.composite() — no raw FriendlyByteBuf writes (ARC-08).
-     *
-     * Phase 2 payloads:
-     * - SquireCommandPayload: CMD_STAY and CMD_FOLLOW (client → server)
-     * - SquireModePayload:    mode query stub, no-op in Phase 2 (client → server)
      */
     @SubscribeEvent
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
@@ -256,13 +170,5 @@ public final class SquireRegistry {
             SquireRegistry.SQUIRE.get(),
             (squire, context) -> squire.getItemHandler()
         );
-    }
-
-    /**
-     * Clears stale PENDING_LINKS entries when a player disconnects mid-link.
-     * Registered on the NeoForge game event bus (not mod bus).
-     */
-    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        SignpostBlock.removePendingLink(event.getEntity().getUUID());
     }
 }

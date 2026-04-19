@@ -3,105 +3,86 @@ package com.sjviklabs.squire.brain.handler;
 import net.minecraft.core.BlockPos;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for PatrolHandler route-building logic.
  *
- * Uses Map-backed test doubles for both the existence check and link resolver —
- * no BlockEntity instantiation required. Consistent with the writeTag/readTag
- * headless-test pattern from SignpostBlockEntityTest.
+ * v3.1.0 — previously tested signpost-chain builder. Now tests crest-area
+ * perimeter builder, which walks the four corners of a rectangular area
+ * defined by two corner BlockPos values.
  *
- * Sentinel: map.containsKey(pos) = "signpost exists here"
- *           map.get(pos) = linked next pos (null = end of chain)
- *
- * Requirements: PTR-02
+ * Requirements: PTR-02 (patrol walks route in a loop, post-combat resume)
  * Run: ./gradlew test --tests "*.PatrolHandlerTest"
  */
 class PatrolHandlerTest {
 
-    /**
-     * Runs buildRouteFromSignpost against a simple pos-to-next map.
-     * map.containsKey(pos) = is a valid signpost; map.get(pos) = linked next (null = end).
-     */
-    private static List<BlockPos> buildRoute(Map<BlockPos, BlockPos> world, BlockPos start) {
-        return PatrolHandler.buildRouteFromSignpost(
-                world::containsKey,  // isSignpost predicate
-                world::get,          // getNext resolver (returns null for end of chain)
-                start
-        );
-    }
-
-    // ── Tests ────────────────────────────────────────────────────────────────
+    // ── buildRouteFromCrestArea ─────────────────────────────────────────────
 
     @Test
-    void test_buildRoute_linear() {
-        // Chain: A -> B -> C -> null (end of chain)
-        BlockPos posA = new BlockPos(0, 64, 0);
-        BlockPos posB = new BlockPos(10, 64, 0);
-        BlockPos posC = new BlockPos(20, 64, 0);
+    void test_area_standardCorners_produces4Waypoints() {
+        // SW corner (0,64,0) and NE corner (10,64,10)
+        BlockPos sw = new BlockPos(0, 64, 0);
+        BlockPos ne = new BlockPos(10, 64, 10);
 
-        Map<BlockPos, BlockPos> world = new HashMap<>();
-        world.put(posA, posB);
-        world.put(posB, posC);
-        world.put(posC, null); // terminal signpost, no link
+        List<BlockPos> route = PatrolHandler.buildRouteFromCrestArea(sw, ne);
 
-        List<BlockPos> route = buildRoute(world, posA);
-
-        assertEquals(3, route.size(), "Linear chain of 3 should produce 3 waypoints");
-        assertEquals(posA, route.get(0));
-        assertEquals(posB, route.get(1));
-        assertEquals(posC, route.get(2));
+        assertEquals(4, route.size(), "Crest area should produce 4 corner waypoints");
+        assertEquals(new BlockPos(0, 64, 0), route.get(0), "First waypoint is SW corner");
+        assertEquals(new BlockPos(10, 64, 0), route.get(1), "Second waypoint is SE corner");
+        assertEquals(new BlockPos(10, 64, 10), route.get(2), "Third waypoint is NE corner");
+        assertEquals(new BlockPos(0, 64, 10), route.get(3), "Fourth waypoint is NW corner");
     }
 
     @Test
-    void test_buildRoute_looped() {
-        // Circular chain: A -> B -> C -> A (loop detected via visited set)
-        BlockPos posA = new BlockPos(0, 64, 0);
-        BlockPos posB = new BlockPos(10, 64, 0);
-        BlockPos posC = new BlockPos(20, 64, 0);
+    void test_area_reversedCorners_samePerimeter() {
+        // Same area but corners given in reverse order (NE first, then SW)
+        BlockPos ne = new BlockPos(10, 64, 10);
+        BlockPos sw = new BlockPos(0, 64, 0);
 
-        Map<BlockPos, BlockPos> world = new HashMap<>();
-        world.put(posA, posB);
-        world.put(posB, posC);
-        world.put(posC, posA); // back to A -- loop
+        List<BlockPos> route = PatrolHandler.buildRouteFromCrestArea(ne, sw);
 
-        List<BlockPos> route = buildRoute(world, posA);
-
-        assertEquals(3, route.size(), "Looped chain should produce 3 waypoints (terminates at revisit)");
-        assertTrue(route.contains(posA));
-        assertTrue(route.contains(posB));
-        assertTrue(route.contains(posC));
+        assertEquals(4, route.size(), "Reversed corner order should still produce 4 waypoints");
+        // The same 4 perimeter points should appear regardless of input order
+        assertTrue(route.contains(new BlockPos(0, 64, 0)));
+        assertTrue(route.contains(new BlockPos(10, 64, 0)));
+        assertTrue(route.contains(new BlockPos(10, 64, 10)));
+        assertTrue(route.contains(new BlockPos(0, 64, 10)));
     }
 
     @Test
-    void test_buildRoute_empty() {
-        // Start position has no signpost in the world
-        BlockPos posA = new BlockPos(0, 64, 0);
-        Map<BlockPos, BlockPos> world = new HashMap<>(); // empty
+    void test_area_usesFirstCornerY() {
+        // When corners are at different Y levels, perimeter uses corner1's Y
+        BlockPos c1 = new BlockPos(0, 70, 0);
+        BlockPos c2 = new BlockPos(10, 80, 10);
 
-        List<BlockPos> route = buildRoute(world, posA);
+        List<BlockPos> route = PatrolHandler.buildRouteFromCrestArea(c1, c2);
 
-        assertTrue(route.isEmpty(), "No signpost at start should return empty list");
+        assertEquals(4, route.size());
+        for (BlockPos p : route) {
+            assertEquals(70, p.getY(), "All waypoints should inherit corner1's Y");
+        }
     }
 
     @Test
-    void test_buildRoute_brokenChain() {
-        // A links to B, but B is not a signpost (broken link)
-        BlockPos posA = new BlockPos(0, 64, 0);
-        BlockPos posB = new BlockPos(10, 64, 0);
+    void test_area_nullCorners_returnsEmpty() {
+        assertTrue(PatrolHandler.buildRouteFromCrestArea(null, new BlockPos(0,64,0)).isEmpty());
+        assertTrue(PatrolHandler.buildRouteFromCrestArea(new BlockPos(0,64,0), null).isEmpty());
+        assertTrue(PatrolHandler.buildRouteFromCrestArea(null, null).isEmpty());
+    }
 
-        Map<BlockPos, BlockPos> world = new HashMap<>();
-        world.put(posA, posB); // A links to B
-        // posB intentionally absent -- broken link
+    @Test
+    void test_area_singlePoint_producesDegenerate4Waypoints() {
+        // Both corners at the same pos — degenerate but should not crash
+        BlockPos p = new BlockPos(5, 64, 5);
 
-        List<BlockPos> route = buildRoute(world, posA);
+        List<BlockPos> route = PatrolHandler.buildRouteFromCrestArea(p, p);
 
-        assertEquals(1, route.size(), "Broken chain should stop at A, returning [A] only");
-        assertEquals(posA, route.get(0));
+        assertEquals(4, route.size(), "Degenerate area still emits 4 waypoints (all identical)");
+        for (BlockPos wp : route) {
+            assertEquals(p, wp, "All waypoints collapse to the single point");
+        }
     }
 }

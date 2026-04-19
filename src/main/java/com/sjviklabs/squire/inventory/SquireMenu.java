@@ -385,7 +385,7 @@ public class SquireMenu extends AbstractContainerMenu {
             return item instanceof net.minecraft.world.item.SwordItem
                 || item instanceof net.minecraft.world.item.AxeItem
                 || item instanceof net.minecraft.world.item.BowItem
-                || item instanceof com.sjviklabs.squire.item.SquireHalberdItem;
+                || item instanceof net.minecraft.world.item.CrossbowItem;
         }
     }
 }

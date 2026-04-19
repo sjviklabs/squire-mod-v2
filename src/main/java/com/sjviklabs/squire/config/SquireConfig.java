@@ -34,7 +34,6 @@ public final class SquireConfig {
     public static final ModConfigSpec.BooleanValue autoEquipArmor;
     public static final ModConfigSpec.BooleanValue shieldBlocking;
     public static final ModConfigSpec.IntValue shieldCooldownTicks;
-    public static final ModConfigSpec.IntValue halberdSweepInterval;
 
     // ── [follow] ─────────────────────────────────────────────────────────────
     public static final ModConfigSpec.DoubleValue followStartDistance;
@@ -88,7 +87,6 @@ public final class SquireConfig {
 
     // ── [patrol] ─────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue patrolDefaultWait;
-    public static final ModConfigSpec.IntValue patrolMaxRouteLength;
 
     // ── [mount] ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.DoubleValue horseSearchRange;
@@ -176,9 +174,6 @@ public final class SquireConfig {
         shieldCooldownTicks = builder
                 .comment("Cooldown ticks after shield is broken before squire can raise it again")
                 .defineInRange("shieldCooldownTicks", 100, 20, 400);
-        halberdSweepInterval = builder
-                .comment("Number of hits between Halberd sweep AoE attacks")
-                .defineInRange("halberdSweepInterval", 3, 1, 10);
         builder.pop();
 
         // ── [follow] ─────────────────────────────────────────────────────────
@@ -320,11 +315,8 @@ public final class SquireConfig {
         // ── [patrol] ─────────────────────────────────────────────────────────
         builder.push("patrol");
         patrolDefaultWait = builder
-                .comment("Ticks the squire waits at each waypoint before moving on")
+                .comment("Ticks the squire waits at each waypoint (corner) before moving on")
                 .defineInRange("patrolDefaultWait", 40, 0, 200);
-        patrolMaxRouteLength = builder
-                .comment("Maximum number of signposts in a patrol route")
-                .defineInRange("patrolMaxRouteLength", 32, 2, 128);
         builder.pop();
 
         // ── [mount] ──────────────────────────────────────────────────────────

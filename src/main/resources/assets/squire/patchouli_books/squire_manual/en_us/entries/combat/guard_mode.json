@@ -1,6 +1,6 @@
 {
   "name": "squire.entry.guard_mode",
-  "icon": "squire:squire_shield",
+  "icon": "minecraft:shield",
   "category": "squire:combat",
   "sortnum": 1,
   "pages": [

@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "squire:block/signpost" },
-    "facing=south": { "model": "squire:block/signpost", "y": 180 },
-    "facing=east":  { "model": "squire:block/signpost", "y": 90 },
-    "facing=west":  { "model": "squire:block/signpost", "y": 270 }
-  }
-}

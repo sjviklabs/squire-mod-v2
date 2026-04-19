@@ -4,7 +4,6 @@ import com.sjviklabs.squire.brain.SquireAIState;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.data.SquireTagKeys;
 import com.sjviklabs.squire.entity.SquireEntity;
-import com.sjviklabs.squire.item.SquireHalberdItem;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -529,15 +528,8 @@ public class CombatHandler {
                 s.playSound(SoundEvents.PLAYER_ATTACK_STRONG, 1.0F,
                         s.level().getRandom().nextFloat() * 0.1F + 0.9F);
 
-                // Halberd sweep AoE — every Nth hit (CMB-08)
-                if (s.getItemBySlot(EquipmentSlot.MAINHAND).getItem() instanceof SquireHalberdItem) {
-                    halberdHitCount++;
-                    if (halberdHitCount >= SquireConfig.halberdSweepInterval.get()) {
-                        halberdHitCount = 0;
-                        float sweepDmg = (float) s.getAttributeValue(Attributes.ATTACK_DAMAGE) * 0.75F;
-                        SquireHalberdItem.performSweep(s, sweepDmg);
-                    }
-                }
+                // Halberd-specific sweep AoE removed in v3.1.0 (custom halberd retired;
+                // squire now wields any vanilla/modded weapon).
 
                 var log = s.getActivityLog();
                 if (!target.isAlive()) {
