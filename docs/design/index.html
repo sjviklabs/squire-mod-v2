@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Squire — Design Package</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+
+<script>
+const TWEAKS = /*EDITMODE-BEGIN*/{
+  "primaryLogo": "seal",
+  "accent": "gold",
+  "heroVariant": "banner",
+  "dark": true
+}/*EDITMODE-END*/;
+</script>
+
+<style>
+  :root {
+    /* Parchment-dark heraldic palette (Squire identity) */
+    --ink:        #0f0e0b;        /* near-black, warm */
+    --ink-2:      #1a1813;
+    --ink-3:      #252119;
+    --vellum:     #e8dfc9;        /* warm off-white for text on dark */
+    --vellum-2:   #c9bfa3;
+    --vellum-3:   #8b8270;        /* muted secondary text */
+    --rule:       #3a3426;        /* hairline color */
+    --rule-2:     #2a251b;
+
+    /* Accents (one chroma, varied hue) */
+    --gold:       #b89558;        /* warm brass */
+    --gold-2:     #d9b878;
+    --gold-dim:   #6e5a38;
+    --claret:     #7a2a2a;        /* deep red */
+    --claret-2:   #a94545;
+    --sage:       #4b5a3e;        /* moss */
+    --sage-2:     #7a8a63;
+    --ivory:      #f2ead4;
+
+    /* Semantic */
+    --bg:         var(--ink);
+    --panel:      var(--ink-2);
+    --panel-2:    var(--ink-3);
+    --fg:         var(--vellum);
+    --muted:      var(--vellum-3);
+    --accent:     var(--gold);
+
+    /* Type */
+    --sans: "Inter", system-ui, sans-serif;
+    --serif: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+    --display: "Cinzel", "Trajan Pro", serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+  }
+
+  /* ---------- Top chrome ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in oklab, var(--ink), black 15%);
+    border-bottom: 1px solid var(--rule-2);
+    backdrop-filter: blur(6px);
+  }
+  .topbar-inner {
+    max-width: 1320px; margin: 0 auto;
+    display: flex; align-items: center; gap: 28px;
+    padding: 14px 28px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-weight: 600;
+    letter-spacing: 0.22em; font-size: 14px;
+    text-transform: uppercase;
+    color: var(--vellum);
+  }
+  .brand-mark {
+    width: 22px; height: 22px;
+  }
+  nav.tabs { display: flex; gap: 4px; margin-left: auto; }
+  nav.tabs button {
+    appearance: none; border: 0; background: transparent;
+    color: var(--muted); font-family: var(--sans);
+    font-size: 12.5px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 14px; border-radius: 2px; cursor: pointer;
+    border: 1px solid transparent;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  nav.tabs button:hover { color: var(--vellum); }
+  nav.tabs button[aria-selected="true"] {
+    color: var(--ink); background: var(--vellum);
+  }
+
+  /* ---------- Page scaffold ---------- */
+  main { max-width: 1320px; margin: 0 auto; padding: 48px 28px 120px; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+
+  .lede {
+    font-family: var(--serif);
+    font-size: 20px;
+    line-height: 1.45;
+    color: var(--vellum-2);
+    max-width: 62ch;
+    font-style: italic;
+  }
+  h1.page-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(32px, 4vw, 46px);
+    letter-spacing: 0.04em;
+    margin: 0 0 10px;
+    color: var(--vellum);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+
+  h2.block-title {
+    font-family: var(--display);
+    font-size: 22px; letter-spacing: 0.06em;
+    font-weight: 600;
+    margin: 64px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; gap: 14px;
+  }
+  h2.block-title .idx {
+    font-family: var(--mono); color: var(--gold);
+    font-size: 12px; letter-spacing: 0.2em;
+    font-weight: 500;
+  }
+
+  /* ---------- Identity page ---------- */
+  .grid { display: grid; gap: 24px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--rule-2);
+    padding: 28px;
+    position: relative;
+  }
+  .card .label {
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  /* palette */
+  .palette { grid-template-columns: repeat(6, 1fr); }
+  .swatch {
+    aspect-ratio: 3/4;
+    border: 1px solid var(--rule-2);
+    padding: 14px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+  .swatch .n { font-family: var(--display); font-size: 15px; letter-spacing: 0.1em; }
+  .swatch .hex { color: inherit; opacity: 0.75; }
+  .swatch .role { color: inherit; opacity: 0.55; font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; }
+
+  /* type specimen */
+  .type-grid { grid-template-columns: 1fr 1fr; }
+  .spec { padding: 32px; background: var(--panel); border: 1px solid var(--rule-2); }
+  .spec .sample-display {
+    font-family: var(--display); font-size: 72px; line-height: 1;
+    letter-spacing: 0.02em; margin: 6px 0 18px;
+  }
+  .spec .sample-serif {
+    font-family: var(--serif); font-size: 34px; line-height: 1.2;
+    margin: 6px 0 18px; font-style: italic;
+  }
+  .spec .sample-sans {
+    font-family: var(--sans); font-size: 22px; line-height: 1.35;
+    margin: 6px 0 18px;
+  }
+  .spec .meta { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+  .spec .stack { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 18px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  /* motif system cards */
+  .motifs { grid-template-columns: repeat(3, 1fr); }
+  .motif-card {
+    aspect-ratio: 1/1.1;
+    background: var(--panel);
+    border: 1px solid var(--rule-2);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .motif-card .cap {
+    position: absolute; bottom: 14px; left: 14px; right: 14px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); letter-spacing: 0.14em; text-transform: uppercase;
+    display: flex; justify-content: space-between;
+  }
+
+  /* ---------- Logo page ---------- */
+  .logo-grid { grid-template-columns: repeat(2, 1fr); gap: 28px; }
+  .logo-card {
+    background: var(--panel);
+    border: 1px solid var(--rule-2);
+    padding: 0;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    min-height: 420px;
+    cursor: pointer;
+    transition: border-color .15s, transform .15s;
+  }
+  .logo-card:hover { border-color: var(--gold-dim); }
+  .logo-card.selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+  .logo-stage {
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px;
+    position: relative;
+  }
+  .logo-stage.light { background: var(--ivory); color: var(--ink); }
+  .logo-stage.dark { background: var(--ink-3); color: var(--vellum); }
+  .logo-meta {
+    border-top: 1px solid var(--rule-2);
+    padding: 18px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .logo-meta .name { color: var(--vellum); font-family: var(--display); letter-spacing: 0.2em; font-size: 12px; }
+
+  .favicon-strip {
+    display: flex; gap: 18px; align-items: center;
+    margin-top: 18px;
+  }
+  .favi {
+    width: 48px; height: 48px;
+    border: 1px solid var(--rule-2);
+    background: var(--ink-3);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .favi.sm { width: 24px; height: 24px; }
+  .favi.xs { width: 16px; height: 16px; }
+
+  /* ---------- Listing page (Modrinth/CurseForge mock) ---------- */
+  .listing {
+    background: var(--ink-2);
+    border: 1px solid var(--rule-2);
+  }
+
+  .listing-hero {
+    position: relative;
+    aspect-ratio: 16/6.5;
+    background:
+      radial-gradient(ellipse at 30% 60%, rgba(184,149,88,0.22), transparent 55%),
+      radial-gradient(ellipse at 80% 40%, rgba(122,42,42,0.18), transparent 50%),
+      linear-gradient(180deg, #1a1813 0%, #0f0e0b 100%);
+    overflow: hidden;
+    border-bottom: 1px solid var(--rule-2);
+  }
+  .listing-hero::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0 60px, rgba(255,255,255,0.012) 60px 61px),
+      repeating-linear-gradient(0deg,  transparent 0 60px, rgba(255,255,255,0.012) 60px 61px);
+    pointer-events: none;
+  }
+  .hero-badge {
+    position: absolute;
+    top: 24px; left: 24px;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold);
+    display: flex; gap: 10px; align-items: center;
+  }
+  .hero-badge::before, .hero-badge::after {
+    content: ""; width: 20px; height: 1px; background: var(--gold);
+  }
+  .hero-content {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 72px;
+    gap: 18px;
+  }
+  .hero-wordmark {
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(64px, 8vw, 112px); line-height: 0.95;
+    letter-spacing: 0.06em;
+    color: var(--vellum);
+    text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+  }
+  .hero-tag {
+    font-family: var(--serif); font-style: italic;
+    font-size: clamp(18px, 1.6vw, 24px);
+    color: var(--gold-2);
+    max-width: 50ch;
+  }
+  .hero-tech {
+    display: flex; gap: 18px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--vellum-3); letter-spacing: 0.14em;
+  }
+  .hero-tech span { padding: 6px 12px; border: 1px solid var(--rule); }
+
+  .listing-bar {
+    display: grid; grid-template-columns: 1fr auto;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--rule-2);
+    background: var(--ink);
+    align-items: center;
+    gap: 24px;
+  }
+  .stat-row { display: flex; gap: 32px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .stat-row strong { color: var(--vellum); font-weight: 600; display: block; font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; }
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    font-family: var(--display); font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    font-size: 12px;
+    padding: 14px 28px;
+    background: var(--gold); color: var(--ink);
+    border: 1px solid var(--gold);
+    transition: background .15s;
+  }
+  .btn:hover { background: var(--gold-2); }
+  .btn.ghost { background: transparent; color: var(--vellum); border-color: var(--rule); }
+  .btn.ghost:hover { background: var(--panel-2); }
+  .cta-row { display: flex; gap: 10px; align-items: center; }
+
+  .listing-body {
+    display: grid; grid-template-columns: 1fr 320px;
+    gap: 40px; padding: 40px 32px;
+  }
+  @media (max-width: 900px) { .listing-body { grid-template-columns: 1fr; } }
+
+  .listing-content > * + * { margin-top: 36px; }
+  .listing-content h3 {
+    font-family: var(--display); font-size: 20px; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 600;
+    margin: 0 0 18px;
+    color: var(--vellum);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .listing-content h3::after {
+    content: ""; flex: 1; height: 1px; background: var(--rule);
+  }
+  .listing-content p {
+    font-family: var(--serif); font-size: 18px; line-height: 1.55;
+    color: var(--vellum-2);
+    max-width: 62ch;
+  }
+  .listing-content p.body-sans {
+    font-family: var(--sans); font-size: 15px; line-height: 1.65;
+    color: var(--vellum-2);
+  }
+
+  /* feature grid */
+  .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--rule-2); border: 1px solid var(--rule-2); }
+  .feat {
+    background: var(--panel);
+    padding: 28px;
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 180px;
+  }
+  .feat .f-sigil {
+    width: 28px; height: 28px; color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .feat h4 {
+    font-family: var(--display); font-size: 14px; letter-spacing: 0.18em;
+    text-transform: uppercase; margin: 0; font-weight: 600;
+    color: var(--vellum);
+  }
+  .feat p {
+    font-family: var(--sans); font-size: 13.5px; line-height: 1.55;
+    color: var(--vellum-3); margin: 0 !important;
+  }
+
+  /* screenshot gallery */
+  .gallery { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 200px 200px; gap: 12px; }
+  .shot {
+    background:
+      repeating-linear-gradient(135deg, #1a1813 0 10px, #221e16 10px 20px);
+    border: 1px solid var(--rule);
+    position: relative;
+    overflow: hidden;
+  }
+  .shot::after {
+    content: attr(data-label);
+    position: absolute; inset: auto 0 0 0;
+    padding: 10px 14px;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.6));
+  }
+  .shot.big { grid-row: 1 / 3; }
+
+  /* commands block */
+  .cmd-block {
+    font-family: var(--mono); font-size: 13px;
+    background: var(--ink); border: 1px solid var(--rule-2);
+    padding: 22px 26px;
+    color: var(--vellum-2);
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .cmd-block .prompt { color: var(--gold); }
+  .cmd-block .arg { color: var(--sage-2); }
+
+  /* FAQ */
+  .faq details {
+    border-bottom: 1px solid var(--rule-2);
+    padding: 16px 0;
+  }
+  .faq summary {
+    font-family: var(--display); font-size: 15px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--vellum);
+    cursor: pointer; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--gold); font-family: var(--serif); font-size: 22px; }
+  .faq details[open] summary::after { content: "–"; }
+  .faq details p { font-family: var(--serif); font-size: 16px; color: var(--vellum-2); margin: 12px 0 4px; }
+
+  /* sidebar */
+  aside.listing-side > * + * { margin-top: 24px; }
+  aside .side-card {
+    background: var(--panel);
+    border: 1px solid var(--rule-2);
+    padding: 22px;
+  }
+  aside h5 {
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--gold); margin: 0 0 14px;
+  }
+  aside .meta-list { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; font-size: 13px; }
+  aside .meta-list dt { font-family: var(--mono); color: var(--muted); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding-top: 2px; }
+  aside .meta-list dd { margin: 0; color: var(--vellum); font-family: var(--sans); }
+  aside .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  aside .tag {
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 5px 10px; border: 1px solid var(--rule);
+    color: var(--vellum-2);
+  }
+
+  /* ---------- Tweaks panel ---------- */
+  #tweaks {
+    position: fixed; right: 24px; bottom: 24px; z-index: 100;
+    width: 300px;
+    background: var(--panel);
+    border: 1px solid var(--gold-dim);
+    padding: 20px;
+    display: none;
+    font-family: var(--sans);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  #tweaks.open { display: block; }
+  #tweaks h6 {
+    font-family: var(--display); letter-spacing: 0.2em; text-transform: uppercase;
+    font-size: 12px; margin: 0 0 14px; color: var(--gold);
+  }
+  #tweaks label { display: block; font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin: 12px 0 6px; font-family: var(--mono); }
+  #tweaks select, #tweaks input[type="text"] {
+    width: 100%; background: var(--ink); border: 1px solid var(--rule);
+    color: var(--vellum); padding: 8px 10px; font-family: var(--sans); font-size: 13px;
+  }
+
+  .foot-note {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule-2);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--vellum-3); letter-spacing: 0.1em;
+    display: flex; justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= TOPBAR ================= -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M12 2 L20 6 V13 C20 17.5 16.5 20.5 12 22 C7.5 20.5 4 17.5 4 13 V6 Z" />
+        <path d="M8 10 L12 7 L16 10 L14 14 H10 Z" fill="currentColor" stroke="none" opacity=".9"/>
+      </svg>
+      Squire · Design Package
+    </div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="identity" aria-selected="true">Identity</button>
+      <button role="tab" data-tab="logo">Logo</button>
+      <button role="tab" data-tab="listing">Listing Page</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= IDENTITY ================= -->
+<section class="tab active" id="tab-identity" data-screen-label="Identity">
+  <div class="eyebrow">01 / Visual Identity Starter</div>
+  <h1 class="page-title">A heraldic system for a serious companion.</h1>
+  <p class="lede">Squire is a hired professional — a D&D henchman, not a pet. The visual language leans on parchment, hammered brass, and blackletter-adjacent display type. Medieval, but restrained. No clipart shields, no foil flourishes.</p>
+
+  <!-- PALETTE -->
+  <h2 class="block-title"><span class="idx">1.1</span> Palette</h2>
+  <div class="grid palette">
+    <div class="swatch" style="background:#0f0e0b;color:#e8dfc9">
+      <div><div class="n">Ink</div><div class="role">Ground</div></div>
+      <div class="hex">#0F0E0B</div>
+    </div>
+    <div class="swatch" style="background:#252119;color:#e8dfc9">
+      <div><div class="n">Slate</div><div class="role">Panel</div></div>
+      <div class="hex">#252119</div>
+    </div>
+    <div class="swatch" style="background:#e8dfc9;color:#1a1813">
+      <div><div class="n">Vellum</div><div class="role">Body</div></div>
+      <div class="hex">#E8DFC9</div>
+    </div>
+    <div class="swatch" style="background:#b89558;color:#1a1813">
+      <div><div class="n">Brass</div><div class="role">Accent · primary</div></div>
+      <div class="hex">#B89558</div>
+    </div>
+    <div class="swatch" style="background:#7a2a2a;color:#e8dfc9">
+      <div><div class="n">Claret</div><div class="role">Accent · alert</div></div>
+      <div class="hex">#7A2A2A</div>
+    </div>
+    <div class="swatch" style="background:#4b5a3e;color:#e8dfc9">
+      <div><div class="n">Moss</div><div class="role">Accent · live</div></div>
+      <div class="hex">#4B5A3E</div>
+    </div>
+  </div>
+  <p class="body-sans" style="margin-top:18px;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.08em">
+    ONE CHROMA, THREE HUES. BRASS CARRIES 90% OF ACCENT LOAD. CLARET + MOSS RESERVED FOR STATE.
+  </p>
+
+  <!-- TYPE -->
+  <h2 class="block-title"><span class="idx">1.2</span> Type</h2>
+  <div class="grid type-grid">
+    <div class="spec">
+      <div class="meta">DISPLAY — CINZEL · 600</div>
+      <div class="sample-display">SQUIRE</div>
+      <div class="stack">
+        <span>Headlines</span><span>Wordmark</span><span>Buttons</span>
+      </div>
+    </div>
+    <div class="spec">
+      <div class="meta">EDITORIAL — CORMORANT GARAMOND · 500 ITALIC</div>
+      <div class="sample-serif">“Do things the hard way.”</div>
+      <div class="stack"><span>Pull-quotes</span><span>Lede</span><span>Body copy (hero)</span></div>
+    </div>
+    <div class="spec">
+      <div class="meta">UI — INTER · 400 / 600</div>
+      <div class="sample-sans">A loyal NPC companion that walks, fights, mines, and patrols — with no teleporting.</div>
+      <div class="stack"><span>Body</span><span>UI labels</span><span>Metadata</span></div>
+    </div>
+    <div class="spec">
+      <div class="meta">MONO — JETBRAINS MONO · 500</div>
+      <div class="sample-sans" style="font-family:var(--mono);font-size:17px;color:var(--gold)">/squire role MINER</div>
+      <div class="stack"><span>Commands</span><span>Eyebrows</span><span>Spec labels</span></div>
+    </div>
+  </div>
+
+  <!-- MOTIFS -->
+  <h2 class="block-title"><span class="idx">1.3</span> Motif System</h2>
+  <div class="grid motifs">
+    <div class="motif-card">
+      <!-- Seal -->
+      <svg viewBox="0 0 200 200" width="180" height="180" fill="none" stroke="#b89558" stroke-width="1.1">
+        <circle cx="100" cy="100" r="84" />
+        <circle cx="100" cy="100" r="76" stroke-width="0.6" />
+        <circle cx="100" cy="100" r="56" />
+        <path d="M100 46 L138 66 V108 C138 130 122 146 100 154 C78 146 62 130 62 108 V66 Z"/>
+        <path d="M82 92 L100 78 L118 92 L110 112 H90 Z" fill="#b89558" stroke="none"/>
+        <g font-family="Cinzel" font-size="9" letter-spacing="3" fill="#b89558" stroke="none" text-anchor="middle">
+          <text x="100" y="36">SQUIRE</text>
+          <text x="100" y="176">MMXXVI</text>
+        </g>
+      </svg>
+      <div class="cap"><span>Heraldic Seal</span><span>1.3.1</span></div>
+    </div>
+    <div class="motif-card">
+      <!-- Crossed tools -->
+      <svg viewBox="0 0 200 200" width="180" height="180" fill="none" stroke="#b89558" stroke-width="1.3">
+        <path d="M60 40 L140 160" />
+        <path d="M140 40 L60 160" />
+        <!-- pickaxe head -->
+        <path d="M52 32 L72 52 L60 64 L40 44 Z" fill="#b89558" stroke="none"/>
+        <!-- sword hilt -->
+        <path d="M148 32 L128 52 L140 64 L160 44 Z" fill="#b89558" stroke="none"/>
+        <circle cx="100" cy="100" r="10" fill="#0f0e0b" stroke="#b89558"/>
+      </svg>
+      <div class="cap"><span>Trades Mark</span><span>1.3.2</span></div>
+    </div>
+    <div class="motif-card">
+      <!-- Rule ornament -->
+      <svg viewBox="0 0 200 200" width="180" height="180" fill="none" stroke="#b89558" stroke-width="1">
+        <path d="M20 100 L80 100" />
+        <path d="M120 100 L180 100" />
+        <path d="M100 100 m-14 0 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0"/>
+        <path d="M100 86 V114 M86 100 H114" />
+        <circle cx="100" cy="100" r="3" fill="#b89558" stroke="none"/>
+        <path d="M80 100 L88 92 M80 100 L88 108" />
+        <path d="M120 100 L112 92 M120 100 L112 108" />
+      </svg>
+      <div class="cap"><span>Section Rule</span><span>1.3.3</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOGO ================= -->
+<section class="tab" id="tab-logo" data-screen-label="Logo">
+  <div class="eyebrow">02 / Wordmark & Mark Exploration</div>
+  <h1 class="page-title">Four directions. Pick one — or remix.</h1>
+  <p class="lede">Each direction pairs a wordmark with a mark that survives down to 16 px. Click a card to set it as the primary across the rest of the package.</p>
+
+  <div class="grid logo-grid" style="margin-top:48px" id="logoGrid">
+
+    <!-- A · Seal / crest -->
+    <div class="logo-card" data-logo="seal">
+      <div class="logo-stage dark">
+        <div style="display:flex;align-items:center;gap:28px">
+          <svg viewBox="0 0 120 140" width="92" height="108" fill="none" stroke="#b89558" stroke-width="1.2">
+            <path d="M60 6 L112 28 V78 C112 106 90 124 60 134 C30 124 8 106 8 78 V28 Z"/>
+            <path d="M60 18 L100 34 V76 C100 98 84 112 60 120 C36 112 20 98 20 76 V34 Z" stroke-width="0.7"/>
+            <path d="M46 64 L60 50 L74 64 L68 82 H52 Z" fill="#b89558" stroke="none"/>
+            <path d="M30 92 H90" stroke-width="0.6"/>
+          </svg>
+          <div style="font-family:Cinzel;font-weight:700;font-size:62px;letter-spacing:.08em;color:#e8dfc9;line-height:.9">
+            SQUIRE
+            <div style="font-family:'Cormorant Garamond';font-style:italic;font-size:16px;letter-spacing:.02em;color:#b89558;margin-top:6px">a loyal hand</div>
+          </div>
+        </div>
+      </div>
+      <div class="logo-meta"><span class="name">A · Seal</span><span>Heraldic / formal</span></div>
+    </div>
+
+    <!-- B · Monogram -->
+    <div class="logo-card" data-logo="monogram">
+      <div class="logo-stage light">
+        <div style="display:flex;align-items:center;gap:24px">
+          <div style="width:92px;height:92px;border:2px solid #0f0e0b;display:grid;place-items:center;position:relative">
+            <div style="font-family:Cinzel;font-weight:700;font-size:58px;color:#0f0e0b;line-height:1">S</div>
+            <div style="position:absolute;inset:4px;border:1px solid #0f0e0b;opacity:.5"></div>
+          </div>
+          <div>
+            <div style="font-family:Cinzel;font-weight:700;font-size:48px;letter-spacing:.18em;color:#0f0e0b;line-height:.9">SQUIRE</div>
+            <div style="font-family:'JetBrains Mono';font-size:11px;letter-spacing:.3em;color:#6e5a38;margin-top:8px">— NEOFORGE · 1.21.1 —</div>
+          </div>
+        </div>
+      </div>
+      <div class="logo-meta"><span class="name">B · Monogram</span><span>Minimal / clean</span></div>
+    </div>
+
+    <!-- C · Banner -->
+    <div class="logo-card" data-logo="banner">
+      <div class="logo-stage dark" style="flex-direction:column;gap:14px">
+        <svg viewBox="0 0 320 60" width="320" height="60" fill="none">
+          <path d="M10 10 H310 V40 L300 50 L295 40 L285 50 L275 40 L265 50 L255 40 L245 50 L235 40 L225 50 L215 40 L205 50 L195 40 L185 50 L175 40 L165 50 L155 40 L145 50 L135 40 L125 50 L115 40 L105 50 L95 40 L85 50 L75 40 L65 50 L55 40 L45 50 L35 40 L25 50 L15 40 L10 45 Z"
+                stroke="#b89558" stroke-width="1.2"/>
+        </svg>
+        <div style="font-family:Cinzel;font-weight:700;font-size:58px;letter-spacing:.16em;color:#e8dfc9;line-height:.9">SQUIRE</div>
+        <div style="font-family:'Cormorant Garamond';font-style:italic;font-size:15px;color:#b89558">Do things the hard way.</div>
+      </div>
+      <div class="logo-meta"><span class="name">C · Banner</span><span>Narrative / hero</span></div>
+    </div>
+
+    <!-- D · Tactical -->
+    <div class="logo-card" data-logo="tactical">
+      <div class="logo-stage dark">
+        <div style="display:flex;align-items:center;gap:20px">
+          <svg viewBox="0 0 80 80" width="72" height="72" fill="none" stroke="#b89558" stroke-width="1.4">
+            <rect x="10" y="10" width="60" height="60"/>
+            <path d="M10 10 L70 70 M70 10 L10 70" stroke-width="0.5"/>
+            <rect x="26" y="26" width="28" height="28" fill="#b89558" stroke="none"/>
+            <path d="M32 40 L38 46 L48 34" stroke="#0f0e0b" stroke-width="2"/>
+          </svg>
+          <div>
+            <div style="font-family:Cinzel;font-weight:700;font-size:54px;letter-spacing:.3em;color:#e8dfc9;line-height:.9;border-bottom:1px solid #b89558;padding-bottom:6px">SQUIRE</div>
+            <div style="font-family:'JetBrains Mono';font-size:11px;letter-spacing:.3em;color:#8b8270;margin-top:8px;display:flex;justify-content:space-between"><span>v3.0.1</span><span>NEOFORGE</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="logo-meta"><span class="name">D · Tactical</span><span>Systems / modpack</span></div>
+    </div>
+
+  </div>
+
+  <!-- Favicon test -->
+  <h2 class="block-title"><span class="idx">2.1</span> Size Test</h2>
+  <p class="body-sans" style="color:var(--muted);max-width:60ch">Each mark down-rendered. The shield-cross (A) reads cleanest at 16 px; the monogram (B) and tactical (D) also hold. The banner (C) is a hero-only mark and falls back to the monogram at small sizes.</p>
+  <div class="favicon-strip" style="margin-top:24px">
+    <div class="favi">
+      <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#b89558" stroke-width="1.6">
+        <path d="M12 2 L20 6 V13 C20 17.5 16.5 20.5 12 22 C7.5 20.5 4 17.5 4 13 V6 Z"/>
+        <path d="M9 11 L12 8.5 L15 11 L13.5 14 H10.5 Z" fill="#b89558" stroke="none"/>
+      </svg>
+    </div>
+    <div class="favi sm">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b89558" stroke-width="2">
+        <path d="M12 2 L20 6 V13 C20 17.5 16.5 20.5 12 22 C7.5 20.5 4 17.5 4 13 V6 Z"/>
+      </svg>
+    </div>
+    <div class="favi xs">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="#b89558">
+        <path d="M12 2 L20 6 V13 C20 17.5 16.5 20.5 12 22 C7.5 20.5 4 17.5 4 13 V6 Z"/>
+      </svg>
+    </div>
+    <div class="favi"><div style="font-family:Cinzel;font-weight:700;font-size:22px;color:#b89558">S</div></div>
+    <div class="favi sm"><div style="font-family:Cinzel;font-weight:700;font-size:14px;color:#b89558">S</div></div>
+    <div class="favi xs"><div style="font-family:Cinzel;font-weight:700;font-size:10px;color:#b89558">S</div></div>
+  </div>
+</section>
+
+<!-- ================= LISTING ================= -->
+<section class="tab" id="tab-listing" data-screen-label="Listing">
+  <div class="eyebrow">03 / Modrinth · CurseForge Listing Mock</div>
+  <h1 class="page-title">The distribution page.</h1>
+  <p class="lede">A host-agnostic mock — the content & layout you'd paste into Modrinth (description block) and CurseForge (description + additional images). Swap screenshot placeholders once you capture in-game shots.</p>
+
+  <div class="listing" style="margin-top:48px">
+
+    <!-- HERO -->
+    <div class="listing-hero">
+      <div class="hero-badge">Minecraft · NeoForge 1.21.1</div>
+      <div class="hero-content">
+        <div class="hero-wordmark" id="heroWordmark">SQUIRE</div>
+        <div class="hero-tag">A loyal hand that walks, fights, and works — no teleporting, no cheating. The companion mod for players who want a henchman, not a pet.</div>
+        <div class="hero-tech">
+          <span>v3.0.1</span><span>NEOFORGE 1.21.1</span><span>ATM10 READY</span><span>MIT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK BAR -->
+    <div class="listing-bar">
+      <div class="stat-row">
+        <div><strong>— —</strong>Downloads</div>
+        <div><strong>84</strong>Source files</div>
+        <div><strong>15.6k</strong>Lines of code</div>
+        <div><strong>v3.0.1</strong>Apr 16, 2026</div>
+      </div>
+      <div class="cta-row">
+        <button class="btn ghost">Source</button>
+        <button class="btn">Download .jar</button>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="listing-body">
+      <div class="listing-content">
+
+        <!-- PITCH -->
+        <section>
+          <h3>The pitch</h3>
+          <p>You don't want a pet. You want a hand — someone who keeps working when you log off the shaft and pop up for a snack, someone who can be trusted with a sword and a patrol route, someone who remembers the way home.</p>
+          <p>Squire adds a single, serious NPC: a companion that does things the way a player would. It walks, swims, eats, and sleeps. It fights with the weapon you handed it. It mines in shafts, it farms in rows, it fishes where the water is deep enough. No teleport pings, no free labor. You hire it, you equip it, and it earns its keep.</p>
+        </section>
+
+        <!-- FEATURES -->
+        <section>
+          <h3>What it does</h3>
+          <div class="feat-grid">
+            <div class="feat">
+              <svg class="f-sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M4 20 L12 4 L20 20 Z"/><path d="M8 14 H16"/>
+              </svg>
+              <h4>Plays like a player</h4>
+              <p>Walks, swims, eats, rests. No teleporting to you, no shortcuts through terrain. If the route is broken, it finds another one — or it stops and waits.</p>
+            </div>
+            <div class="feat">
+              <svg class="f-sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <rect x="4" y="4" width="16" height="16"/><path d="M4 8 H20 M8 4 V20"/>
+              </svg>
+              <h4>Autonomous work</h4>
+              <p>Sweep-mine or shaft-mine on command. Farm a row, harvest, replant, repeat. Fish at any body of water deep enough to cast into.</p>
+            </div>
+            <div class="feat">
+              <svg class="f-sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <circle cx="12" cy="12" r="9"/><path d="M12 3 V12 L18 15"/>
+              </svg>
+              <h4>Roles, not macros</h4>
+              <p><span style="font-family:var(--mono);color:var(--gold)">/squire role MINER | FARMER | FISHER</span> — switch posture and the AI adjusts tactics, targets, and daily rhythm.</p>
+            </div>
+            <div class="feat">
+              <svg class="f-sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M6 20 L6 10 L12 4 L18 10 L18 20 Z"/><path d="M10 20 V14 H14 V20"/>
+              </svg>
+              <h4>Home chest aware</h4>
+              <p>Designate a home chest and the squire deposits hauls, retrieves tools, and manages its own inventory between tasks.</p>
+            </div>
+            <div class="feat">
+              <svg class="f-sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M3 18 L21 18"/><path d="M6 18 L6 10 L10 8 L14 8 L18 10 L18 18"/><circle cx="8" cy="18" r="2"/><circle cx="16" cy="18" r="2"/>
+              </svg>
+              <h4>Mounted patrols</h4>
+              <p>Put it on a horse with <span style="font-family:var(--mono);color:var(--gold)">/squire mount</span>. It rides a patrol line, engages threats with the weapon you gave it, returns when clear.</p>
+            </div>
+            <div class="feat">
+              <svg class="f-sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                <path d="M4 6 H20 V20 H4 Z"/><path d="M4 6 L12 2 L20 6"/><path d="M9 12 H15 M9 16 H15"/>
+              </svg>
+              <h4>The Squire's Manual</h4>
+              <p>Full Patchouli guidebook in-game. Every command, every role, every quirk — written in character, read at your pace.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREENSHOTS -->
+        <section>
+          <h3>Screenshots</h3>
+          <div class="gallery">
+            <div class="shot big" data-label="HERO · Squire patrolling at dusk"></div>
+            <div class="shot" data-label="Mining shaft"></div>
+            <div class="shot" data-label="Farm row"></div>
+            <div class="shot" data-label="Mounted"></div>
+            <div class="shot" data-label="Guidebook"></div>
+          </div>
+          <p class="body-sans" style="color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-top:14px">
+            Placeholders — capture 1920×1080 in-game and drop in. Recommended: 1 hero + 4 feature beats.
+          </p>
+        </section>
+
+        <!-- COMMANDS -->
+        <section>
+          <h3>Commands</h3>
+          <div class="cmd-block">
+<span class="prompt">/squire</span> info          <span style="color:var(--muted)"># status, level, gear</span><br>
+<span class="prompt">/squire</span> name <span class="arg">"Jorah"</span>  <span style="color:var(--muted)"># give them a name</span><br>
+<span class="prompt">/squire</span> role <span class="arg">MINER | FARMER | FISHER</span><br>
+<span class="prompt">/squire</span> mine          <span style="color:var(--muted)"># sweep pattern from current spot</span><br>
+<span class="prompt">/squire</span> shaft         <span style="color:var(--muted)"># descend-and-branch</span><br>
+<span class="prompt">/squire</span> farm          <span style="color:var(--muted)"># patrol-row harvest/replant</span><br>
+<span class="prompt">/squire</span> fish          <span style="color:var(--muted)"># auto-find water</span><br>
+<span class="prompt">/squire</span> mount / dismount<br>
+<span class="prompt">/squire</span> homechest     <span style="color:var(--muted)"># designate deposit target</span><br>
+<span class="prompt">/squire</span> mode | appearance | place | list | clear | kill
+          </div>
+        </section>
+
+        <!-- FAQ -->
+        <section>
+          <h3>FAQ</h3>
+          <div class="faq">
+            <details open>
+              <summary>Does it work with ATM10?</summary>
+              <p>Yes. Squire is a NeoForge 1.21.1 mod and has been tested alongside All the Mods 10. It also runs standalone or in smaller packs.</p>
+            </details>
+            <details>
+              <summary>Can it teleport to me?</summary>
+              <p>No — by design. The squire walks the world the way you do. If you outpace it, it catches up on its own terms.</p>
+            </details>
+            <details>
+              <summary>Does it duplicate items?</summary>
+              <p>No. Every item it deposits was mined, harvested, or fished by its own hand. No spawned loot, no multipliers.</p>
+            </details>
+            <details>
+              <summary>Can I have more than one?</summary>
+              <p>One active squire per player is the design intent. Plans for retinues are tracked in the roadmap.</p>
+            </details>
+            <details>
+              <summary>How do I report bugs?</summary>
+              <p>GitHub issues on the source repo. Include your modpack list, NeoForge version, and a reproduction seed if possible.</p>
+            </details>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside class="listing-side">
+        <div class="side-card">
+          <h5>At a glance</h5>
+          <dl class="meta-list">
+            <dt>Version</dt><dd>3.0.1</dd>
+            <dt>Released</dt><dd>Apr 16, 2026</dd>
+            <dt>Loader</dt><dd>NeoForge</dd>
+            <dt>MC</dt><dd>1.21.1</dd>
+            <dt>License</dt><dd>MIT</dd>
+            <dt>Client</dt><dd>Required</dd>
+            <dt>Server</dt><dd>Required</dd>
+            <dt>Singleplayer</dt><dd>Yes</dd>
+          </dl>
+        </div>
+
+        <div class="side-card">
+          <h5>Categories</h5>
+          <div class="tag-row">
+            <span class="tag">Adventure</span>
+            <span class="tag">Mobs</span>
+            <span class="tag">Utility</span>
+            <span class="tag">Automation</span>
+            <span class="tag">Quality of Life</span>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <h5>Links</h5>
+          <div style="display:grid;gap:10px;font-family:var(--sans);font-size:13px">
+            <a href="#" style="color:var(--gold);text-decoration:none;border-bottom:1px solid var(--rule);padding-bottom:6px">→ Source on GitHub</a>
+            <a href="#" style="color:var(--gold);text-decoration:none;border-bottom:1px solid var(--rule);padding-bottom:6px">→ Issue tracker</a>
+            <a href="#" style="color:var(--gold);text-decoration:none;border-bottom:1px solid var(--rule);padding-bottom:6px">→ Changelog</a>
+            <a href="#" style="color:var(--gold);text-decoration:none">→ The Squire's Manual</a>
+          </div>
+        </div>
+
+        <div class="side-card" style="background:transparent;border-color:var(--gold-dim)">
+          <h5>Support</h5>
+          <p style="font-family:var(--serif);font-size:15px;color:var(--vellum-2);margin:0 0 12px;font-style:italic">"Paid in coin or in kind."</p>
+          <button class="btn" style="width:100%">Become a patron</button>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <div class="foot-note">
+    <span>DRAFT · ORIGINAL DESIGN FOR SQUIRE MOD</span>
+    <span>PASTE-READY FOR MODRINTH / CURSEFORGE</span>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ TWEAKS PANEL ============ -->
+<div id="tweaks">
+  <h6>Tweaks</h6>
+
+  <label>Primary logo</label>
+  <select id="tw-logo">
+    <option value="seal">A · Seal</option>
+    <option value="monogram">B · Monogram</option>
+    <option value="banner">C · Banner</option>
+    <option value="tactical">D · Tactical</option>
+  </select>
+
+  <label>Accent</label>
+  <select id="tw-accent">
+    <option value="gold">Brass (default)</option>
+    <option value="claret">Claret</option>
+    <option value="sage">Moss</option>
+  </select>
+
+  <label>Hero wordmark style</label>
+  <select id="tw-hero">
+    <option value="banner">Full wordmark</option>
+    <option value="seal">Seal + wordmark</option>
+    <option value="tactical">Tactical block</option>
+  </select>
+
+  <div style="margin-top:16px;font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.08em">
+    Toggle Tweaks from the toolbar.
+  </div>
+</div>
+
+<script>
+  // ===== Tab nav =====
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const sections = document.querySelectorAll('section.tab');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.setAttribute('aria-selected', x === t));
+    sections.forEach(s => s.classList.toggle('active', s.id === 'tab-' + t.dataset.tab));
+    localStorage.setItem('squire.tab', t.dataset.tab);
+  }));
+  const savedTab = localStorage.getItem('squire.tab');
+  if (savedTab) {
+    const btn = document.querySelector(`nav.tabs button[data-tab="${savedTab}"]`);
+    if (btn) btn.click();
+  }
+
+  // ===== Logo selection =====
+  const grid = document.getElementById('logoGrid');
+  function applyLogo(which) {
+    grid.querySelectorAll('.logo-card').forEach(c =>
+      c.classList.toggle('selected', c.dataset.logo === which)
+    );
+    // Tweak hero wordmark rendering based on logo
+    const hero = document.getElementById('heroWordmark');
+    if (hero) {
+      hero.style.fontFamily = which === 'tactical' ? 'Cinzel' : 'Cinzel';
+      hero.style.letterSpacing = which === 'tactical' ? '0.3em' : '0.06em';
+    }
+    TWEAKS.primaryLogo = which;
+  }
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('.logo-card');
+    if (!card) return;
+    applyLogo(card.dataset.logo);
+    const sel = document.getElementById('tw-logo');
+    if (sel) sel.value = card.dataset.logo;
+    persist();
+  });
+  applyLogo(TWEAKS.primaryLogo);
+
+  // ===== Accent swap =====
+  function applyAccent(which) {
+    const map = {
+      gold:   { accent: '#b89558', accent2: '#d9b878', dim: '#6e5a38' },
+      claret: { accent: '#a94545', accent2: '#c66a6a', dim: '#5a1f1f' },
+      sage:   { accent: '#7a8a63', accent2: '#9aaa83', dim: '#3e4a33' },
+    };
+    const c = map[which] || map.gold;
+    document.documentElement.style.setProperty('--gold', c.accent);
+    document.documentElement.style.setProperty('--gold-2', c.accent2);
+    document.documentElement.style.setProperty('--gold-dim', c.dim);
+    TWEAKS.accent = which;
+  }
+  applyAccent(TWEAKS.accent);
+
+  // ===== Tweaks plumbing =====
+  const panel = document.getElementById('tweaks');
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d || typeof d !== 'object') return;
+    if (d.type === '__activate_edit_mode') panel.classList.add('open');
+    if (d.type === '__deactivate_edit_mode') panel.classList.remove('open');
+  });
+  window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+  function persist() {
+    window.parent.postMessage({
+      type: '__edit_mode_set_keys',
+      edits: { ...TWEAKS }
+    }, '*');
+  }
+
+  document.getElementById('tw-logo').value = TWEAKS.primaryLogo;
+  document.getElementById('tw-accent').value = TWEAKS.accent;
+  document.getElementById('tw-hero').value = TWEAKS.heroVariant;
+
+  document.getElementById('tw-logo').addEventListener('change', e => { applyLogo(e.target.value); persist(); });
+  document.getElementById('tw-accent').addEventListener('change', e => { applyAccent(e.target.value); persist(); });
+  document.getElementById('tw-hero').addEventListener('change', e => {
+    TWEAKS.heroVariant = e.target.value;
+    const hero = document.getElementById('heroWordmark');
+    if (!hero) return persist();
+    if (e.target.value === 'tactical') { hero.textContent = 'SQUIRE'; hero.style.letterSpacing = '0.32em'; }
+    else { hero.textContent = 'SQUIRE'; hero.style.letterSpacing = '0.06em'; }
+    persist();
+  });
+</script>
+
+</body>
+</html>
