@@ -175,6 +175,16 @@ public class CombatHandler {
         return currentTactic;
     }
 
+    /** Ticks until the next melee swing is ready. Exposed for /squire info diagnostics. */
+    public int getTicksUntilNextAttack() {
+        return ticksUntilNextAttack;
+    }
+
+    /** Configured attack cooldown (ticks) after each swing. Exposed for /squire info diagnostics. */
+    public int getAttackCooldown() {
+        return attackCooldown;
+    }
+
     // ================================================================
     // Flee logic (CMB-06)
     // ================================================================

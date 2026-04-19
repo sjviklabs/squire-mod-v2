@@ -334,6 +334,51 @@ public final class SquireCommand {
             source.sendSuccess(() -> Component.literal(status + ability.id() + " — " + ability.description()), false);
         }
 
+        // Combat diagnostics — for debugging "squire won't fight" issues (v3.1.4).
+        // Shows FSM state + target + distances + attack cooldown so failures are self-diagnosing.
+        source.sendSuccess(() -> Component.literal("--- Combat ---"), false);
+        var brain = squire.getSquireBrain();
+        if (brain != null) {
+            var state = brain.getCurrentState();
+            var combat = brain.getCombatHandler();
+            var target = squire.getTarget();
+            double distOwnerSq = squire.distanceToSqr(player);
+            double followRange = squire.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.FOLLOW_RANGE);
+            double leash = com.sjviklabs.squire.config.SquireConfig.combatLeashDistance.get();
+            double attackDmg = squire.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+            net.minecraft.world.item.ItemStack mainhand = squire.getMainHandItem();
+
+            String stateLine = String.format("State: %s | Tactic: %s | Mode: %s",
+                    state, combat.getCurrentTactic(), modeName(squire.getSquireMode()));
+            source.sendSuccess(() -> Component.literal(stateLine), false);
+
+            String targetLine;
+            if (target == null) {
+                targetLine = "Target: (none)";
+            } else {
+                double distTargetSq = squire.distanceToSqr(target);
+                targetLine = String.format("Target: %s | %.1fb away | alive=%s | followRange=%.0fb",
+                        target.getType().toShortString(),
+                        Math.sqrt(distTargetSq),
+                        target.isAlive(),
+                        followRange);
+            }
+            final String tl = targetLine;
+            source.sendSuccess(() -> Component.literal(tl), false);
+
+            String ownerLine = String.format("Owner: %.1fb away | leashDistance=%.0fb | breach=%s",
+                    Math.sqrt(distOwnerSq), leash,
+                    distOwnerSq > leash * leash ? "YES" : "no");
+            source.sendSuccess(() -> Component.literal(ownerLine), false);
+
+            String weaponLine = String.format("Weapon: %s | ATK=%.1f | cooldown=%d/%d ticks",
+                    mainhand.isEmpty() ? "(bare hands)" : mainhand.getItem().toString(),
+                    attackDmg,
+                    combat.getTicksUntilNextAttack(),
+                    combat.getAttackCooldown());
+            source.sendSuccess(() -> Component.literal(weaponLine), false);
+        }
+
         return 1;
     }
 

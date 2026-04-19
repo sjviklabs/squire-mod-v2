@@ -426,8 +426,40 @@ public class FarmingHandler implements WorkHandler {
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof CropBlock crop) || !crop.isMaxAge(state)) return false;
 
-        // Break the crop — drops items naturally into the world; squire picks up via ItemHandler
-        level.destroyBlock(pos, true, squire);
+        // v3.1.4 — compute drops BEFORE breaking so we can insert them directly into the
+        // squire's inventory. Previously we called destroyBlock(pos, true, squire) which
+        // spawned ItemEntities on the ground, and then performPlant relied on a seed being
+        // in the inventory — which it usually wasn't because the ItemHandler pickup state
+        // is source-locked to IDLE/FOLLOWING_OWNER and never fires from FARM_SCAN. Net
+        // effect: seeds accumulated on the ground and replant never happened. Fix: short-
+        // circuit the ItemEntity -> pickup round-trip entirely for our own harvests.
+        net.minecraft.world.level.storage.loot.LootParams.Builder paramsBuilder =
+                new net.minecraft.world.level.storage.loot.LootParams.Builder(level)
+                        .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_STATE, state)
+                        .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.ORIGIN, net.minecraft.world.phys.Vec3.atCenterOf(pos))
+                        .withParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.TOOL, squire.getMainHandItem())
+                        .withOptionalParameter(net.minecraft.world.level.storage.loot.parameters.LootContextParams.THIS_ENTITY, squire);
+        List<ItemStack> drops = state.getDrops(paramsBuilder);
+
+        // Break without natural drops — we're taking them directly.
+        level.destroyBlock(pos, false, squire);
+
+        // Insert drops into backpack. Overflow spawns on ground as a safety net so nothing
+        // is silently swallowed if the pack is full.
+        com.sjviklabs.squire.inventory.SquireItemHandler handler = squire.getItemHandler();
+        if (handler != null) {
+            for (ItemStack drop : drops) {
+                ItemStack remaining = drop;
+                for (int slot = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS;
+                     slot < handler.getSlots(); slot++) {
+                    if (remaining.isEmpty()) break;
+                    remaining = handler.insertItem(slot, remaining, false);
+                }
+                if (!remaining.isEmpty()) {
+                    squire.spawnAtLocation(remaining);
+                }
+            }
+        }
 
         // Award harvest XP
         if (squire.getProgressionHandler() != null) {

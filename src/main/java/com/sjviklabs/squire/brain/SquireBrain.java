@@ -640,26 +640,33 @@ public class SquireBrain {
     }
 
     /**
-     * PICKING_UP_ITEM transitions (plan 05-04):
+     * PICKING_UP_ITEM transitions (plan 05-04, broadened in v3.1.4).
      * Priority 45 (work tier — below follow at 30 but above patrol/farming).
      *
-     * Enter from IDLE or FOLLOWING_OWNER when items are nearby and inventory has space.
+     * v3.1.4: was source-locked to IDLE / FOLLOWING_OWNER — meaning the squire
+     * never picked up loot while patrolling, wandering, or between farm actions.
+     * Now fires as a global interrupt from any non-critical state. Combat, mining,
+     * sitting, eating, fleeing, and active farm-work are NOT interruptible so the
+     * squire doesn't abandon a swing or a mining task to chase a seed.
      * Per-tick: delegate to ItemHandler.tick() which returns PICKING_UP_ITEM while items remain.
      * Exit to IDLE when no items remain or inventory is full.
      */
     private void registerItemPickupTransitions() {
-        // Enter PICKING_UP_ITEM from IDLE when items are nearby
+        // Global enter PICKING_UP_ITEM — only from interruptible states.
         machine.addTransition(new AITransition(
-                SquireAIState.IDLE,
-                item::hasNearbyItems,
-                s -> { item.start(); return SquireAIState.PICKING_UP_ITEM; },
-                10, 45
-        ));
-
-        // Enter PICKING_UP_ITEM from FOLLOWING_OWNER when items are nearby
-        machine.addTransition(new AITransition(
-                SquireAIState.FOLLOWING_OWNER,
-                item::hasNearbyItems,
+                null,
+                () -> {
+                    SquireAIState cur = machine.getCurrentState();
+                    boolean interruptible = cur == SquireAIState.IDLE
+                            || cur == SquireAIState.FOLLOWING_OWNER
+                            || cur == SquireAIState.PATROL_WALK
+                            || cur == SquireAIState.PATROL_WAIT
+                            || cur == SquireAIState.FARM_SCAN
+                            || cur == SquireAIState.LOOKING_AROUND
+                            || cur == SquireAIState.WANDERING;
+                    if (!interruptible) return false;
+                    return item.hasNearbyItems();
+                },
                 s -> { item.start(); return SquireAIState.PICKING_UP_ITEM; },
                 10, 45
         ));
