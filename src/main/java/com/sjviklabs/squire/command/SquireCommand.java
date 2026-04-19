@@ -124,7 +124,7 @@ public final class SquireCommand {
                 )
             )
 
-            // /squire patrol — start patrolling from nearest signpost
+            // /squire patrol — walk the perimeter of the crest-marked area
             .then(Commands.literal("patrol")
                 .executes(ctx -> startPatrol(ctx.getSource()))
                 .then(Commands.literal("stop")

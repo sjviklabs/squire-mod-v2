@@ -67,9 +67,6 @@ public class CombatHandler {
     // ---- Ranged state ----
     private int rangedChargeTicks;  // ticks bow has been drawn
 
-    // ---- Halberd sweep state (CMB-08) ----
-    private int halberdHitCount;    // instance field — resets on combat start; not static, not item NBT
-
     public CombatHandler(SquireEntity squire) {
         this.squire = squire;
     }
