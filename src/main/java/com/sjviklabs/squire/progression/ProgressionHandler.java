@@ -105,6 +105,28 @@ public class ProgressionHandler {
     }
 
     /**
+     * Public XP grant — used by /squire xp add. Delegates to {@link #addXP} so level-up
+     * effects and entity sync behave identically to XP earned through normal play.
+     * Negative amounts are clamped to zero (don't use this to subtract; use {@link #setXP}).
+     */
+    public void grantXP(int amount) {
+        if (amount <= 0) return;
+        addXP(amount);
+    }
+
+    /**
+     * Public XP absolute-set — used by /squire xp set. Replaces the total, then
+     * recalculates level. Pass 0 to reset to fresh. Fires level-up effects if the new
+     * total crosses a threshold upward; does NOT fire level-DOWN effects when the new
+     * total is lower (the squire quietly re-levels).
+     */
+    public void setXP(int total) {
+        this.totalXP = Math.max(0, total);
+        squire.setTotalXP(this.totalXP);
+        recalculateLevel();
+    }
+
+    /**
      * Walk tier thresholds from the datapack loader.
      * Each tier's xpToNext is the cumulative XP required to advance past that tier.
      * Falls back to SquireTier enum minLevel boundaries if loader hasn't populated yet.

@@ -1,6 +1,7 @@
 package com.sjviklabs.squire.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.sjviklabs.squire.SquireMod;
 import com.sjviklabs.squire.entity.SquireEntity;
@@ -87,6 +88,27 @@ public final class SquireCommand {
                 .requires(src -> src.hasPermission(2))
                 .executes(ctx -> toggleGodMode(ctx.getSource())))
 
+            // /squire xp add <amount> [player]   (admin: grant XP)
+            // /squire xp set <amount> [player]   (admin: set absolute XP total)
+            // XP unlocks abilities at tier thresholds, so this is a progression cheat —
+            // OP 2 gated. Without a player argument, targets the caller's own squire.
+            .then(Commands.literal("xp")
+                .requires(src -> src.hasPermission(2))
+                .then(Commands.literal("add")
+                    .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                        .executes(ctx -> addXP(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "amount"), null))
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .executes(ctx -> addXP(ctx.getSource(),
+                                    IntegerArgumentType.getInteger(ctx, "amount"),
+                                    EntityArgument.getPlayer(ctx, "player"))))))
+                .then(Commands.literal("set")
+                    .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                        .executes(ctx -> setXP(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "amount"), null))
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .executes(ctx -> setXP(ctx.getSource(),
+                                    IntegerArgumentType.getInteger(ctx, "amount"),
+                                    EntityArgument.getPlayer(ctx, "player")))))))
+
             // /squire mine   — mine the crest-selected area
             .then(Commands.literal("mine").executes(ctx -> mineArea(ctx.getSource())))
 
@@ -114,16 +136,22 @@ public final class SquireCommand {
                 .executes(ctx -> patrolStart(ctx.getSource()))
                 .then(Commands.literal("stop").executes(ctx -> patrolStop(ctx.getSource()))))
 
-            // /squire store <pos> — deposit backpack contents into the chest at pos
+            // /squire store [pos] — deposit backpack into chest at pos, or at the block
+            // the caller is looking at if pos is omitted (v4.0.9). Crosshair targeting
+            // matches how players actually interact with blocks — typing coords by hand is
+            // painful when you're standing three blocks from the chest.
             .then(Commands.literal("store")
+                .executes(ctx -> storeAtCrosshair(ctx.getSource()))
                 .then(Commands.argument("pos", net.minecraft.commands.arguments.coordinates.BlockPosArgument.blockPos())
                     .executes(ctx -> storeAt(ctx.getSource(),
                             net.minecraft.commands.arguments.coordinates.BlockPosArgument.getBlockPos(ctx, "pos")))))
 
             // /squire resupply [pos] — pull missing gear from chest at pos, or the last
-            // chest the squire deposited into if pos is omitted (v4.0.3).
+            // chest the squire deposited into if pos is omitted (v4.0.3). v4.0.9 adds
+            // crosshair targeting too: `/squire resupply` with no args and looking at a
+            // chest routes to that chest, matching the /store ergonomics.
             .then(Commands.literal("resupply")
-                .executes(ctx -> resupplyFromLast(ctx.getSource()))
+                .executes(ctx -> resupplyDefault(ctx.getSource()))
                 .then(Commands.argument("pos", net.minecraft.commands.arguments.coordinates.BlockPosArgument.blockPos())
                     .executes(ctx -> resupplyAt(ctx.getSource(),
                             net.minecraft.commands.arguments.coordinates.BlockPosArgument.getBlockPos(ctx, "pos")))))
@@ -357,6 +385,71 @@ public final class SquireCommand {
     }
 
     // ================================================================
+    // /squire xp add|set (admin cheat — OP 2)
+    // ================================================================
+
+    /**
+     * Add XP to a squire's progression. {@code target} may be null, in which case the
+     * command targets the caller's own squire. Level-up effects (tier advance, ability
+     * unlocks) fire normally if the new total crosses a threshold.
+     */
+    private static int addXP(CommandSourceStack source, int amount, @Nullable ServerPlayer target) {
+        SquireEntity squire = resolveSquireForAdminCommand(source, target);
+        if (squire == null) return 0;
+        var prog = squire.getProgressionHandler();
+        if (prog == null) {
+            source.sendFailure(Component.literal("Squire not ready — progression handler not initialized yet."));
+            return 0;
+        }
+        prog.grantXP(amount);
+        final String who = target == null ? "your squire" : target.getName().getString() + "'s squire";
+        source.sendSuccess(() -> Component.literal(
+                "Granted " + amount + " XP to " + who + " (total: " + squire.getTotalXP() + ")"),
+                true);   // broadcast to ops
+        return 1;
+    }
+
+    /**
+     * Set a squire's XP to an absolute value. Pass 0 to reset progression. The handler
+     * re-derives level from the new total; level-up effects fire upward but there are
+     * no level-down effects (the squire quietly re-levels).
+     */
+    private static int setXP(CommandSourceStack source, int amount, @Nullable ServerPlayer target) {
+        SquireEntity squire = resolveSquireForAdminCommand(source, target);
+        if (squire == null) return 0;
+        var prog = squire.getProgressionHandler();
+        if (prog == null) {
+            source.sendFailure(Component.literal("Squire not ready — progression handler not initialized yet."));
+            return 0;
+        }
+        prog.setXP(amount);
+        final String who = target == null ? "your squire" : target.getName().getString() + "'s squire";
+        source.sendSuccess(() -> Component.literal(
+                "Set " + who + " XP to " + amount + " (level " + squire.getLevel() + ")"),
+                true);
+        return 1;
+    }
+
+    /**
+     * Find the squire to target for an admin command. If {@code target} is null, use the
+     * caller's own squire (requires caller to be a ServerPlayer). Otherwise use the
+     * target player's squire. Emits command-specific failure messages and returns null
+     * if no squire is resolvable.
+     */
+    @Nullable
+    private static SquireEntity resolveSquireForAdminCommand(CommandSourceStack source, @Nullable ServerPlayer target) {
+        if (target != null) {
+            SquireEntity squire = findOwnedSquire(target);
+            if (squire == null) {
+                source.sendFailure(Component.literal(target.getName().getString() + " has no active squire."));
+                return null;
+            }
+            return squire;
+        }
+        return requireSquire(source);   // null-on-failure, sends its own message
+    }
+
+    // ================================================================
     // /squire godmode (admin)
     // ================================================================
 
@@ -568,9 +661,87 @@ public final class SquireCommand {
         return 1;
     }
 
+    /**
+     * {@code /squire store} with no coords: raycast from the caller's eye position, use
+     * the hit block's position as the chest target. Matches the native MC pattern for
+     * "this block I'm looking at" (see /data get block, /setblock).
+     *
+     * <p>Max reach 6 blocks so there's some give beyond the survival interact distance —
+     * a squire owner shouldn't have to stand adjacent to the chest to tell the squire
+     * to use it.
+     */
+    private static int storeAtCrosshair(CommandSourceStack source) {
+        net.minecraft.core.BlockPos pos = crosshairBlockPos(source, 6.0);
+        if (pos == null) return 0;
+        return storeAt(source, pos);
+    }
+
     // ================================================================
     // /squire resupply [pos] — pull missing gear from chest (v4.0.3)
     // ================================================================
+
+    /**
+     * {@code /squire resupply} with no args has two fallbacks:
+     * <ol>
+     *   <li>If the caller is looking at a container, use that.</li>
+     *   <li>Otherwise fall back to the last chest the squire deposited into (v4.0.3).</li>
+     * </ol>
+     * Crosshair wins because it's more specific — the player explicitly pointed at a chest.
+     */
+    private static int resupplyDefault(CommandSourceStack source) {
+        net.minecraft.core.BlockPos pos = crosshairBlockPosSilent(source, 6.0);
+        if (pos != null && isContainerAt(source, pos)) {
+            return resupplyAt(source, pos);
+        }
+        return resupplyFromLast(source);
+    }
+
+    /**
+     * Raycast from the caller's eye to the block they're looking at. Returns null + sends
+     * a failure message if the caller isn't a player or isn't looking at a block.
+     */
+    @Nullable
+    private static net.minecraft.core.BlockPos crosshairBlockPos(CommandSourceStack source, double reach) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            source.sendFailure(Component.literal("This command requires a player."));
+            return null;
+        }
+        var hit = player.pick(reach, 0.0f, false);
+        if (!(hit instanceof net.minecraft.world.phys.BlockHitResult bhr)
+                || bhr.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
+            source.sendFailure(Component.literal(
+                    "Look at a chest (within " + (int) reach + " blocks) or provide coordinates."));
+            return null;
+        }
+        return bhr.getBlockPos();
+    }
+
+    /** Silent variant — returns null on miss without sending a failure message. */
+    @Nullable
+    private static net.minecraft.core.BlockPos crosshairBlockPosSilent(CommandSourceStack source, double reach) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            return null;
+        }
+        var hit = player.pick(reach, 0.0f, false);
+        if (!(hit instanceof net.minecraft.world.phys.BlockHitResult bhr)
+                || bhr.getType() == net.minecraft.world.phys.HitResult.Type.MISS) {
+            return null;
+        }
+        return bhr.getBlockPos();
+    }
+
+    /** True if there's a container (capability or vanilla BaseContainerBlockEntity) at pos. */
+    private static boolean isContainerAt(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        if (!(source.getLevel() instanceof net.minecraft.server.level.ServerLevel lvl)) return false;
+        return lvl.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK, pos, null) != null
+                || lvl.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
+    }
 
     private static int resupplyAt(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
         SquireEntity squire = requireSquire(source);
