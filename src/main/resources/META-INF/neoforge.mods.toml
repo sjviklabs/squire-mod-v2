@@ -7,6 +7,11 @@ license = "MIT"
     version = "${mod_version}"
     displayName = "Squire Mod"
     description = "A real companion — walks everywhere, never teleports."
+    # Mod logo shown in the in-game "Mods" menu. Path is jar-root-relative; the PNG lives
+    # at src/main/resources/logo.png and ships at /logo.png in the jar.
+    logoFile = "logo.png"
+    # logoBlur=false keeps the pixel-art edges crisp when NeoForge rescales for the menu.
+    logoBlur = false
 
 [[dependencies.squire]]
     modId = "neoforge"

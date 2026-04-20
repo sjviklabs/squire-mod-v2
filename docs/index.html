@@ -8,6 +8,9 @@
 <meta property="og:title" content="Squire — A Minecraft Companion Mod">
 <meta property="og:description" content="Paid in coin or in kind. A loyal NPC companion for Minecraft NeoForge 1.21.1. MineColonies addon.">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://sjviklabs.github.io/squire-mod-v2/logo-hero.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://sjviklabs.github.io/squire-mod-v2/logo-hero.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:ital,wght@1,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -37,10 +40,15 @@ main {
   text-align: center;
 }
 .mark {
-  width: 112px;
-  height: 112px;
+  width: 144px;
+  height: 144px;
   margin: 0 auto 2rem;
   display: block;
+  /* Preserve pixel-art edges — the hero logo is intentional pixel art, not a smooth SVG.
+     image-rendering: pixelated keeps the square pixels crisp on any zoom level. */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
 }
 h1 {
   font-family: Cinzel, serif;
@@ -179,18 +187,11 @@ footer .links { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; le
 </head>
 <body>
 <main>
-  <!-- Placeholder Seal mark; swap for actual logo export when LOGO_EXPORTS.md is fulfilled -->
-  <svg class="mark" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Squire Seal">
-    <circle cx="50" cy="50" r="46" stroke="#B89558" stroke-width="2"/>
-    <circle cx="50" cy="50" r="40" stroke="#B89558" stroke-width="1" opacity="0.5"/>
-    <!-- Inner heater shield -->
-    <path d="M30 28 L70 28 L70 52 Q70 74 50 82 Q30 74 30 52 Z" stroke="#B89558" stroke-width="2" fill="none"/>
-    <!-- Crossed pickaxe + sword -->
-    <line x1="38" y1="40" x2="62" y2="64" stroke="#B89558" stroke-width="2.5"/>
-    <line x1="62" y1="40" x2="38" y2="64" stroke="#B89558" stroke-width="2.5"/>
-    <circle cx="38" cy="40" r="2" fill="#B89558"/>
-    <circle cx="62" cy="40" r="2" fill="#B89558"/>
-  </svg>
+  <!-- Heraldic Seal — pixel-art rendering of the Trades Mark (crossed pickaxe + sword)
+       inside the inner shield. Replaces the earlier SVG placeholder. 500×500 source PNG
+       scaled to 144px via CSS, with pixel-art rendering preserved for crisp edges. -->
+  <img class="mark" src="logo-hero.png" width="500" height="500" alt="Squire — Heraldic Seal">
+
 
   <h1>Squire</h1>
   <p class="tagline">Paid in coin or in kind.</p>
