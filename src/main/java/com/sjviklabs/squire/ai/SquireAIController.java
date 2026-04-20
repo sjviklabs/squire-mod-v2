@@ -1,11 +1,14 @@
 package com.sjviklabs.squire.ai;
 
+import com.sjviklabs.squire.ai.job.FarmerAI;
+import com.sjviklabs.squire.ai.job.FisherAI;
 import com.sjviklabs.squire.ai.job.FollowOwnerAI;
 import com.sjviklabs.squire.ai.job.GuardAI;
 import com.sjviklabs.squire.ai.job.IdleAI;
 import com.sjviklabs.squire.ai.job.JobAI;
 import com.sjviklabs.squire.ai.job.LumberjackAI;
 import com.sjviklabs.squire.ai.job.MinerAI;
+import com.sjviklabs.squire.ai.job.PlacingAI;
 import com.sjviklabs.squire.ai.state.SquireAIState;
 import com.sjviklabs.squire.ai.threat.SquireThreatScanner;
 import com.sjviklabs.squire.entity.SquireEntity;
@@ -39,6 +42,9 @@ public final class SquireAIController {
     private final JobAI guardAI;
     private final MinerAI minerAI;
     private final LumberjackAI lumberjackAI;
+    private final FarmerAI farmerAI;
+    private final FisherAI fisherAI;
+    private final PlacingAI placingAI;
 
     private JobAI activeJob;
     private int swapCounter = 0;
@@ -51,12 +57,18 @@ public final class SquireAIController {
         this.guardAI = new GuardAI(squire);
         this.minerAI = new MinerAI(squire);
         this.lumberjackAI = new LumberjackAI(squire);
+        this.farmerAI = new FarmerAI(squire);
+        this.fisherAI = new FisherAI(squire);
+        this.placingAI = new PlacingAI(squire);
         this.activeJob = idleAI;
     }
 
     /** Accessors for work-AI intake from commands. */
     public MinerAI getMinerAI() { return minerAI; }
     public LumberjackAI getLumberjackAI() { return lumberjackAI; }
+    public FarmerAI getFarmerAI() { return farmerAI; }
+    public FisherAI getFisherAI() { return fisherAI; }
+    public PlacingAI getPlacingAI() { return placingAI; }
 
     /** Called once per server tick from SquireEntity.aiStep. */
     public void tick() {
@@ -94,12 +106,16 @@ public final class SquireAIController {
         if (squire.getThreatTable().getTargetMob() != null) {
             return guardAI;
         }
-        // Priority 2: work AIs with pending assignments. Block-breaking work (Miner,
-        // Lumberjack) is interruptible by combat (priority 1 above). Between them,
-        // whichever was assigned most recently wins — `hasWork` returns true only while
-        // their queue is non-empty. Both queues drain themselves back to IDLE.
-        if (minerAI.hasWork()) return minerAI;
+        // Priority 2: work AIs with pending assignments. All are interruptible by combat
+        // above. Between them, first-hasWork-wins — assigning a new task to a different
+        // AI while one is active effectively switches the squire to the new one (the old
+        // AI's queue/assignment stays; whichever gets re-checked first wins, but since
+        // hasWork checks are cheap, in practice the order here matches player intent).
+        if (minerAI.hasWork())      return minerAI;
         if (lumberjackAI.hasWork()) return lumberjackAI;
+        if (farmerAI.hasWork())     return farmerAI;
+        if (fisherAI.hasWork())     return fisherAI;
+        if (placingAI.hasWork())    return placingAI;
         // Priority 3: follow. Active only in MODE_FOLLOW; sit/guard modes anchor the squire.
         if (squire.getOwner() != null
                 && squire.getSquireMode() == SquireEntity.MODE_FOLLOW) {

@@ -92,6 +92,22 @@ public final class SquireCommand {
 
             // /squire chop   — fell every tree in the crest-selected area
             .then(Commands.literal("chop").executes(ctx -> chopArea(ctx.getSource())))
+
+            // /squire farm / stop — farm the crest-selected area until told to stop
+            .then(Commands.literal("farm")
+                .executes(ctx -> farmArea(ctx.getSource()))
+                .then(Commands.literal("stop").executes(ctx -> farmStop(ctx.getSource()))))
+
+            // /squire fish / stop — fish the nearest water until told to stop
+            .then(Commands.literal("fish")
+                .executes(ctx -> fishStart(ctx.getSource()))
+                .then(Commands.literal("stop").executes(ctx -> fishStop(ctx.getSource()))))
+
+            // /squire place <pos> — place the squire's mainhand block at pos
+            .then(Commands.literal("place")
+                .then(Commands.argument("pos", net.minecraft.commands.arguments.coordinates.BlockPosArgument.blockPos())
+                    .executes(ctx -> placeBlock(ctx.getSource(),
+                            net.minecraft.commands.arguments.coordinates.BlockPosArgument.getBlockPos(ctx, "pos")))))
         );
     }
 
@@ -351,5 +367,105 @@ public final class SquireCommand {
         net.minecraft.world.item.ItemStack held = player.getMainHandItem();
         if (!(held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem)) return null;
         return com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
+    }
+
+    // ================================================================
+    // /squire farm / farm stop
+    // ================================================================
+
+    private static int farmArea(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        net.minecraft.core.BlockPos[] area = readCrestArea(player);
+        if (area == null) {
+            source.sendFailure(Component.literal("Mark two corners with the Squire's Crest first."));
+            return 0;
+        }
+        var ctl = squire.getAIController();
+        if (ctl == null) { source.sendFailure(Component.literal("Squire not ready.")); return 0; }
+        ctl.getFarmerAI().setArea(area[0], area[1]);
+        com.sjviklabs.squire.item.SquireCrestItem.clearSelection(player.getMainHandItem());
+        source.sendSuccess(() -> Component.literal("Squire tending the area. Use /squire farm stop to recall."), false);
+        return 1;
+    }
+
+    private static int farmStop(CommandSourceStack source) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        var ctl = squire.getAIController();
+        if (ctl != null) ctl.getFarmerAI().stop();
+        source.sendSuccess(() -> Component.literal("Squire farming stopped."), false);
+        return 1;
+    }
+
+    // ================================================================
+    // /squire fish / fish stop
+    // ================================================================
+
+    private static int fishStart(CommandSourceStack source) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        // Find nearest water block within 16b of the squire.
+        net.minecraft.core.BlockPos waterPos = findNearestWater(squire, 16);
+        if (waterPos == null) {
+            source.sendFailure(Component.literal("No water within range of the squire."));
+            return 0;
+        }
+        var ctl = squire.getAIController();
+        if (ctl == null) { source.sendFailure(Component.literal("Squire not ready.")); return 0; }
+        ctl.getFisherAI().start(waterPos);
+        source.sendSuccess(() -> Component.literal("Squire fishing at " + waterPos.toShortString() + "."), false);
+        return 1;
+    }
+
+    private static int fishStop(CommandSourceStack source) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        var ctl = squire.getAIController();
+        if (ctl != null) ctl.getFisherAI().stop();
+        source.sendSuccess(() -> Component.literal("Squire fishing stopped."), false);
+        return 1;
+    }
+
+    @Nullable
+    private static net.minecraft.core.BlockPos findNearestWater(SquireEntity squire, int radius) {
+        net.minecraft.core.BlockPos origin = squire.blockPosition();
+        net.minecraft.core.BlockPos best = null;
+        double bestDSq = Double.MAX_VALUE;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                for (int dy = -4; dy <= 4; dy++) {
+                    net.minecraft.core.BlockPos p = origin.offset(dx, dy, dz);
+                    if (!squire.level().getBlockState(p).getFluidState().is(net.minecraft.tags.FluidTags.WATER)) continue;
+                    double d = origin.distSqr(p);
+                    if (d < bestDSq) { bestDSq = d; best = p; }
+                }
+            }
+        }
+        return best;
+    }
+
+    // ================================================================
+    // /squire place <pos>
+    // ================================================================
+
+    private static int placeBlock(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        net.minecraft.world.item.ItemStack main = squire.getMainHandItem();
+        if (!(main.getItem() instanceof net.minecraft.world.item.BlockItem bi)) {
+            source.sendFailure(Component.literal("Squire has no block in main hand."));
+            return 0;
+        }
+        var ctl = squire.getAIController();
+        if (ctl == null) { source.sendFailure(Component.literal("Squire not ready.")); return 0; }
+        ctl.getPlacingAI().setTarget(pos, bi.getBlock());
+        source.sendSuccess(() -> Component.literal("Squire placing " + bi.getBlock().getName().getString()
+                + " at " + pos.toShortString()), false);
+        return 1;
     }
 }

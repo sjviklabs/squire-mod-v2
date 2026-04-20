@@ -76,7 +76,8 @@ public final class BlockBreakUtil {
         return hasToolClass(squire, net.minecraft.world.item.AxeItem.class);
     }
 
-    private static boolean hasToolClass(SquireEntity squire, Class<?> toolClass) {
+    /** True if the squire has a tool of the given class in mainhand or backpack. */
+    public static boolean hasToolClass(SquireEntity squire, Class<?> toolClass) {
         if (toolClass.isInstance(squire.getMainHandItem().getItem())) return true;
         SquireItemHandler handler = squire.getItemHandler();
         if (handler == null) return false;
