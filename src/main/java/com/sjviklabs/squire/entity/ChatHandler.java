@@ -93,7 +93,9 @@ public class ChatHandler {
     public static void sendLine(SquireEntity squire, Player owner, ChatEvent event) {
         if (owner == null || squire.level().isClientSide()) return;
 
-        // TODO Phase 6: replace with event bus publish when SquireBrainEventBus is wired
+        // v4.0.0 wired transitions directly on SquireAIController — no event bus needed.
+        // SquireBrainEventBus (the v3-era indirection this TODO referenced) was deleted
+        // during the Phase 1 scorched-earth pass.
         SquireTier tier = SquireTier.fromLevel(squire.getLevel());
         List<List<String>> byTier = LINES.get(event);
         if (byTier == null) return;

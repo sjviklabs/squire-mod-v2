@@ -192,6 +192,30 @@ public final class SquireCommand {
         };
     }
 
+    /**
+     * Map a Job AI class's simple name to player-facing text for /squire info. Internal
+     * class names (FollowOwnerAI, LumberjackAI) are fine for logs and crash reports but
+     * look like implementation leak in a user-facing command. "Following owner" /
+     * "Chopping trees" reads better and matches how the player thinks about what the
+     * squire is doing.
+     */
+    private static String humanizeAIName(String simpleClassName) {
+        return switch (simpleClassName) {
+            case "IdleAI"        -> "Idle";
+            case "FollowOwnerAI" -> "Following owner";
+            case "GuardAI"       -> "Fighting";
+            case "MinerAI"       -> "Mining";
+            case "LumberjackAI"  -> "Chopping trees";
+            case "FarmerAI"      -> "Farming";
+            case "FisherAI"      -> "Fishing";
+            case "PlacingAI"     -> "Placing block";
+            case "PatrolAI"      -> "Patrolling";
+            case "ChestAI"       -> "Depositing to chest";
+            case "RestockAI"     -> "Restocking from chest";
+            default              -> simpleClassName;   // unknown; fall back to raw class name
+        };
+    }
+
     // ================================================================
     // /squire info
     // ================================================================
@@ -236,7 +260,8 @@ public final class SquireCommand {
 
         // --- Active AI + position ---
         var ctl = squire.getAIController();
-        String activeAI = ctl == null ? "(not ready)" : ctl.getActiveJob().getClass().getSimpleName();
+        String activeAI = ctl == null ? "(not ready)"
+                : humanizeAIName(ctl.getActiveJob().getClass().getSimpleName());
         var pos = squire.blockPosition();
         source.sendSuccess(() -> Component.literal(String.format(
             "Active: %s @ [%d, %d, %d]",
@@ -320,13 +345,24 @@ public final class SquireCommand {
      * {@link #recallSquire} and reused anywhere state must survive entity removal. No-op
      * if the squire has no owner resolvable on this server (offline owner, UUID mismatch).
      */
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger(SquireCommand.class);
+
     private static void persistToAttachment(SquireEntity squire) {
         if (squire.level().isClientSide) return;
         if (!(squire.level() instanceof ServerLevel level)) return;
         var ownerUUID = squire.getOwnerUUID();
         if (ownerUUID == null) return;
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerUUID);
-        if (owner == null) return;
+        if (owner == null) {
+            // Multi-player edge case: the squire persists (setPersistenceRequired) after its
+            // owner logs off. A recall/death while offline means we can't reach the attachment.
+            // State survives on the entity's own NBT until super.die() removes the entity;
+            // after that, it's gone. Log so server ops can spot the pattern in audit trails.
+            LOGGER.warn("[Squire] persistToAttachment skipped — owner {} is offline; squire state at [{}] may not survive removal",
+                    ownerUUID, squire.blockPosition().toShortString());
+            return;
+        }
 
         var data = owner.getData(com.sjviklabs.squire.SquireRegistry.SQUIRE_DATA.get());
         String name = squire.hasCustomName() && squire.getCustomName() != null
