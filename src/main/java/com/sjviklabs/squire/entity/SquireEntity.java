@@ -1,7 +1,10 @@
 package com.sjviklabs.squire.entity;
 
+import com.minecolonies.api.entity.ai.combat.threat.IThreatTableEntity;
+import com.minecolonies.api.entity.ai.combat.threat.ThreatTable;
 import com.sjviklabs.squire.SquireMod;
 import com.sjviklabs.squire.SquireRegistry;
+import com.sjviklabs.squire.ai.SquireAIController;
 import com.sjviklabs.squire.brain.SquireActivityLog;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
@@ -66,7 +69,7 @@ import java.util.UUID;
  * - SLIM_MODEL   Boolean          false=wide arms (Steve), true=slim arms (Alex)
  * - OWNER_ID     Optional<UUID>   owner player UUID (synced to client for radial menu)
  */
-public class SquireEntity extends PathfinderMob implements GeoEntity {
+public class SquireEntity extends PathfinderMob implements GeoEntity, IThreatTableEntity {
 
     // ---- SynchedEntityData keys (MUST pass SquireEntity.class — not any superclass) ----
     private static final EntityDataAccessor<Byte> SQUIRE_MODE =
@@ -105,8 +108,14 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     // ---- Inventory capability (initialized in constructor) ----
     private SquireItemHandler itemHandler;
 
-    // ---- AI field (v4.0.0 Phase 2 will add SquireAIController here) ----
-    // For Phase 1 the entity has NO custom AI: vanilla FloatGoal + OpenDoorGoal only.
+    // ---- AI (v4.0.0 Phase 2 — lazy-init on first server-side tick) ----
+    @Nullable
+    private SquireAIController aiController;
+
+    // ---- Threat table (v4.0.0 Phase 2 — target ownership single authority, replaces v3.x
+    //      scattered squire.setTarget(null) paths. GuardAI reads + writes this in Phase 3.) ----
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private final ThreatTable threatTable = new ThreatTable(this);
 
     // ---- Activity log ----
     @Nullable
@@ -320,6 +329,22 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         return level().getPlayerByUUID(ownerUUID);
     }
 
+    // ── MC IThreatTableEntity ────────────────────────────────────────────────
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public ThreatTable getThreatTable() {
+        return this.threatTable;
+    }
+
+    // ── AI controller accessor ───────────────────────────────────────────────
+
+    /** May be null before first server-side tick. */
+    @Nullable
+    public SquireAIController getAIController() {
+        return this.aiController;
+    }
+
     /**
      * Returns the activity log for this squire, creating it lazily on first call.
      * Keep through v4.0.0 — used by future AI controller for state transition logging.
@@ -515,20 +540,23 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
 
     @Override
     public void aiStep() {
-        // v4.0.0 Phase 1 — SquireBrain removed. Phase 2 reintroduces a SquireAIController here.
-        // For now the entity only runs vanilla pathfinder goals (Float + OpenDoor) and ticks
-        // progression.
         if (!this.level().isClientSide) {
+            if (this.aiController == null) {
+                this.aiController = new SquireAIController(this);
+            }
             if (this.progressionHandler == null) {
                 this.progressionHandler = new ProgressionHandler(this);
                 this.progressionHandler.setFromAttachment(this.totalXP, getLevel());
             }
         }
+        if (this.aiController != null) {
+            this.aiController.tick();
+        }
         if (this.progressionHandler != null) {
             this.progressionHandler.tick();
         }
-        // Auto-equip cleanup every 2s. No "isWorking" guard in Phase 1 because no work
-        // state exists yet; Phase 4+ will re-introduce a guard driven by the new AI.
+        // Auto-equip cleanup every 2s. Will gain a work-state guard in Phase 4+ so the
+        // equip pass doesn't fight an active MinerAI (which equips pickaxes explicitly).
         if (!this.level().isClientSide && this.tickCount % 40 == 0) {
             com.sjviklabs.squire.inventory.SquireEquipmentHelper.runFullEquipCheck(this);
         }
