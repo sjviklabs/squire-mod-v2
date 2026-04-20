@@ -652,6 +652,31 @@ public class SquireEntity extends PathfinderMob implements GeoEntity, IThreatTab
     }
 
     // ================================================================
+    // Damage → threat hook (v4.0.0 Phase 3)
+    // ================================================================
+
+    /**
+     * When the squire takes damage, add the attacker to the threat table with a
+     * damage-weighted score so GuardAI escalates them above whatever the scanner has
+     * already queued. This is a reflex — runs regardless of active AI.
+     */
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        boolean result = super.hurt(source, amount);
+        if (!this.level().isClientSide
+                && result
+                && source.getEntity() instanceof net.minecraft.world.entity.LivingEntity attacker
+                && attacker != this
+                && attacker.isAlive()
+                && !com.sjviklabs.squire.compat.MineColoniesCompat.isFriendly(attacker)) {
+            // Score scales with damage taken — a single big hit spikes the attacker to the top.
+            int threatScore = Math.max(1, (int) Math.ceil(amount * 2));
+            this.getThreatTable().addThreat(attacker, threatScore);
+        }
+        return result;
+    }
+
+    // ================================================================
     // Death — drops gear, retains attachment
     // ================================================================
 
