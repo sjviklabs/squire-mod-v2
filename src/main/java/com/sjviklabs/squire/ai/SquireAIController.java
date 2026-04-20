@@ -17,6 +17,7 @@ import com.sjviklabs.squire.ai.state.SquireAIState;
 import com.sjviklabs.squire.ai.threat.SquireThreatScanner;
 import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.EnumSet;
 
@@ -39,10 +40,12 @@ public final class SquireAIController {
 
     private static final int SWAP_CHECK_INTERVAL_TICKS = 20;
     private static final int THREAT_SCAN_INTERVAL_TICKS = 10;
-    // Restock auto-trigger: check missing gear once per 5 s. Cheaper than swap check since
-    // it only matters when the squire has both (a) a known last-deposit chest and (b) gear
-    // holes; the field short-circuits when either is absent.
-    private static final int RESTOCK_CHECK_INTERVAL_TICKS = 100;
+    // Auto-action (deposit / restock) check cadence — 5 s. Cheap when either the squire has
+    // no remembered chest, an auto-action is already in flight, or a work AI owns the squire.
+    private static final int AUTO_ACTION_CHECK_INTERVAL_TICKS = 100;
+    // Auto-deposit fires when ≥ 80% of backpack slots hold surplus (non-gear) items.
+    // Tuned so a 36-slot Champion deposits at 29 full slots, a 9-slot Servant at 7.
+    private static final double AUTO_DEPOSIT_FILL_RATIO = 0.80;
 
     private final SquireEntity squire;
 
@@ -63,7 +66,7 @@ public final class SquireAIController {
     private JobAI activeJob;
     private int swapCounter = 0;
     private int scanCounter = 0;
-    private int restockCounter = 0;
+    private int autoActionCounter = 0;
 
     public SquireAIController(SquireEntity squire) {
         this.squire = squire;
@@ -102,10 +105,10 @@ public final class SquireAIController {
             SquireThreatScanner.scan(squire);
         }
 
-        restockCounter++;
-        if (restockCounter >= RESTOCK_CHECK_INTERVAL_TICKS) {
-            restockCounter = 0;
-            maybeAutoRestock();
+        autoActionCounter++;
+        if (autoActionCounter >= AUTO_ACTION_CHECK_INTERVAL_TICKS) {
+            autoActionCounter = 0;
+            maybeAutoAction();
         }
 
         swapCounter++;
@@ -117,34 +120,69 @@ public final class SquireAIController {
     }
 
     /**
-     * v4.0.3 — if the squire is missing one or more gear categories entirely (no copy in
-     * equipment slots OR backpack) AND has a known last-deposit chest, auto-assign the
-     * RestockAI to that chest. Priority is below combat but above Follow/Idle, so the
-     * squire interrupts passive tailing to go fetch a replacement pickaxe after a break.
+     * v4.0.3 / v4.0.4 — between-tasks auto-action. When the squire is passive (no active
+     * work, no combat) AND has a remembered deposit chest, dispatch one of:
+     * <ol>
+     *   <li><b>Auto-deposit</b> (v4.0.4) — if ≥{@value #AUTO_DEPOSIT_FILL_RATIO} of backpack
+     *       slots hold surplus (non-gear) items, assign ChestAI to empty them.</li>
+     *   <li><b>Auto-restock</b> (v4.0.3) — if any gear category is missing entirely, assign
+     *       RestockAI to pull a replacement.</li>
+     * </ol>
      *
-     * <p>Short-circuits cheaply when either precondition fails: no chest memory (never
-     * deposited → nothing to fetch from), no missing categories (fully equipped), or
-     * RestockAI already has a target (don't re-assign mid-walk).
+     * <p>Deposit fires before restock on purpose: if both conditions hold (full backpack AND
+     * broken tool), we'd rather dump surplus first so the restocked tool has backpack space
+     * to land in. Worst case two trips; same-chest means it's still fast.
+     *
+     * <p>Short-circuits cheaply when any precondition fails: no remembered chest, an
+     * auto-action already in flight, a work AI owning the squire, or GuardAI active.
      */
-    private void maybeAutoRestock() {
-        if (restockAI.hasWork()) return;   // already en route
-        var chest = squire.getLastDepositChest();
-        if (chest == null) return;         // no memory of any chest
-        // Don't interrupt active work or combat to restock — the squire finishes the current
-        // area first. Restock runs when the squire is passive (Idle or Follow) or when the
-        // active work AI itself is blocked waiting on a tool (which manifests as the AI
-        // clearing its own queue).
-        if (activeJob == guardAI) return;
+    private void maybeAutoAction() {
+        if (chestAI.hasWork() || restockAI.hasWork()) return;  // auto-action already in flight
+        if (activeJob == guardAI) return;                      // combat owns the squire
         if (minerAI.hasWork() || lumberjackAI.hasWork() || farmerAI.hasWork()
-                || fisherAI.hasWork() || placingAI.hasWork() || patrolAI.hasWork()
-                || chestAI.hasWork()) {
-            return;
+                || fisherAI.hasWork() || placingAI.hasWork() || patrolAI.hasWork()) {
+            return;                                            // work AI owns the squire
         }
+        var chest = squire.getLastDepositChest();
+        if (chest == null) return;                             // no memory of any chest
+
         SquireItemHandler backpack = squire.getItemHandler();
         if (backpack == null) return;
+
+        // Priority 1: deposit surplus if the squire is holding enough junk to be worth the trip.
+        if (surplusFillRatio(backpack) >= AUTO_DEPOSIT_FILL_RATIO) {
+            chestAI.setTarget(chest);
+            return;
+        }
+
+        // Priority 2: restock any missing gear category.
         EnumSet<GearCategorizer.Category> missing = GearCategorizer.missingCategories(squire, backpack);
-        if (missing.isEmpty()) return;     // fully geared, nothing to fetch
-        restockAI.setTarget(chest);
+        if (!missing.isEmpty()) {
+            restockAI.setTarget(chest);
+        }
+    }
+
+    /**
+     * Fraction of backpack slots holding surplus (non-gear) items. "Gear" per
+     * {@link GearCategorizer#classify} is preserved by keep-best and does not count toward
+     * the fill ratio — we measure how much stuff the squire has accumulated that belongs
+     * in a chest, not how full the backpack looks.
+     *
+     * <p>Returns 0.0 for an empty backpack, 1.0 for a backpack where every slot holds a
+     * non-gear stack. A squire carrying only tools + armor reports 0.0 and never triggers
+     * auto-deposit, which is what we want — nothing there is surplus.
+     */
+    private static double surplusFillRatio(SquireItemHandler backpack) {
+        int backpackSize = backpack.getSlots() - SquireItemHandler.EQUIPMENT_SLOTS;
+        if (backpackSize <= 0) return 0.0;
+        int surplus = 0;
+        for (int i = SquireItemHandler.EQUIPMENT_SLOTS; i < backpack.getSlots(); i++) {
+            ItemStack s = backpack.getStackInSlot(i);
+            if (s.isEmpty()) continue;
+            if (GearCategorizer.classify(s) != null) continue;   // gear — preserved by keep-best
+            surplus++;
+        }
+        return (double) surplus / backpackSize;
     }
 
     /**

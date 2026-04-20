@@ -33,7 +33,13 @@ public class SquireClientEvents {
      *
      * RegisterKeyMappingsEvent and EntityRenderersEvent both fire on the MOD bus.
      * FMLClientSetupEvent also fires on the MOD bus — used here for SquireScreen registration.
+     *
+     * NOTE: {@code Bus.MOD} is the default value of {@link EventBusSubscriber#bus()} — we
+     * keep the explicit {@code bus = Bus.MOD} for symmetry with the GameEvents subscriber
+     * below, which must specify {@code Bus.GAME}. When NeoForge finalizes the bus() removal
+     * migration, both will move to the replacement annotation together.
      */
+    @SuppressWarnings("removal")
     @EventBusSubscriber(modid = SquireMod.MODID, bus = Bus.MOD, value = Dist.CLIENT)
     public static class ModEvents {
 
@@ -62,6 +68,7 @@ public class SquireClientEvents {
      * InputEvent.Key fires on the NeoForge GAME bus on every key press/release.
      * We check consumeClick() which returns true once per press and clears the flag.
      */
+    @SuppressWarnings("removal")
     @EventBusSubscriber(modid = SquireMod.MODID, bus = Bus.GAME, value = Dist.CLIENT)
     public static class GameEvents {
 
