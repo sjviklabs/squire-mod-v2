@@ -3,7 +3,6 @@ package com.sjviklabs.squire.entity;
 import com.sjviklabs.squire.SquireMod;
 import com.sjviklabs.squire.SquireRegistry;
 import com.sjviklabs.squire.brain.SquireActivityLog;
-import com.sjviklabs.squire.brain.SquireBrain;
 import com.sjviklabs.squire.config.SquireConfig;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
 import com.sjviklabs.squire.progression.ProgressionHandler;
@@ -106,11 +105,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     // ---- Inventory capability (initialized in constructor) ----
     private SquireItemHandler itemHandler;
 
-    // ---- AI (lazy-initialized in aiStep — constructor fires before registerGoals) ----
-    @Nullable
-    private SquireBrain squireBrain;
+    // ---- AI field (v4.0.0 Phase 2 will add SquireAIController here) ----
+    // For Phase 1 the entity has NO custom AI: vanilla FloatGoal + OpenDoorGoal only.
 
-    // ---- Activity log (lazy-initialized alongside brain) ----
+    // ---- Activity log ----
     @Nullable
     private SquireActivityLog activityLog;
 
@@ -323,17 +321,8 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
     }
 
     /**
-     * Returns the squire's brain (FSM + event bus). May be null before first server-side tick.
-     * Used by work handlers that need to fire events (e.g. WORK_TASK_COMPLETE) or force state.
-     */
-    @Nullable
-    public SquireBrain getSquireBrain() {
-        return this.squireBrain;
-    }
-
-    /**
      * Returns the activity log for this squire, creating it lazily on first call.
-     * Used by TickRateStateMachine to log state transitions when activityLogging is enabled.
+     * Keep through v4.0.0 — used by future AI controller for state transition logging.
      */
     @Nullable
     public SquireActivityLog getActivityLog() {
@@ -366,17 +355,12 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
 
     @Override
     protected void registerGoals() {
-        // FloatGoal: squire swims and doesn't drown
+        // v4.0.0 — only MOVEMENT PRIMITIVES. Combat / follow / work come from
+        // SquireAIController (Phase 2+) which uses MC's ThreatTable for target
+        // ownership, not vanilla goals. Adding vanilla target goals here would
+        // re-introduce the target-race bug class we deleted this release to kill.
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        // OpenDoorGoal: squire can follow player through doors
         this.goalSelector.addGoal(1, new OpenDoorGoal(this, true));
-        // HurtByTargetGoal: squire retaliates when attacked (PathfinderMob-compatible).
-        this.targetSelector.addGoal(1, new net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal(this));
-        // NearestAttackableTargetGoal: proactively target hostile mobs within 16 blocks.
-        // This makes the squire fight zombies, skeletons etc. without being hit first.
-        this.targetSelector.addGoal(2, new net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal<>(
-                this, net.minecraft.world.entity.monster.Monster.class, true));
-        // All follow/combat/work behavior is Phase 2 (SquireBrain FSM).
     }
 
     // ================================================================
@@ -531,41 +515,25 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
 
     @Override
     public void aiStep() {
+        // v4.0.0 Phase 1 — SquireBrain removed. Phase 2 reintroduces a SquireAIController here.
+        // For now the entity only runs vanilla pathfinder goals (Float + OpenDoor) and ticks
+        // progression.
         if (!this.level().isClientSide) {
-            if (this.squireBrain == null) {
-                this.squireBrain = new SquireBrain(this);
-            }
             if (this.progressionHandler == null) {
                 this.progressionHandler = new ProgressionHandler(this);
-                // Apply attribute modifiers from saved NBT level (already set via readAdditionalSaveData)
                 this.progressionHandler.setFromAttachment(this.totalXP, getLevel());
             }
         }
-        if (this.squireBrain != null) {
-            this.squireBrain.tick();
-        }
         if (this.progressionHandler != null) {
-            this.progressionHandler.tick(); // ticks down undying cooldown
+            this.progressionHandler.tick();
         }
-        // Auto-equip check every 40 ticks (~2 seconds) — skip during active work
-        // (mining equips pickaxes, farming equips hoes — cleanup pass would fight them)
-        if (!this.level().isClientSide && this.tickCount % 40 == 0 && this.squireBrain != null) {
-            var state = this.squireBrain.getCurrentState();
-            boolean isWorking = state == com.sjviklabs.squire.brain.SquireAIState.MINING_APPROACH
-                    || state == com.sjviklabs.squire.brain.SquireAIState.MINING_BREAK
-                    || state == com.sjviklabs.squire.brain.SquireAIState.FARM_SCAN
-                    || state == com.sjviklabs.squire.brain.SquireAIState.FARM_APPROACH
-                    || state == com.sjviklabs.squire.brain.SquireAIState.FARM_WORK
-                    || state == com.sjviklabs.squire.brain.SquireAIState.FISHING_APPROACH
-                    || state == com.sjviklabs.squire.brain.SquireAIState.FISHING_IDLE;
-            if (!isWorking) {
-                com.sjviklabs.squire.inventory.SquireEquipmentHelper.runFullEquipCheck(this);
-            }
+        // Auto-equip cleanup every 2s. No "isWorking" guard in Phase 1 because no work
+        // state exists yet; Phase 4+ will re-introduce a guard driven by the new AI.
+        if (!this.level().isClientSide && this.tickCount % 40 == 0) {
+            com.sjviklabs.squire.inventory.SquireEquipmentHelper.runFullEquipCheck(this);
         }
         super.aiStep();
         // PathfinderMob does not call updateSwingTime() automatically (only Monster does).
-        // Required for weapon swing animations to complete at the correct duration.
-        // See: 04-RESEARCH.md Pitfall F — attack animation duration.
         this.updateSwingTime();
     }
 
@@ -600,23 +568,12 @@ public class SquireEntity extends PathfinderMob implements GeoEntity {
         tag.put("Inventory", this.itemHandler.serializeNBT(this.registryAccess()));
         // Progression — save XP and level (attribute modifiers auto-saved by NeoForge)
         if (progressionHandler != null) progressionHandler.save(tag);
-        // Mount — persist assigned horse UUID so squire reconnects after restart (MNT-04)
-        if (squireBrain != null && squireBrain.getMountHandler().getHorseUUID() != null) {
-            tag.putUUID("HorseUUID", squireBrain.getMountHandler().getHorseUUID());
-        }
-        // Work role + home chest (Wave 1)
-        if (squireBrain != null) {
-            tag.putByte("WorkRole", (byte) squireBrain.getWorkRole().ordinal());
-            if (squireBrain.getHomeChest() != null) {
-                net.minecraft.core.BlockPos hc = squireBrain.getHomeChest();
-                tag.putInt("HomeChestX", hc.getX());
-                tag.putInt("HomeChestY", hc.getY());
-                tag.putInt("HomeChestZ", hc.getZ());
-            }
-            // Task queue (v3.1.1) — persist so the squire resumes what they were doing
-            // after world reload / chunk unload / combat interruption.
-            tag.put("TaskQueue", squireBrain.getTaskQueue().save());
-        }
+        // v4.0.0 Phase 1 — SquireBrain was the source of mount/role/home-chest/task-queue
+        // persistence. Those accessors now live on SquireAIController (Phase 2+).
+        // Pending fields (pendingHorseUUID/Role/HomeChest/TaskQueue) still read from NBT in
+        // readAdditionalSaveData, and the new controller will consume them on first tick.
+        // Nothing to save for those here in Phase 1 because the save data is captured only
+        // when the new controller takes over — the save format will likely change at v4.0.0 ship.
     }
 
     @Override
