@@ -82,6 +82,16 @@ public final class PlacingAI implements JobAI {
         return hasAssignment();
     }
 
+    /**
+     * Cancel the placement assignment. Called by {@code /squire stop}. Clears target state
+     * so {@link #hasAssignment} returns false on the next controller swap check.
+     */
+    public void clearQueue() {
+        this.targetPos = null;
+        this.targetBlock = null;
+        squire.getNavigation().stop();
+    }
+
     private boolean hasAssignment() {
         return targetPos != null && targetBlock != null && inventoryHasBlock(targetBlock);
     }

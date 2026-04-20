@@ -120,46 +120,68 @@ public final class SquireAIController {
     }
 
     /**
-     * v4.0.3 / v4.0.4 — between-tasks auto-action. When the squire is passive (no active
-     * work, no combat) AND has a remembered deposit chest, dispatch one of:
+     * Between-tasks auto-action. Dispatches ChestAI (auto-deposit) or RestockAI (auto-restock)
+     * when conditions warrant. v4.0.13 made auto-deposit preemptive for continuous-loop work
+     * (Farmer, Fisher, Patrol) because those AIs never finish on their own — before this fix
+     * they'd run with a 100% full backpack forever, dropping every subsequent harvest.
+     *
      * <ol>
-     *   <li><b>Auto-deposit</b> (v4.0.4) — if ≥{@value #AUTO_DEPOSIT_FILL_RATIO} of backpack
-     *       slots hold surplus (non-gear) items, assign ChestAI to empty them.</li>
-     *   <li><b>Auto-restock</b> (v4.0.3) — if any gear category is missing entirely, assign
-     *       RestockAI to pull a replacement.</li>
+     *   <li><b>Auto-deposit</b> — if ≥{@value #AUTO_DEPOSIT_FILL_RATIO} of backpack slots
+     *       hold surplus, assign ChestAI. Fires regardless of whether a work AI has work;
+     *       the work AI's {@code hasWork()} stays true so the controller will swap back to
+     *       it as soon as ChestAI clears its assignment. Effectively: work → deposit → work.</li>
+     *   <li><b>Auto-restock</b> — only when the squire is idle (no work AI has work and
+     *       GuardAI is not active). Restock doesn't make sense mid-work: a working AI that's
+     *       missing its tool has probably already failed and dropped its queue.</li>
      * </ol>
      *
-     * <p>Deposit fires before restock on purpose: if both conditions hold (full backpack AND
-     * broken tool), we'd rather dump surplus first so the restocked tool has backpack space
-     * to land in. Worst case two trips; same-chest means it's still fast.
-     *
-     * <p>Short-circuits cheaply when any precondition fails: no remembered chest, an
-     * auto-action already in flight, a work AI owning the squire, or GuardAI active.
+     * <p>Deposit beats restock when both conditions could apply: dump first so the restocked
+     * tool has space. Worst case = two trips to the same remembered chest.
      */
     private void maybeAutoAction() {
         if (chestAI.hasWork() || restockAI.hasWork()) return;  // auto-action already in flight
         if (activeJob == guardAI) return;                      // combat owns the squire
-        if (minerAI.hasWork() || lumberjackAI.hasWork() || farmerAI.hasWork()
-                || fisherAI.hasWork() || placingAI.hasWork() || patrolAI.hasWork()) {
-            return;                                            // work AI owns the squire
-        }
+
         var chest = squire.getLastDepositChest();
         if (chest == null) return;                             // no memory of any chest
 
         SquireItemHandler backpack = squire.getItemHandler();
         if (backpack == null) return;
 
-        // Priority 1: deposit surplus if the squire is holding enough junk to be worth the trip.
+        // Priority 1: deposit preempts work. v4.0.13 bug fix — continuous-loop AIs (Farmer,
+        // Fisher, Patrol) never clear their queue, so the pre-v4.0.13 "wait for work to
+        // finish" guard meant auto-deposit literally never fired during a long farm/fish
+        // session. Backpack overflowed every time.
         if (surplusFillRatio(backpack) >= AUTO_DEPOSIT_FILL_RATIO) {
             chestAI.setTarget(chest);
             return;
         }
 
-        // Priority 2: restock any missing gear category.
+        // Priority 2: restock stays guarded to "squire idle." Mid-work restock is weird —
+        // if a miner lost its pickaxe, MinerAI's loop has already dead-ended.
+        if (minerAI.hasWork() || lumberjackAI.hasWork() || farmerAI.hasWork()
+                || fisherAI.hasWork() || placingAI.hasWork() || patrolAI.hasWork()) {
+            return;
+        }
         EnumSet<GearCategorizer.Category> missing = GearCategorizer.missingCategories(squire, backpack);
         if (!missing.isEmpty()) {
             restockAI.setTarget(chest);
         }
+    }
+
+    /**
+     * Cancel every work AI's assignment. Used by {@code /squire stop} as an escape hatch
+     * when a player wants the squire to stop doing everything and come back to idle/follow.
+     * Does NOT touch GuardAI (combat is reactive, clearing threat table via /squire recall or
+     * killing the threat is the right escape) or ChestAI/RestockAI (auto-actions clear themselves).
+     */
+    public void clearAllWork() {
+        minerAI.clearArea();
+        lumberjackAI.stop();
+        farmerAI.stop();
+        fisherAI.stop();
+        placingAI.clearQueue();
+        patrolAI.stop();
     }
 
     /**

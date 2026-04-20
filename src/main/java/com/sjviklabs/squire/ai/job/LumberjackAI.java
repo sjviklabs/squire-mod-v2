@@ -187,6 +187,15 @@ public final class LumberjackAI implements JobAI {
         return !queue.isEmpty();
     }
 
+    /**
+     * Cancel the chopping assignment. Called by {@code /squire stop}. Clears the log queue
+     * and stops navigation so the squire doesn't keep pathing to the last queued log.
+     */
+    public void stop() {
+        queue.clear();
+        squire.getNavigation().stop();
+    }
+
     private SquireAIState tickChopping() {
         if (!(squire.level() instanceof ServerLevel level)) return SquireAIState.MINING;
         BlockPos target = queue.peekFirst();

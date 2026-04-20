@@ -135,6 +135,17 @@ public final class MinerAI implements JobAI {
         return !queue.isEmpty();
     }
 
+    /**
+     * Cancel the mining assignment. Called by {@code /squire stop} and
+     * {@link com.sjviklabs.squire.ai.SquireAIController#clearAllWork}. Clears the block
+     * queue and stops any pending navigation so the squire doesn't keep walking to the
+     * last queued block after the controller swaps it out.
+     */
+    public void clearArea() {
+        queue.clear();
+        squire.getNavigation().stop();
+    }
+
     private SquireAIState tickMining() {
         if (!(squire.level() instanceof ServerLevel level)) return SquireAIState.MINING;
         BlockPos target = queue.peekFirst();

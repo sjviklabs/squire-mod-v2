@@ -59,6 +59,12 @@ public final class SquireCommand {
             .then(Commands.literal("recall")
                 .executes(ctx -> recallSquire(ctx.getSource())))
 
+            // /squire stop — master escape hatch: cancel every work-AI assignment
+            // (mine, chop, farm, fish, patrol, place). Combat is reactive, not a queue —
+            // use /squire recall if you need to pull the squire out of a fight.
+            .then(Commands.literal("stop")
+                .executes(ctx -> stopAllWork(ctx.getSource())))
+
             // /squire mode <follow|stay|guard>
             .then(Commands.literal("mode")
                 .then(Commands.literal("follow").executes(ctx -> setMode(ctx.getSource(), "follow")))
@@ -337,6 +343,25 @@ public final class SquireCommand {
 
         squire.discard();
         source.sendSuccess(() -> Component.literal("Squire recalled."), false);
+        return 1;
+    }
+
+    /**
+     * /squire stop — cancel every pending work-AI assignment. Escape hatch for when the
+     * squire is working and the player wants it to come back to idle/follow. Combat
+     * (GuardAI) is NOT cleared — that's reactive to the threat table; use /squire recall
+     * to pull the squire out of a fight.
+     */
+    private static int stopAllWork(CommandSourceStack source) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        var ctl = squire.getAIController();
+        if (ctl == null) {
+            source.sendFailure(Component.literal("Squire not ready."));
+            return 0;
+        }
+        ctl.clearAllWork();
+        source.sendSuccess(() -> Component.literal("Squire work cleared. Returning to idle."), false);
         return 1;
     }
 
