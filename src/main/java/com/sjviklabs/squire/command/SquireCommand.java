@@ -108,6 +108,11 @@ public final class SquireCommand {
                 .then(Commands.argument("pos", net.minecraft.commands.arguments.coordinates.BlockPosArgument.blockPos())
                     .executes(ctx -> placeBlock(ctx.getSource(),
                             net.minecraft.commands.arguments.coordinates.BlockPosArgument.getBlockPos(ctx, "pos")))))
+
+            // /squire patrol / stop — walk the crest-selected area's perimeter
+            .then(Commands.literal("patrol")
+                .executes(ctx -> patrolStart(ctx.getSource()))
+                .then(Commands.literal("stop").executes(ctx -> patrolStop(ctx.getSource()))))
         );
     }
 
@@ -447,6 +452,39 @@ public final class SquireCommand {
             }
         }
         return best;
+    }
+
+    // ================================================================
+    // /squire patrol / patrol stop
+    // ================================================================
+
+    private static int patrolStart(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        net.minecraft.core.BlockPos[] area = readCrestArea(player);
+        if (area == null) {
+            source.sendFailure(Component.literal("Mark two corners with the Squire's Crest first."));
+            return 0;
+        }
+        var ctl = squire.getAIController();
+        if (ctl == null) { source.sendFailure(Component.literal("Squire not ready.")); return 0; }
+        ctl.getPatrolAI().setArea(area[0], area[1]);
+        com.sjviklabs.squire.item.SquireCrestItem.clearSelection(player.getMainHandItem());
+        source.sendSuccess(() -> Component.literal("Squire patrolling the area. /squire patrol stop to recall."), false);
+        return 1;
+    }
+
+    private static int patrolStop(CommandSourceStack source) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        var ctl = squire.getAIController();
+        if (ctl != null) ctl.getPatrolAI().stop();
+        source.sendSuccess(() -> Component.literal("Squire patrol stopped."), false);
+        return 1;
     }
 
     // ================================================================

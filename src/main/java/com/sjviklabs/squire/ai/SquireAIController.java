@@ -8,6 +8,7 @@ import com.sjviklabs.squire.ai.job.IdleAI;
 import com.sjviklabs.squire.ai.job.JobAI;
 import com.sjviklabs.squire.ai.job.LumberjackAI;
 import com.sjviklabs.squire.ai.job.MinerAI;
+import com.sjviklabs.squire.ai.job.PatrolAI;
 import com.sjviklabs.squire.ai.job.PlacingAI;
 import com.sjviklabs.squire.ai.state.SquireAIState;
 import com.sjviklabs.squire.ai.threat.SquireThreatScanner;
@@ -45,6 +46,7 @@ public final class SquireAIController {
     private final FarmerAI farmerAI;
     private final FisherAI fisherAI;
     private final PlacingAI placingAI;
+    private final PatrolAI patrolAI;
 
     private JobAI activeJob;
     private int swapCounter = 0;
@@ -60,6 +62,7 @@ public final class SquireAIController {
         this.farmerAI = new FarmerAI(squire);
         this.fisherAI = new FisherAI(squire);
         this.placingAI = new PlacingAI(squire);
+        this.patrolAI = new PatrolAI(squire);
         this.activeJob = idleAI;
     }
 
@@ -69,6 +72,7 @@ public final class SquireAIController {
     public FarmerAI getFarmerAI() { return farmerAI; }
     public FisherAI getFisherAI() { return fisherAI; }
     public PlacingAI getPlacingAI() { return placingAI; }
+    public PatrolAI getPatrolAI() { return patrolAI; }
 
     /** Called once per server tick from SquireEntity.aiStep. */
     public void tick() {
@@ -116,6 +120,7 @@ public final class SquireAIController {
         if (farmerAI.hasWork())     return farmerAI;
         if (fisherAI.hasWork())     return fisherAI;
         if (placingAI.hasWork())    return placingAI;
+        if (patrolAI.hasWork())     return patrolAI;
         // Priority 3: follow. Active only in MODE_FOLLOW; sit/guard modes anchor the squire.
         if (squire.getOwner() != null
                 && squire.getSquireMode() == SquireEntity.MODE_FOLLOW) {
