@@ -7,15 +7,7 @@ import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.BowItem;
-import net.minecraft.world.item.CrossbowItem;
-import net.minecraft.world.item.DiggerItem;
-import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ShieldItem;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -23,16 +15,25 @@ import net.neoforged.neoforge.items.IItemHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EnumMap;
+
 /**
  * Chest deposit job AI — walk to a target container and unload the squire's backpack into it.
  *
  * Accepts any block that exposes {@link Capabilities#ItemHandler.BLOCK} capability or extends
  * {@link BaseContainerBlockEntity}. Vanilla chests / barrels / shulkers plus modded storage
  * (Iron Chests, Sophisticated Storage, Storage Drawers, Refined Storage, AE2) all work.
- * This is the v3.1.2 homechest capability-detection pattern carried forward.
  *
  * Equipment slots (mainhand, offhand, armor) are preserved — only backpack slots (6+) are dumped.
  * Overflow (chest full mid-transfer) stops cleanly; remaining stacks stay in the squire.
+ *
+ * v4.0.3 — Keep-best per category via {@link GearCategorizer}. The squire keeps one best
+ * tool/weapon/armor per category (best pickaxe, best sword, best helmet, etc.) and deposits
+ * duplicates + worse copies. Cursed items are always deposited. Bulk drops (logs, stone,
+ * seeds, fish) have no category and deposit unconditionally.
+ *
+ * v4.0.3 — on successful deposit, records the chest as the squire's last-deposit chest
+ * (persisted on SquireEntity) so RestockAI knows where to go when tools run out.
  *
  * State tree: IDLE → DEPOSITING → IDLE. Single assignment per invocation — the AI does not
  * loop; after a deposit the assignment clears and the controller swaps back to Idle/Follow.
@@ -97,10 +98,8 @@ public final class ChestAI implements JobAI {
             return SquireAIState.PLACING;
         }
 
-        // Validate the target is still a container.
         IItemHandler chest = getChestHandler(level, chestPos);
         if (chest == null) {
-            // Target gone / not a container — abort.
             chestPos = null;
             return SquireAIState.PLACING;
         }
@@ -115,32 +114,55 @@ public final class ChestAI implements JobAI {
         squire.getNavigation().stop();
         if (cooldown > 0) { cooldown--; return SquireAIState.PLACING; }
 
-        // Transfer backpack (slots ≥ EQUIPMENT_SLOTS) into the chest. Stop on first overflow
-        // to avoid running the chest-insert loop for every tick when it's full.
         SquireItemHandler backpack = squire.getItemHandler();
         if (backpack == null) { chestPos = null; return SquireAIState.PLACING; }
 
-        boolean anyMoved = false;
+        // Pass 1: walk backpack, find the best slot per gear category. Non-gear slots
+        // (logs, stone, seeds, fish) have no category and are skipped here; they fall
+        // through to the deposit path below with no preservation.
+        EnumMap<GearCategorizer.Category, Integer> bestSlotByCategory = new EnumMap<>(GearCategorizer.Category.class);
+        EnumMap<GearCategorizer.Category, Integer> bestScoreByCategory = new EnumMap<>(GearCategorizer.Category.class);
         for (int slot = SquireItemHandler.EQUIPMENT_SLOTS; slot < backpack.getSlots(); slot++) {
             ItemStack stack = backpack.getStackInSlot(slot);
             if (stack.isEmpty()) continue;
-            if (shouldPreserve(stack)) continue;   // v4.0.2 — keep tools/armor/weapons
+            GearCategorizer.Category cat = GearCategorizer.classify(stack);
+            if (cat == null) continue;
+            int score = GearCategorizer.scoreStack(stack);
+            Integer prev = bestScoreByCategory.get(cat);
+            if (prev == null || score > prev) {
+                bestScoreByCategory.put(cat, score);
+                bestSlotByCategory.put(cat, slot);
+            }
+        }
+
+        // Pass 2: deposit every slot that is NOT a category winner.
+        boolean anyMoved = false;
+        boolean chestFull = false;
+        for (int slot = SquireItemHandler.EQUIPMENT_SLOTS; slot < backpack.getSlots() && !chestFull; slot++) {
+            ItemStack stack = backpack.getStackInSlot(slot);
+            if (stack.isEmpty()) continue;
+            GearCategorizer.Category cat = GearCategorizer.classify(stack);
+            if (cat != null) {
+                Integer bestSlot = bestSlotByCategory.get(cat);
+                if (bestSlot != null && bestSlot == slot) continue;  // winner — keep
+            }
 
             ItemStack remaining = stack.copy();
             for (int chestSlot = 0; chestSlot < chest.getSlots() && !remaining.isEmpty(); chestSlot++) {
                 remaining = chest.insertItem(chestSlot, remaining, false);
             }
-
-            // Write back whatever didn't fit.
             int movedCount = stack.getCount() - remaining.getCount();
             if (movedCount > 0) {
                 backpack.extractItem(slot, movedCount, false);
                 anyMoved = true;
             }
-            if (!remaining.isEmpty()) break; // chest full
+            if (!remaining.isEmpty()) chestFull = true;
         }
 
-        if (anyMoved) squire.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+        if (anyMoved) {
+            squire.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
+            squire.setLastDepositChest(chestPos);   // v4.0.3 — RestockAI's default target
+        }
 
         // One-shot: clear the assignment after a single pass. Controller swaps us out next check.
         chestPos = null;
@@ -149,33 +171,12 @@ public final class ChestAI implements JobAI {
     }
 
     /**
-     * True if the stack is a tool, weapon, armor, or shield that the squire uses for its jobs.
-     * Such items stay in the backpack on deposit — the squire needs them to keep working and
-     * to stay equipped through auto-equip swaps. Bulk items (logs, stone, seeds, fish, etc.)
-     * have no class in this list and get deposited normally.
-     *
-     * DiggerItem covers pickaxes, axes, hoes, shovels. TieredItem would include swords too
-     * via the tool hierarchy, but SwordItem is explicit for clarity. Any modded tool that
-     * extends these base classes is preserved automatically.
-     */
-    private static boolean shouldPreserve(ItemStack stack) {
-        return stack.getItem() instanceof DiggerItem     // pickaxe / axe / hoe / shovel
-                || stack.getItem() instanceof SwordItem
-                || stack.getItem() instanceof BowItem
-                || stack.getItem() instanceof CrossbowItem
-                || stack.getItem() instanceof TridentItem
-                || stack.getItem() instanceof FishingRodItem
-                || stack.getItem() instanceof ArmorItem   // helmet / chest / legs / boots
-                || stack.getItem() instanceof ShieldItem;
-    }
-
-    /**
      * Resolve an {@link IItemHandler} for the block at {@code pos}. Prefers the capability API
      * (works for modded storage); falls back to vanilla {@link BaseContainerBlockEntity} for
      * blocks that don't expose the capability but are still containers.
      */
     @org.jetbrains.annotations.Nullable
-    private static IItemHandler getChestHandler(ServerLevel level, BlockPos pos) {
+    static IItemHandler getChestHandler(ServerLevel level, BlockPos pos) {
         IItemHandler cap = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
         if (cap != null) return cap;
         BlockEntity be = level.getBlockEntity(pos);

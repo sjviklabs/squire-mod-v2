@@ -138,6 +138,10 @@ public class SquireEntity extends PathfinderMob implements GeoEntity, IThreatTab
     @Nullable
     public CompoundTag pendingTaskQueue = null;
 
+    // ---- Last chest the squire successfully deposited into (v4.0.3 — RestockAI target) ----
+    @Nullable
+    private net.minecraft.core.BlockPos lastDepositChest = null;
+
     // ================================================================
     // Constructor
     // ================================================================
@@ -159,6 +163,22 @@ public class SquireEntity extends PathfinderMob implements GeoEntity, IThreatTab
     @Nullable
     public ProgressionHandler getProgressionHandler() {
         return this.progressionHandler;
+    }
+
+    /**
+     * The chest the squire last successfully deposited into via ChestAI.
+     * Used by RestockAI as the default target when the squire needs to resupply tools.
+     * {@code null} if the squire has never deposited (or its last deposit chest was destroyed
+     * and cleared). Persists across world reloads via NBT.
+     */
+    @Nullable
+    public net.minecraft.core.BlockPos getLastDepositChest() {
+        return this.lastDepositChest;
+    }
+
+    /** Record a successful deposit target. Called by ChestAI after items move. */
+    public void setLastDepositChest(@Nullable net.minecraft.core.BlockPos pos) {
+        this.lastDepositChest = pos;
     }
 
     // ================================================================
@@ -594,6 +614,13 @@ public class SquireEntity extends PathfinderMob implements GeoEntity, IThreatTab
         }
         // Inventory — ItemStackHandler provides NBT serialization
         tag.put("Inventory", this.itemHandler.serializeNBT(this.registryAccess()));
+        // v4.0.3 — last chest the squire deposited into (RestockAI uses this as default target).
+        // Three ints rather than a BlockPos NBT helper so the save format is self-evident.
+        if (this.lastDepositChest != null) {
+            tag.putInt("LastDepositChestX", this.lastDepositChest.getX());
+            tag.putInt("LastDepositChestY", this.lastDepositChest.getY());
+            tag.putInt("LastDepositChestZ", this.lastDepositChest.getZ());
+        }
         // Progression — save XP and level (attribute modifiers auto-saved by NeoForge)
         if (progressionHandler != null) progressionHandler.save(tag);
         // v4.0.0 Phase 1 — SquireBrain was the source of mount/role/home-chest/task-queue
@@ -648,6 +675,16 @@ public class SquireEntity extends PathfinderMob implements GeoEntity, IThreatTab
         // Task queue (v3.1.1) — injected into brain on first brain init
         if (tag.contains("TaskQueue")) {
             pendingTaskQueue = tag.getCompound("TaskQueue");
+        }
+        // v4.0.3 — last deposit chest for RestockAI. All three coordinates must exist;
+        // a partial save (e.g. hand-edited world file) is treated as missing.
+        if (tag.contains("LastDepositChestX")
+                && tag.contains("LastDepositChestY")
+                && tag.contains("LastDepositChestZ")) {
+            this.lastDepositChest = new net.minecraft.core.BlockPos(
+                    tag.getInt("LastDepositChestX"),
+                    tag.getInt("LastDepositChestY"),
+                    tag.getInt("LastDepositChestZ"));
         }
     }
 

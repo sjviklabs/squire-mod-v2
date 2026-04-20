@@ -4,6 +4,7 @@ import com.sjviklabs.squire.ai.job.ChestAI;
 import com.sjviklabs.squire.ai.job.FarmerAI;
 import com.sjviklabs.squire.ai.job.FisherAI;
 import com.sjviklabs.squire.ai.job.FollowOwnerAI;
+import com.sjviklabs.squire.ai.job.GearCategorizer;
 import com.sjviklabs.squire.ai.job.GuardAI;
 import com.sjviklabs.squire.ai.job.IdleAI;
 import com.sjviklabs.squire.ai.job.JobAI;
@@ -11,9 +12,13 @@ import com.sjviklabs.squire.ai.job.LumberjackAI;
 import com.sjviklabs.squire.ai.job.MinerAI;
 import com.sjviklabs.squire.ai.job.PatrolAI;
 import com.sjviklabs.squire.ai.job.PlacingAI;
+import com.sjviklabs.squire.ai.job.RestockAI;
 import com.sjviklabs.squire.ai.state.SquireAIState;
 import com.sjviklabs.squire.ai.threat.SquireThreatScanner;
 import com.sjviklabs.squire.entity.SquireEntity;
+import com.sjviklabs.squire.inventory.SquireItemHandler;
+
+import java.util.EnumSet;
 
 /**
  * Top-level AI router for a SquireEntity.
@@ -34,6 +39,10 @@ public final class SquireAIController {
 
     private static final int SWAP_CHECK_INTERVAL_TICKS = 20;
     private static final int THREAT_SCAN_INTERVAL_TICKS = 10;
+    // Restock auto-trigger: check missing gear once per 5 s. Cheaper than swap check since
+    // it only matters when the squire has both (a) a known last-deposit chest and (b) gear
+    // holes; the field short-circuits when either is absent.
+    private static final int RESTOCK_CHECK_INTERVAL_TICKS = 100;
 
     private final SquireEntity squire;
 
@@ -49,10 +58,12 @@ public final class SquireAIController {
     private final PlacingAI placingAI;
     private final PatrolAI patrolAI;
     private final ChestAI chestAI;
+    private final RestockAI restockAI;
 
     private JobAI activeJob;
     private int swapCounter = 0;
     private int scanCounter = 0;
+    private int restockCounter = 0;
 
     public SquireAIController(SquireEntity squire) {
         this.squire = squire;
@@ -66,6 +77,7 @@ public final class SquireAIController {
         this.placingAI = new PlacingAI(squire);
         this.patrolAI = new PatrolAI(squire);
         this.chestAI = new ChestAI(squire);
+        this.restockAI = new RestockAI(squire);
         this.activeJob = idleAI;
     }
 
@@ -77,6 +89,7 @@ public final class SquireAIController {
     public PlacingAI getPlacingAI() { return placingAI; }
     public PatrolAI getPatrolAI() { return patrolAI; }
     public ChestAI getChestAI() { return chestAI; }
+    public RestockAI getRestockAI() { return restockAI; }
 
     /** Called once per server tick from SquireEntity.aiStep. */
     public void tick() {
@@ -89,12 +102,49 @@ public final class SquireAIController {
             SquireThreatScanner.scan(squire);
         }
 
+        restockCounter++;
+        if (restockCounter >= RESTOCK_CHECK_INTERVAL_TICKS) {
+            restockCounter = 0;
+            maybeAutoRestock();
+        }
+
         swapCounter++;
         if (swapCounter >= SWAP_CHECK_INTERVAL_TICKS) {
             swapCounter = 0;
             selectJob();
         }
         activeJob.tick();
+    }
+
+    /**
+     * v4.0.3 — if the squire is missing one or more gear categories entirely (no copy in
+     * equipment slots OR backpack) AND has a known last-deposit chest, auto-assign the
+     * RestockAI to that chest. Priority is below combat but above Follow/Idle, so the
+     * squire interrupts passive tailing to go fetch a replacement pickaxe after a break.
+     *
+     * <p>Short-circuits cheaply when either precondition fails: no chest memory (never
+     * deposited → nothing to fetch from), no missing categories (fully equipped), or
+     * RestockAI already has a target (don't re-assign mid-walk).
+     */
+    private void maybeAutoRestock() {
+        if (restockAI.hasWork()) return;   // already en route
+        var chest = squire.getLastDepositChest();
+        if (chest == null) return;         // no memory of any chest
+        // Don't interrupt active work or combat to restock — the squire finishes the current
+        // area first. Restock runs when the squire is passive (Idle or Follow) or when the
+        // active work AI itself is blocked waiting on a tool (which manifests as the AI
+        // clearing its own queue).
+        if (activeJob == guardAI) return;
+        if (minerAI.hasWork() || lumberjackAI.hasWork() || farmerAI.hasWork()
+                || fisherAI.hasWork() || placingAI.hasWork() || patrolAI.hasWork()
+                || chestAI.hasWork()) {
+            return;
+        }
+        SquireItemHandler backpack = squire.getItemHandler();
+        if (backpack == null) return;
+        EnumSet<GearCategorizer.Category> missing = GearCategorizer.missingCategories(squire, backpack);
+        if (missing.isEmpty()) return;     // fully geared, nothing to fetch
+        restockAI.setTarget(chest);
     }
 
     /**
@@ -161,6 +211,10 @@ public final class SquireAIController {
         if (placingAI.hasWork())    return placingAI;
         if (patrolAI.hasWork())     return patrolAI;
         if (chestAI.hasWork())      return chestAI;
+        // Priority 2.5: restock (v4.0.3). Between work and follow — a squire missing a
+        // pickaxe should walk to its chest before resuming passive follow, but an active
+        // mine/chop/farm assignment wins.
+        if (restockAI.hasWork())    return restockAI;
         // Priority 3: follow. Active only in MODE_FOLLOW; sit/guard modes anchor the squire.
         if (squire.getOwner() != null
                 && squire.getSquireMode() == SquireEntity.MODE_FOLLOW) {

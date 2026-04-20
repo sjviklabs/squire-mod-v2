@@ -119,6 +119,14 @@ public final class SquireCommand {
                 .then(Commands.argument("pos", net.minecraft.commands.arguments.coordinates.BlockPosArgument.blockPos())
                     .executes(ctx -> storeAt(ctx.getSource(),
                             net.minecraft.commands.arguments.coordinates.BlockPosArgument.getBlockPos(ctx, "pos")))))
+
+            // /squire resupply [pos] — pull missing gear from chest at pos, or the last
+            // chest the squire deposited into if pos is omitted (v4.0.3).
+            .then(Commands.literal("resupply")
+                .executes(ctx -> resupplyFromLast(ctx.getSource()))
+                .then(Commands.argument("pos", net.minecraft.commands.arguments.coordinates.BlockPosArgument.blockPos())
+                    .executes(ctx -> resupplyAt(ctx.getSource(),
+                            net.minecraft.commands.arguments.coordinates.BlockPosArgument.getBlockPos(ctx, "pos")))))
         );
     }
 
@@ -517,6 +525,41 @@ public final class SquireCommand {
         ctl.getChestAI().setTarget(pos);
         source.sendSuccess(() -> Component.literal("Squire depositing backpack into chest at " + pos.toShortString()), false);
         return 1;
+    }
+
+    // ================================================================
+    // /squire resupply [pos] — pull missing gear from chest (v4.0.3)
+    // ================================================================
+
+    private static int resupplyAt(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        var ctl = squire.getAIController();
+        if (ctl == null) { source.sendFailure(Component.literal("Squire not ready.")); return 0; }
+
+        if (squire.level() instanceof net.minecraft.server.level.ServerLevel lvl) {
+            boolean ok = lvl.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK, pos, null) != null
+                    || lvl.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
+            if (!ok) {
+                source.sendFailure(Component.literal("No container at " + pos.toShortString() + "."));
+                return 0;
+            }
+        }
+
+        ctl.getRestockAI().setTarget(pos);
+        source.sendSuccess(() -> Component.literal("Squire resupplying from chest at " + pos.toShortString()), false);
+        return 1;
+    }
+
+    private static int resupplyFromLast(CommandSourceStack source) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        var chest = squire.getLastDepositChest();
+        if (chest == null) {
+            source.sendFailure(Component.literal("Squire has no remembered chest — use /squire resupply <pos> or /squire store <pos> first."));
+            return 0;
+        }
+        return resupplyAt(source, chest);
     }
 
     // ================================================================
