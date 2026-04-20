@@ -5,80 +5,23 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for MineColoniesCompat — specifically covers the absent-mod guard path.
+ * Unit tests for {@link MineColoniesCompat}.
  *
- * MineColonies is NOT on the test classpath. ModList is not available in the JUnit
- * environment (no NeoForge bootstrap). Tests exercise pure Java logic:
- * - When the mod is absent (modPresent stays null / isActive() returns false), all
- *   classification methods must return false.
- * - isFromPackage hierarchy-walk behavior is tested indirectly via the guard path
- *   and directly via the exposed helper structure.
+ * <p>Pre-v4.0.0 this file tested the "MineColonies is absent" guard paths — {@code isActive()
+ * returns false}, {@code isColonist(null) returns false}, etc. Those scenarios no longer
+ * occur: v4.0.0 made MineColonies a hard dependency, so production runs always have it
+ * loaded and the test harness (see build.gradle's patchModsTomlForTests) has it on the
+ * classpath too. The absent-mod test cases were deleted in v4.0.11.
  *
- * Design: Tests do NOT instantiate Minecraft entities (requires NeoForge bootstrap).
- * All entity-typed parameters are passed as null — safe because the absent-mod guard
- * short-circuits before any entity field is accessed.
+ * <p>What remains: the pure-Java helper {@link MineColoniesCompat#isFromPackageTestHook}
+ * which tests hierarchy-walk behavior independent of mod presence.
+ *
+ * <p>Gap: we don't currently have MC-present tests that exercise isColonist/isRaider/isFriendly
+ * against real MC entities. Those would require the MC entity registry to be populated,
+ * which needs a larger test harness setup than the current one provides. Worth revisiting
+ * if friendly-fire bugs surface.
  */
 class MineColoniesCompatTest {
-
-    /**
-     * Reset the static cache between tests so each test starts with a clean state.
-     * Uses reflection to reset the private static Boolean field.
-     */
-    @org.junit.jupiter.api.BeforeEach
-    void resetModPresentCache() throws Exception {
-        var field = MineColoniesCompat.class.getDeclaredField("modPresent");
-        field.setAccessible(true);
-        field.set(null, null);
-    }
-
-    // ── Mod detection ─────────────────────────────────────────────────────────
-
-    /**
-     * MineColonies is not on the test classpath.
-     * ModList is not bootstrapped in JUnit, so isActive() must return false.
-     */
-    @Test
-    void isActive_returnsFalse_whenModAbsent() {
-        assertFalse(MineColoniesCompat.isActive(),
-                "isActive() must return false when MineColonies is not loaded");
-    }
-
-    // ── Colonist detection ────────────────────────────────────────────────────
-
-    /**
-     * When MineColonies is absent, isColonist() must short-circuit and return false
-     * without touching the entity parameter (null-safe via the mod guard).
-     */
-    @Test
-    void isColonist_returnsFalse_whenModAbsent() {
-        // Pass null — the absent-mod guard short-circuits before any entity access
-        assertFalse(MineColoniesCompat.isColonist(null),
-                "isColonist() must return false when MineColonies is not loaded");
-    }
-
-    // ── Raider detection ─────────────────────────────────────────────────────
-
-    /**
-     * When MineColonies is absent, isRaider() must short-circuit and return false.
-     */
-    @Test
-    void isRaider_returnsFalse_whenModAbsent() {
-        assertFalse(MineColoniesCompat.isRaider(null),
-                "isRaider() must return false when MineColonies is not loaded");
-    }
-
-    // ── Friendly-fire prevention ──────────────────────────────────────────────
-
-    /**
-     * When MineColonies is absent, isFriendly() must short-circuit and return false.
-     */
-    @Test
-    void isFriendly_returnsFalse_whenModAbsent() {
-        assertFalse(MineColoniesCompat.isFriendly(null),
-                "isFriendly() must return false when MineColonies is not loaded");
-    }
-
-    // ── isFromPackage hierarchy walk ──────────────────────────────────────────
 
     /**
      * Test the package-scan helper directly via the exposed test-hook.

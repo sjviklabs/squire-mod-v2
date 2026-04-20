@@ -158,19 +158,40 @@ public final class GearCategorizer {
 
     /**
      * Rank a tier so netherite &gt; diamond &gt; iron &gt; stone &gt; gold &gt; wood. In 1.21.1 the
-     * {@code Tier} interface no longer exposes {@code getLevel()}, so we read the enum
-     * ordinal for vanilla {@link Tiers} (authoritative game-progression order) and fall
-     * back to attack-damage bonus × 10,000 for modded tiers that don't use the vanilla enum.
+     * {@code Tier} interface no longer exposes {@code getLevel()}; we map the vanilla
+     * {@link Tiers} enum values to an explicit rank table and fall back to attack-damage
+     * bonus × 10,000 for modded tiers that don't use the vanilla enum.
      *
-     * <p>Tiers.ordinal() gives WOOD=0, GOLD=1, STONE=2, IRON=3, DIAMOND=4, NETHERITE=5 —
-     * which matches the player's intuition about tier strength (gold &gt; wood for mining
-     * speed but weaker durability; in practice gold tools are transitional). Scaling by
-     * 100,000 keeps tier dominant over durability / enchantments / armor subscores.
+     * <p><b>Do not use {@code Tiers.ordinal()}.</b> In 1.21.1 the enum is declared in order
+     * {@code WOOD, STONE, IRON, DIAMOND, GOLD, NETHERITE} — gold's ordinal is 4, which
+     * would rank it above diamond. Player intuition (and keep-best correctness) wants gold
+     * between wood and stone: gold hits fast but dies fast, it's a transitional tool, not
+     * a flex one. The explicit rank table encodes this.
+     *
+     * <p>Scaling by 100,000 keeps tier dominant over durability / enchantments / armor
+     * subscores — a netherite pickaxe with 1 hp left still outscores a pristine diamond.
      */
     private static int tierScore(Tier tier) {
         if (tier instanceof Tiers t) {
-            return t.ordinal() * 100_000;
+            return vanillaTierRank(t) * 100_000;
         }
         return (int) (tier.getAttackDamageBonus() * 10_000);
+    }
+
+    /**
+     * Explicit player-intuition rank for vanilla tiers. Higher = better tool to keep.
+     * Covers every value in the 1.21.1 {@link Tiers} enum; a future vanilla addition
+     * would trigger the default branch and get ranked by name length (effectively random),
+     * which surfaces as a test failure when the new tier appears — the signal we want.
+     */
+    private static int vanillaTierRank(Tiers t) {
+        return switch (t) {
+            case WOOD -> 1;
+            case GOLD -> 2;      // above wood, below stone — transitional, not flex
+            case STONE -> 3;
+            case IRON -> 4;
+            case DIAMOND -> 5;
+            case NETHERITE -> 6;
+        };
     }
 }

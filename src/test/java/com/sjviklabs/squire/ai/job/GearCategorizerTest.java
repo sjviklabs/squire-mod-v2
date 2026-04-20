@@ -24,26 +24,21 @@ import static org.junit.jupiter.api.Assertions.*;
  * silently break the deposit/restock contract. Pure unit tests — no SquireEntity, no
  * server context, no registry access beyond {@link Items} static fields.
  *
- * <h2>Harness status (as of v4.0.5)</h2>
+ * <h2>Harness (as of v4.0.11)</h2>
  *
- * <p>The NeoForge JUnit test harness (via {@code unitTest enable()} in build.gradle) fails
- * to bootstrap because MineColonies is declared {@code type = "required"} in mods.toml, and
- * the test harness's mod loader doesn't see the MC jar sitting in {@code libs/} (picked up
- * by {@code localRuntime fileTree} for main, but not registered as a loaded mod for tests).
- * Error: {@code Mod squire requires minecolonies 1.1.1299 or above — not installed}.
+ * <p>Shipped as executable spec in v4.0.5 — the harness couldn't bootstrap because MC was
+ * declared {@code required} in mods.toml but wasn't registered as a loaded mod for tests.
+ * v4.0.11 fixed this via paired Gradle tasks {@code patchModsTomlForTests} +
+ * {@code restoreModsTomlAfterTests} in build.gradle — they flip the MC dep to {@code optional}
+ * in the already-processed mods.toml for the duration of the test task, then restore via
+ * {@code finalizedBy} regardless of pass/fail. MC itself is on the test JVM via
+ * {@code testRuntimeOnly fileTree('libs')}.
  *
- * <p>Running {@code ./gradlew test} currently fails at harness init for ALL tests in the
- * project, not just this one. The builds themselves work via {@code ./gradlew build -x test}.
- *
- * <p>This file is deliberately shipped ahead of the harness fix:
- * <ul>
- *   <li>It's executable specification for {@link GearCategorizer} — reviewers can read the
- *       test expectations to understand the contract without running anything.</li>
- *   <li>When the harness is fixed (register MineColonies as an additional test mod, or
- *       factor the MC dep to optional for tests only), these tests light up instantly.</li>
- *   <li>Deleting them because "they don't run yet" would be the wrong move — the tests
- *       capture regression-prevention intent that lives nowhere else.</li>
- * </ul>
+ * <p>The first post-fix run caught a real bug: {@code GearCategorizer.scoreStack} used
+ * {@code Tiers.ordinal()} for tier ranking. In 1.21.1 the enum order puts gold at ordinal 4
+ * (between diamond and netherite), meaning a gold pickaxe would beat a diamond one in keep-best.
+ * Fixed with an explicit {@code vanillaTierRank} switch ({@link GearCategorizer#tierScore}).
+ * The test that failed is why the fix landed.
  *
  * <p>Not tested here: {@link GearCategorizer#missingCategories(com.sjviklabs.squire.entity.SquireEntity, com.sjviklabs.squire.inventory.SquireItemHandler)}
  * which requires a live entity. That path is exercised end-to-end by manual in-game testing
@@ -146,8 +141,9 @@ class GearCategorizerTest {
             int diamond = GearCategorizer.scoreStack(new ItemStack(Items.DIAMOND_PICKAXE));
             int netherite = GearCategorizer.scoreStack(new ItemStack(Items.NETHERITE_PICKAXE));
 
-            // Tiers.ordinal() order: WOOD=0, GOLD=1, STONE=2, IRON=3, DIAMOND=4, NETHERITE=5.
-            // Scoring must match this so keep-best and restock agree on "better."
+            // Explicit tier rank (see GearCategorizer#vanillaTierRank) — NOT Tiers.ordinal(),
+            // which in 1.21.1 puts gold at ordinal 4 (between diamond and netherite) and
+            // would wrongly rank gold above iron + diamond. Gold is transitional, not flex.
             assertTrue(wood < gold, "wood < gold");
             assertTrue(gold < stone, "gold < stone");
             assertTrue(stone < iron, "stone < iron");

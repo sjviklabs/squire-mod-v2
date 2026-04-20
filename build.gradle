@@ -76,10 +76,79 @@ dependencies {
     // mods.toml declares it required). Tests extend runtimeClasspath, so this
     // covers both main and test without extra configuration plumbing.
     localRuntime fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Test harness specifically — moddev builds a JVM classpath for the launched
+    // test runner via writeNeoForgeTestClasspath. That task does NOT inherit the
+    // localRuntime configuration; it only picks up dependencies explicitly declared
+    // for tests. Without this line, SquireEntity fails to load at test time with
+    // NoClassDefFoundError on MC's IThreatTableEntity (which SquireEntity implements).
+    testRuntimeOnly fileTree(dir: 'libs', include: ['*.jar'])
 }
 
 test {
     useJUnitPlatform()
+}
+
+// ── Test harness: patch mods.toml around the test task ────────────────────────
+//
+// The NeoForge JUnit harness boots via ModLauncher, which reads mods.toml and
+// enforces required-dependency checks. Our production mods.toml declares
+// MineColonies as `required`, but the test harness can't see the MC jar (it
+// sits in libs/ via `localRuntime` — not registered as a loaded mod artifact).
+// Result: EVERY test fails with "Mod squire requires minecolonies... not installed"
+// before any test class even loads.
+//
+// Fix: patch the processed mods.toml in build/resources/main in-place to mark
+// MC as `optional` for test runs, then restore immediately via finalizedBy so
+// subsequent jar/build tasks ship the correct production declaration.
+//
+// Why not a test-resources overlay (src/test/resources/META-INF/neoforge.mods.toml)?
+// Tried — ModLauncher then sees TWO mods.toml files on the test classpath, can't
+// determine which mod source `build/classes/java/main` belongs to, and fails with
+// "is not a valid mod file". Single source of truth wins.
+//
+// Why not a `mc_dep_type` expand property? Properties are evaluated at Gradle
+// configuration time; we can't differentiate between `./gradlew test` (want
+// optional) and `./gradlew build` (want required, even though build implicitly
+// runs test through the check chain). A runtime patch+restore handles both.
+//
+// Cleanup guarantee: finalizedBy runs regardless of test pass/fail, so a failed
+// test can't leave the jar output with MC as optional.
+
+tasks.register('patchModsTomlForTests') {
+    dependsOn processResources
+    doLast {
+        var tomlFile = file("$buildDir/resources/main/META-INF/neoforge.mods.toml")
+        var backup = file("$buildDir/resources/main/META-INF/neoforge.mods.toml.orig")
+        if (!tomlFile.exists()) return
+        if (backup.exists()) return   // already patched — idempotent
+        backup.text = tomlFile.text
+        // Narrow replacement: only the minecolonies dep, only its `required`.
+        // Regex must survive the [[dependencies.squire]] block form and arbitrary
+        // whitespace/comments between the modId and type lines.
+        var patched = tomlFile.text.replaceAll(
+                /(?s)(modId = "minecolonies".*?type = )"required"/,
+                '$1"optional"')
+        tomlFile.text = patched
+        println "[test-harness] Patched mods.toml: minecolonies dep → optional"
+    }
+}
+
+tasks.register('restoreModsTomlAfterTests') {
+    doLast {
+        var tomlFile = file("$buildDir/resources/main/META-INF/neoforge.mods.toml")
+        var backup = file("$buildDir/resources/main/META-INF/neoforge.mods.toml.orig")
+        if (backup.exists()) {
+            tomlFile.text = backup.text
+            backup.delete()
+            println "[test-harness] Restored mods.toml: minecolonies dep → required"
+        }
+    }
+}
+
+tasks.named('test').configure {
+    dependsOn patchModsTomlForTests
+    finalizedBy restoreModsTomlAfterTests
 }
 
 repositories {
