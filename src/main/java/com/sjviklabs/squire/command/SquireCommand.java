@@ -221,23 +221,70 @@ public final class SquireCommand {
             .getModContainerById(SquireMod.MODID)
             .map(c -> c.getModInfo().getVersion().toString())
             .orElse("unknown");
+
+        // --- Header ---
         source.sendSuccess(() -> Component.literal("=== Squire Mod v" + modVersion + " ==="), false);
 
+        // --- Identity line ---
         String tier = squire.getTier().name().charAt(0) + squire.getTier().name().substring(1).toLowerCase();
         source.sendSuccess(() -> Component.literal(String.format(
             "%s — Lv.%d %s | XP: %d | HP: %.0f/%.0f | Mode: %s",
-            name,
-            squire.getLevel(),
-            tier,
-            squire.getTotalXP(),
-            squire.getHealth(),
-            squire.getMaxHealth(),
+            name, squire.getLevel(), tier, squire.getTotalXP(),
+            squire.getHealth(), squire.getMaxHealth(),
             modeName(squire.getSquireMode())
         )), false);
 
-        source.sendSuccess(() -> Component.literal(
-            "v4.0.0 Phase 1 — custom AI disabled (only FloatGoal + OpenDoorGoal active). " +
-            "Combat/work commands return in later phases."), false);
+        // --- Active AI + position ---
+        var ctl = squire.getAIController();
+        String activeAI = ctl == null ? "(not ready)" : ctl.getActiveJob().getClass().getSimpleName();
+        var pos = squire.blockPosition();
+        source.sendSuccess(() -> Component.literal(String.format(
+            "Active: %s @ [%d, %d, %d]",
+            activeAI, pos.getX(), pos.getY(), pos.getZ()
+        )), false);
+
+        // --- Remembered deposit chest (v4.0.3 / RestockAI target) ---
+        var chest = squire.getLastDepositChest();
+        if (chest != null) {
+            source.sendSuccess(() -> Component.literal(String.format(
+                "Deposit chest: [%d, %d, %d]",
+                chest.getX(), chest.getY(), chest.getZ()
+            )), false);
+        } else {
+            source.sendSuccess(() -> Component.literal(
+                "Deposit chest: (none — use /squire store to set)"), false);
+        }
+
+        // --- Backpack fill + missing gear (restock/auto-deposit diagnostics) ---
+        var handler = squire.getItemHandler();
+        if (handler != null) {
+            int backpackSize = handler.getSlots() - com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS;
+            int surplus = 0;
+            int gear = 0;
+            for (int i = com.sjviklabs.squire.inventory.SquireItemHandler.EQUIPMENT_SLOTS; i < handler.getSlots(); i++) {
+                var s = handler.getStackInSlot(i);
+                if (s.isEmpty()) continue;
+                if (com.sjviklabs.squire.ai.job.GearCategorizer.classify(s) == null) surplus++;
+                else gear++;
+            }
+            int fillPct = backpackSize > 0 ? (surplus * 100 / backpackSize) : 0;
+            final int surplusF = surplus, gearF = gear, fillPctF = fillPct, bpSize = backpackSize;
+            source.sendSuccess(() -> Component.literal(String.format(
+                "Backpack: %d/%d surplus (%d%%) + %d gear stashed",
+                surplusF, bpSize, fillPctF, gearF
+            )), false);
+
+            var missing = com.sjviklabs.squire.ai.job.GearCategorizer.missingCategories(squire, handler);
+            if (missing.isEmpty()) {
+                source.sendSuccess(() -> Component.literal("Gear: all categories covered"), false);
+            } else {
+                String missingList = missing.stream()
+                        .map(Enum::name)
+                        .reduce((a, b) -> a + ", " + b)
+                        .orElse("");
+                source.sendSuccess(() -> Component.literal("Missing: " + missingList), false);
+            }
+        }
 
         return 1;
     }
