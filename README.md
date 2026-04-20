@@ -38,7 +38,8 @@ Each work task uses a Crest right-click area selection. Two corner clicks define
 
 - **`/squire store <chest>`** — deposits surplus into any chest / barrel / shulker / modded container. Keeps the **best** tool/weapon/armor per category (diamond Fortune III pickaxe beats iron Efficiency I, etc.); duplicates and worse copies go to the chest. Cursed gear always deposits.
 - **`/squire resupply [chest]`** — pulls one best-scoring item per missing gear category from the specified chest (or the last chest the squire deposited into, if omitted).
-- **Auto-restock** — when the squire is missing a gear category entirely (broken tool, empty backpack slot) and has a remembered deposit chest, it auto-walks there, pulls a replacement, and auto-equips. No command needed.
+- **Auto-deposit (v4.0.4)** — when the squire is passive and ≥80% of backpack slots hold surplus (non-gear) items, it auto-walks to its remembered deposit chest and empties them.
+- **Auto-restock (v4.0.3)** — when the squire is missing a gear category entirely (broken tool, empty backpack slot) and has a remembered deposit chest, it auto-walks there, pulls a replacement, and auto-equips. No command needed.
 
 ### Equipment
 
