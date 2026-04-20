@@ -96,11 +96,46 @@ public final class SquireAIController {
     /**
      * Decide which job AI should be active given the squire's current context.
      * Priority (high to low): Guard (threat present) → Follow (owner far, mode FOLLOW) → Idle.
+     *
+     * Fires chat lines on meaningful transitions (idle/follow/work → Guard = COMBAT_START,
+     * any → idle after task completion = IDLE). Each uses {@link com.sjviklabs.squire.entity.ChatHandler#sendLineWithCooldown}
+     * so a flapping state machine can't spam chat — the v3.x scream-loop defense stays wired
+     * in even though the bug class that caused it is structurally gone.
      */
     private void selectJob() {
         JobAI next = chooseJob();
         if (next != activeJob) {
+            JobAI previous = activeJob;
             activeJob = next;
+            fireTransitionChat(previous, next);
+        }
+    }
+
+    /** Publish chat lines for player-visible job transitions. Cooldowns prevent spam. */
+    private void fireTransitionChat(JobAI previous, JobAI next) {
+        var owner = squire.getOwner();
+        if (owner == null) return;
+
+        // Combat entry: from ANY non-combat AI → GuardAI.
+        if (next == guardAI && previous != guardAI) {
+            com.sjviklabs.squire.entity.ChatHandler.sendLineWithCooldown(
+                    squire, owner,
+                    com.sjviklabs.squire.entity.ChatHandler.ChatEvent.COMBAT_START,
+                    40L);  // 2 s cooldown — defense in depth
+            return;
+        }
+
+        // Work completion: from any work AI → IDLE/Follow (i.e., controller chose Idle or Follow
+        // because the work AI's queue drained). One "task complete" line per drain, cooldown 60t.
+        boolean previousWasWork = previous == minerAI || previous == lumberjackAI
+                || previous == farmerAI || previous == fisherAI || previous == placingAI
+                || previous == patrolAI;
+        boolean nextIsPassive = next == idleAI || next == followOwnerAI;
+        if (previousWasWork && nextIsPassive) {
+            com.sjviklabs.squire.entity.ChatHandler.sendLineWithCooldown(
+                    squire, owner,
+                    com.sjviklabs.squire.entity.ChatHandler.ChatEvent.IDLE,
+                    60L);
         }
     }
 

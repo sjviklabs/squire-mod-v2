@@ -150,8 +150,13 @@ public class ProgressionHandler {
 
         applyModifiers();
 
-        // v4.0.0 Phase 1 — LEVEL_UP event removed with SquireBrain.
-        // Phase 7 rewires chat personality against SquireAIController state transitions.
+        // Chat personality on level up. Direct ChatHandler call — no event bus round trip.
+        var owner = squire.getOwner();
+        if (owner != null) {
+            com.sjviklabs.squire.entity.ChatHandler.sendLine(
+                    squire, owner,
+                    com.sjviklabs.squire.entity.ChatHandler.ChatEvent.LEVEL_UP);
+        }
 
         // Level-up particle effect (small burst)
         if (squire.level() instanceof net.minecraft.server.level.ServerLevel sl) {
@@ -165,8 +170,13 @@ public class ProgressionHandler {
             // Refresh capability references held by pipes/hoppers — slot count expanded
             squire.invalidateCapabilities();
 
-            // v4.0.0 Phase 1 — TIER_ADVANCE event removed with SquireBrain.
-            // Phase 7 rewires chat personality against SquireAIController state transitions.
+            // Chat personality on tier advance.
+            var tierOwner = squire.getOwner();
+            if (tierOwner != null) {
+                com.sjviklabs.squire.entity.ChatHandler.sendLine(
+                        squire, tierOwner,
+                        com.sjviklabs.squire.entity.ChatHandler.ChatEvent.NEW_TIER);
+            }
 
             // Tier advance: firework explosion effect + fanfare
             if (squire.level() instanceof net.minecraft.server.level.ServerLevel sl2) {
