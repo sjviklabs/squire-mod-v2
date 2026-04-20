@@ -103,6 +103,8 @@ public final class FisherAI implements JobAI {
     public void stop() {
         this.waterPos = null;
         this.cast = false;
+        // v4.0.1 — cancel live path (see FarmerAI.stop for rationale).
+        squire.getNavigation().stop();
     }
 
     /** True when we've been told to fish and have the required tool. */

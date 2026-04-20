@@ -113,6 +113,12 @@ public final class SquireCommand {
             .then(Commands.literal("patrol")
                 .executes(ctx -> patrolStart(ctx.getSource()))
                 .then(Commands.literal("stop").executes(ctx -> patrolStop(ctx.getSource()))))
+
+            // /squire store <pos> — deposit backpack contents into the chest at pos
+            .then(Commands.literal("store")
+                .then(Commands.argument("pos", net.minecraft.commands.arguments.coordinates.BlockPosArgument.blockPos())
+                    .executes(ctx -> storeAt(ctx.getSource(),
+                            net.minecraft.commands.arguments.coordinates.BlockPosArgument.getBlockPos(ctx, "pos")))))
         );
     }
 
@@ -484,6 +490,32 @@ public final class SquireCommand {
         var ctl = squire.getAIController();
         if (ctl != null) ctl.getPatrolAI().stop();
         source.sendSuccess(() -> Component.literal("Squire patrol stopped."), false);
+        return 1;
+    }
+
+    // ================================================================
+    // /squire store <pos> — deposit backpack into chest at pos
+    // ================================================================
+
+    private static int storeAt(CommandSourceStack source, net.minecraft.core.BlockPos pos) {
+        SquireEntity squire = requireSquire(source);
+        if (squire == null) return 0;
+        var ctl = squire.getAIController();
+        if (ctl == null) { source.sendFailure(Component.literal("Squire not ready.")); return 0; }
+
+        // Validate target is a container before dispatching — cheaper to fail fast here than
+        // have the AI walk over and bail silently.
+        if (squire.level() instanceof net.minecraft.server.level.ServerLevel lvl) {
+            boolean ok = lvl.getCapability(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK, pos, null) != null
+                    || lvl.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
+            if (!ok) {
+                source.sendFailure(Component.literal("No container at " + pos.toShortString() + "."));
+                return 0;
+            }
+        }
+
+        ctl.getChestAI().setTarget(pos);
+        source.sendSuccess(() -> Component.literal("Squire depositing backpack into chest at " + pos.toShortString()), false);
         return 1;
     }
 

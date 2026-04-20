@@ -98,6 +98,8 @@ public final class PatrolAI implements JobAI {
         waypoints.clear();
         currentIndex = 0;
         dwellTimer = 0;
+        // v4.0.1 — cancel live path (see FarmerAI.stop for rationale).
+        squire.getNavigation().stop();
     }
 
     public boolean hasWork() {

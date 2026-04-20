@@ -111,6 +111,10 @@ public final class FarmerAI implements JobAI {
         this.cornerB = null;
         this.actionPos = null;
         this.actionKind = null;
+        // v4.0.1 — cancel any live path so the squire doesn't keep walking to the last farm
+        // target after the controller has swapped us out. Previously stop() only cleared our
+        // bookkeeping; the squire's navigation goal persisted across the swap.
+        squire.getNavigation().stop();
     }
 
     public boolean hasWork() {
@@ -119,6 +123,15 @@ public final class FarmerAI implements JobAI {
 
     private SquireAIState tickFarming() {
         if (!(squire.level() instanceof ServerLevel level)) return SquireAIState.FARMING;
+
+        // v4.0.1 — early-out when stop() has cleared our assignment. Without this, the per-tick
+        // transition would keep running up to 10 ticks before the source-state exit transition
+        // checks cornerA == null, and scanForTask() would NPE on cornerA.getX(). The net effect
+        // was the squire appearing "stuck" after /squire farm stop — user had to recall.
+        if (cornerA == null || cornerB == null) {
+            squire.getNavigation().stop();
+            return SquireAIState.FARMING;  // exit transition (priority 10t) will swap to IDLE
+        }
 
         // No pending action? Scan for one.
         if (actionPos == null) {
