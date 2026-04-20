@@ -86,6 +86,12 @@ public final class SquireCommand {
             .then(Commands.literal("godmode")
                 .requires(src -> src.hasPermission(2))
                 .executes(ctx -> toggleGodMode(ctx.getSource())))
+
+            // /squire mine   — mine the crest-selected area
+            .then(Commands.literal("mine").executes(ctx -> mineArea(ctx.getSource())))
+
+            // /squire chop   — fell every tree in the crest-selected area
+            .then(Commands.literal("chop").executes(ctx -> chopArea(ctx.getSource())))
         );
     }
 
@@ -285,5 +291,65 @@ public final class SquireCommand {
         squire.setInvulnerable(now);
         source.sendSuccess(() -> Component.literal("Squire godmode: " + (now ? "ON" : "OFF")), false);
         return 1;
+    }
+
+    // ================================================================
+    // /squire mine, /squire chop — pass crest area to the relevant work AI
+    // ================================================================
+
+    private static int mineArea(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        net.minecraft.core.BlockPos[] area = readCrestArea(player);
+        if (area == null) {
+            source.sendFailure(Component.literal("Mark two corners with the Squire's Crest first."));
+            return 0;
+        }
+        var ctl = squire.getAIController();
+        if (ctl == null) {
+            source.sendFailure(Component.literal("Squire not ready."));
+            return 0;
+        }
+        ctl.getMinerAI().setArea(area[0], area[1]);
+        int queued = ctl.getMinerAI().getQueueSize();
+        com.sjviklabs.squire.item.SquireCrestItem.clearSelection(player.getMainHandItem());
+        source.sendSuccess(() -> Component.literal("Squire mining area: " + queued + " blocks."), false);
+        return 1;
+    }
+
+    private static int chopArea(CommandSourceStack source) {
+        if (!source.isPlayer()) return 0;
+        ServerPlayer player = (ServerPlayer) source.getEntity();
+        if (player == null) return 0;
+        SquireEntity squire = findOwnedSquire(player);
+        if (squire == null) { source.sendFailure(Component.literal("You have no active squire.")); return 0; }
+
+        net.minecraft.core.BlockPos[] area = readCrestArea(player);
+        if (area == null) {
+            source.sendFailure(Component.literal("Mark two corners with the Squire's Crest first."));
+            return 0;
+        }
+        var ctl = squire.getAIController();
+        if (ctl == null) {
+            source.sendFailure(Component.literal("Squire not ready."));
+            return 0;
+        }
+        ctl.getLumberjackAI().setArea(area[0], area[1]);
+        int queued = ctl.getLumberjackAI().getQueueSize();
+        com.sjviklabs.squire.item.SquireCrestItem.clearSelection(player.getMainHandItem());
+        source.sendSuccess(() -> Component.literal("Squire chopping area: " + queued + " log blocks queued."), false);
+        return 1;
+    }
+
+    /** Reads the crest area from the player's mainhand. Returns null if not held or not fully selected. */
+    @Nullable
+    private static net.minecraft.core.BlockPos[] readCrestArea(ServerPlayer player) {
+        net.minecraft.world.item.ItemStack held = player.getMainHandItem();
+        if (!(held.getItem() instanceof com.sjviklabs.squire.item.SquireCrestItem)) return null;
+        return com.sjviklabs.squire.item.SquireCrestItem.getSelectedArea(held);
     }
 }

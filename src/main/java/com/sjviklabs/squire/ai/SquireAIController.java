@@ -4,6 +4,8 @@ import com.sjviklabs.squire.ai.job.FollowOwnerAI;
 import com.sjviklabs.squire.ai.job.GuardAI;
 import com.sjviklabs.squire.ai.job.IdleAI;
 import com.sjviklabs.squire.ai.job.JobAI;
+import com.sjviklabs.squire.ai.job.LumberjackAI;
+import com.sjviklabs.squire.ai.job.MinerAI;
 import com.sjviklabs.squire.ai.state.SquireAIState;
 import com.sjviklabs.squire.ai.threat.SquireThreatScanner;
 import com.sjviklabs.squire.entity.SquireEntity;
@@ -35,6 +37,8 @@ public final class SquireAIController {
     private final JobAI idleAI;
     private final JobAI followOwnerAI;
     private final JobAI guardAI;
+    private final MinerAI minerAI;
+    private final LumberjackAI lumberjackAI;
 
     private JobAI activeJob;
     private int swapCounter = 0;
@@ -45,8 +49,14 @@ public final class SquireAIController {
         this.idleAI = new IdleAI(squire);
         this.followOwnerAI = new FollowOwnerAI(squire);
         this.guardAI = new GuardAI(squire);
+        this.minerAI = new MinerAI(squire);
+        this.lumberjackAI = new LumberjackAI(squire);
         this.activeJob = idleAI;
     }
+
+    /** Accessors for work-AI intake from commands. */
+    public MinerAI getMinerAI() { return minerAI; }
+    public LumberjackAI getLumberjackAI() { return lumberjackAI; }
 
     /** Called once per server tick from SquireEntity.aiStep. */
     public void tick() {
@@ -84,12 +94,18 @@ public final class SquireAIController {
         if (squire.getThreatTable().getTargetMob() != null) {
             return guardAI;
         }
-        // Priority 2: follow. Active only in MODE_FOLLOW; sit/guard modes anchor the squire.
+        // Priority 2: work AIs with pending assignments. Block-breaking work (Miner,
+        // Lumberjack) is interruptible by combat (priority 1 above). Between them,
+        // whichever was assigned most recently wins — `hasWork` returns true only while
+        // their queue is non-empty. Both queues drain themselves back to IDLE.
+        if (minerAI.hasWork()) return minerAI;
+        if (lumberjackAI.hasWork()) return lumberjackAI;
+        // Priority 3: follow. Active only in MODE_FOLLOW; sit/guard modes anchor the squire.
         if (squire.getOwner() != null
                 && squire.getSquireMode() == SquireEntity.MODE_FOLLOW) {
             return followOwnerAI;
         }
-        // Priority 3: idle (default fallback).
+        // Priority 4: idle (default fallback).
         return idleAI;
     }
 
