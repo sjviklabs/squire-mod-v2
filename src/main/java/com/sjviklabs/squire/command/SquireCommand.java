@@ -215,15 +215,56 @@ public final class SquireCommand {
     }
 
     // ================================================================
-    // /squire recall — dismisses the squire (entity discard)
+    // /squire recall — persist state to owner attachment, then discard
     // ================================================================
 
+    /**
+     * Dismiss the squire and persist its state to the owner's attachment so re-summon
+     * via the Crest restores the same squire with XP, inventory, name, and appearance
+     * intact. Pre-v4.0.8 this just called {@code squire.discard()} and dropped every
+     * piece of state on the floor.
+     *
+     * <p>Save targets (all via {@link com.sjviklabs.squire.entity.SquireDataAttachment.SquireData}):
+     * XP + level, custom name, slim-model flag, full inventory NBT (equipment slots 0–5
+     * + backpack 6+). {@code clearSquireUUID()} marks the attachment as "no live squire"
+     * so Crest re-summon knows to spawn fresh.
+     */
     private static int recallSquire(CommandSourceStack source) {
         SquireEntity squire = requireSquire(source);
         if (squire == null) return 0;
+
+        persistToAttachment(squire);
+
         squire.discard();
         source.sendSuccess(() -> Component.literal("Squire recalled."), false);
         return 1;
+    }
+
+    /**
+     * Write the squire's current runtime state to the owner player's attachment. Used by
+     * {@link #recallSquire} and reused anywhere state must survive entity removal. No-op
+     * if the squire has no owner resolvable on this server (offline owner, UUID mismatch).
+     */
+    private static void persistToAttachment(SquireEntity squire) {
+        if (squire.level().isClientSide) return;
+        if (!(squire.level() instanceof ServerLevel level)) return;
+        var ownerUUID = squire.getOwnerUUID();
+        if (ownerUUID == null) return;
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerUUID);
+        if (owner == null) return;
+
+        var data = owner.getData(com.sjviklabs.squire.SquireRegistry.SQUIRE_DATA.get());
+        String name = squire.hasCustomName() && squire.getCustomName() != null
+                ? squire.getCustomName().getString()
+                : data.customName();
+        var inventoryNBT = squire.getItemHandler().serializeNBT(level.registryAccess());
+
+        owner.setData(com.sjviklabs.squire.SquireRegistry.SQUIRE_DATA.get(),
+                data.withXP(squire.getTotalXP(), squire.getLevel())
+                    .withName(name)
+                    .withAppearance(squire.isSlimModel())
+                    .withInventory(inventoryNBT)
+                    .clearSquireUUID());
     }
 
     // ================================================================

@@ -737,45 +737,37 @@ public class SquireEntity extends PathfinderMob implements GeoEntity, IThreatTab
         releaseChunkLoading();
 
         if (!this.level().isClientSide && this.level() instanceof ServerLevel serverLevel) {
-            // Find owner and persist progression to attachment before super.die() removes entity
+            // v4.0.8 — persist FULL state (XP + inventory + identity) to owner attachment so
+            // re-summon via the Crest restores the same squire intact. Pre-v4.0.8 this only
+            // saved XP/level/name/appearance and dropped equipped gear as item entities,
+            // which forced the player to scramble-loot their dead squire's remains and lost
+            // the backpack entirely. Attachment-based persistence is the same path /squire
+            // recall uses; death is now equivalent to "recall under duress."
             if (this.ownerUUID != null) {
                 ServerPlayer owner = serverLevel.getServer().getPlayerList().getPlayer(this.ownerUUID);
                 if (owner != null) {
-                    // Write current XP/level/name back to player attachment (survives death)
                     SquireDataAttachment.SquireData data =
                             owner.getData(SquireRegistry.SQUIRE_DATA.get());
                     String name = this.hasCustomName() && this.getCustomName() != null
                             ? this.getCustomName().getString()
-                            : "Squire";
+                            : data.customName();
+                    CompoundTag inventoryNBT =
+                            this.itemHandler.serializeNBT(this.registryAccess());
                     owner.setData(SquireRegistry.SQUIRE_DATA.get(),
                             data.withXP(this.totalXP, getLevel())
                                 .withName(name)
                                 .withAppearance(isSlimModel())
+                                .withInventory(inventoryNBT)
                                 .clearSquireUUID());
 
-                    // Notify owner with death coordinates
+                    // Notify owner with death coordinates so they know where it happened,
+                    // even though gear no longer litters the ground there.
                     int x = this.blockPosition().getX();
                     int y = this.blockPosition().getY();
                     int z = this.blockPosition().getZ();
                     owner.sendSystemMessage(Component.literal(
-                            "Your squire fell at [" + x + ", " + y + ", " + z + "]"));
-                }
-            }
-
-            // Drop equipped slots 0-5: armor×4 (HEAD, CHEST, LEGS, FEET) + mainhand + offhand
-            // Backpack slots (if any) are lost on death — per locked design decision.
-            EquipmentSlot[] equipSlots = {
-                EquipmentSlot.HEAD, EquipmentSlot.CHEST,
-                EquipmentSlot.LEGS, EquipmentSlot.FEET,
-                EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND
-            };
-            for (EquipmentSlot slot : equipSlots) {
-                ItemStack stack = this.getItemBySlot(slot);
-                if (!stack.isEmpty()) {
-                    ItemEntity itemEntity = new ItemEntity(serverLevel,
-                            this.getX(), this.getY(), this.getZ(), stack.copy());
-                    serverLevel.addFreshEntity(itemEntity);
-                    this.setItemSlot(slot, ItemStack.EMPTY);
+                            "Your squire fell at [" + x + ", " + y + ", " + z
+                            + "]. Inventory preserved — re-summon with your Crest."));
                 }
             }
         }
