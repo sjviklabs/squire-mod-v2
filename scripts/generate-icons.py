@@ -1,25 +1,29 @@
 #!/usr/bin/env python3
 """
-Generate Squire Mod v2 default item icons from scratch.
+Generate Squire Mod v2 default item icons.
 
-Pixel-accurate rendering in the Squire brand palette (see docs/design/handoff/BRAND.md):
-- Ink    #0F0E0B — dark background
-- Brass  #B89558 — primary accent
-- Vellum #E8DFC9 — parchment highlight
-- Claret #7A2A2A — alert (unused here, reserved)
+Two sources, two different mechanisms:
 
-Design rules honored:
+1. **Crest (32×32)** — downscaled from src/main/resources/logo.png (253×253 canonical
+   Heraldic Seal art, used unchanged for the mod-menu logo). Lanczos resample keeps
+   the detail legible at hotbar scale; MC's item renderer then nearest-neighbors it at
+   draw time, which is fine — the downscale is the only lossy step.
+
+2. **Guidebook (16×16)** — hand-pixeled in Pillow using the Squire brand palette (see
+   docs/design/handoff/BRAND.md). The guidebook is a book, not a seal, so the logo
+   motif doesn't apply.
+
+Design rules honored (BRAND.md "draw rules"):
 - Monochromatic — brass on ink, ink on brass. No gradients.
-- No rounded corners above 2px (hand-pixeled means no anti-aliasing, no false-AA rounds).
+- No rounded corners above 2px.
 - Stroke width ≥ 1px at icon scale.
-- No green (sjvik territory).
+- No green (SJVIK territory).
 
 Output:
   src/main/resources/assets/squire/textures/item/squire_crest.png     (32×32)
   src/main/resources/assets/squire/textures/item/squire_guidebook.png (16×16)
 
-Re-run any time — overwrites in place. The script is the source of truth; the PNGs
-are regeneratable artifacts.
+Re-run any time — overwrites in place. If logo.png changes, the crest auto-refreshes.
 """
 from __future__ import annotations
 
@@ -37,62 +41,26 @@ BRASS = (184, 149, 88, 255)
 DEEP_BRASS = (110, 90, 56, 255)
 CLEAR = (0, 0, 0, 0)
 
-ASSETS = Path(__file__).resolve().parents[1] / "src/main/resources/assets/squire/textures/item"
+REPO = Path(__file__).resolve().parents[1]
+LOGO_SRC = REPO / "src/main/resources/logo.png"
+ASSETS = REPO / "src/main/resources/assets/squire/textures/item"
 
 
 # ---------------------------------------------------------------------------
 # Squire's Crest — 32×32
 #
-# Heraldic Seal motif from BRAND.md: circular seal with inner shield and crossed
-# pickaxe + sword (Trades Mark). The crest is the primary summoning item, so it
-# gets the full heraldic treatment rather than just the shield alone.
+# Derived from the canonical Heraldic Seal PNG (logo.png, 253×253) via Lanczos
+# downscale. Keeping a single source of truth for the brand mark means the item
+# icon, mod-menu logo, and website hero all stay in visual sync — changing the
+# logo file refreshes every derivative with one script run.
 #
-# At 32×32 we have enough pixels for: outer ring, inner field, heater shield,
-# and the crossed tools. Stroke width 1-2px per BRAND rules.
+# Alternative considered: hand-pixel a 32×32 version independently. Rejected
+# because the two would drift as the brand art evolves; the Lanczos result is
+# legible at hotbar scale and that's what the item icon needs.
 # ---------------------------------------------------------------------------
 def draw_crest() -> Image.Image:
-    size = 32
-    img = Image.new("RGBA", (size, size), CLEAR)
-    d = ImageDraw.Draw(img)
-    cx, cy = 15.5, 15.5
-
-    # Dark ink field inside the outer ring — gives the icon weight against the
-    # hotbar background. Ring at r=14.5 (ellipse bbox 1..30), fill at r=13.
-    d.ellipse((1, 1, 30, 30), fill=INK, outline=BRASS, width=1)
-
-    # Inner concentric ring — echo from the website's seal, scaled down.
-    # Bbox 4..27 gives r≈11.5.
-    d.ellipse((4, 4, 27, 27), outline=DEEP_BRASS, width=1)
-
-    # Heater shield inside the seal. Bounds roughly x 8..23, y 8..26. Classic
-    # heater shape: straight top, straight sides top half, curved-in to point.
-    # Drawn with polygon for the pointed bottom, then top drawn as rectangle.
-    shield_top = 8
-    shield_bot = 24
-    shield_l = 9
-    shield_r = 22
-    shield_points = [
-        (shield_l, shield_top),
-        (shield_r, shield_top),
-        (shield_r, shield_top + 6),
-        (cx, shield_bot),
-        (shield_l, shield_top + 6),
-    ]
-    d.polygon(shield_points, outline=BRASS)
-
-    # Trades Mark — crossed pickaxe + sword inside the shield. Two diagonal
-    # strokes from inner shield corners, with brass dots on the handle ends
-    # to echo the outer ring punctuation. Thin 1px strokes; at 32×32 this
-    # reads cleanly without smudging into the shield outline.
-    # First diagonal: top-left to bottom-right
-    d.line((12, 12, 20, 20), fill=BRASS, width=1)
-    # Second diagonal: top-right to bottom-left
-    d.line((20, 12, 12, 20), fill=BRASS, width=1)
-    # Handle-end dots (brass, 1px)
-    for (x, y) in ((12, 12), (20, 12), (12, 20), (20, 20)):
-        d.point((x, y), fill=BRASS)
-
-    return img
+    src = Image.open(LOGO_SRC).convert("RGBA")
+    return src.resize((32, 32), Image.LANCZOS)
 
 
 # ---------------------------------------------------------------------------
