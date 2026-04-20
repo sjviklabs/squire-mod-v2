@@ -7,7 +7,15 @@ import com.sjviklabs.squire.entity.SquireEntity;
 import com.sjviklabs.squire.inventory.SquireItemHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.DiggerItem;
+import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -116,6 +124,7 @@ public final class ChestAI implements JobAI {
         for (int slot = SquireItemHandler.EQUIPMENT_SLOTS; slot < backpack.getSlots(); slot++) {
             ItemStack stack = backpack.getStackInSlot(slot);
             if (stack.isEmpty()) continue;
+            if (shouldPreserve(stack)) continue;   // v4.0.2 — keep tools/armor/weapons
 
             ItemStack remaining = stack.copy();
             for (int chestSlot = 0; chestSlot < chest.getSlots() && !remaining.isEmpty(); chestSlot++) {
@@ -137,6 +146,27 @@ public final class ChestAI implements JobAI {
         chestPos = null;
         cooldown = DEPOSIT_COOLDOWN_TICKS;
         return SquireAIState.PLACING;
+    }
+
+    /**
+     * True if the stack is a tool, weapon, armor, or shield that the squire uses for its jobs.
+     * Such items stay in the backpack on deposit — the squire needs them to keep working and
+     * to stay equipped through auto-equip swaps. Bulk items (logs, stone, seeds, fish, etc.)
+     * have no class in this list and get deposited normally.
+     *
+     * DiggerItem covers pickaxes, axes, hoes, shovels. TieredItem would include swords too
+     * via the tool hierarchy, but SwordItem is explicit for clarity. Any modded tool that
+     * extends these base classes is preserved automatically.
+     */
+    private static boolean shouldPreserve(ItemStack stack) {
+        return stack.getItem() instanceof DiggerItem     // pickaxe / axe / hoe / shovel
+                || stack.getItem() instanceof SwordItem
+                || stack.getItem() instanceof BowItem
+                || stack.getItem() instanceof CrossbowItem
+                || stack.getItem() instanceof TridentItem
+                || stack.getItem() instanceof FishingRodItem
+                || stack.getItem() instanceof ArmorItem   // helmet / chest / legs / boots
+                || stack.getItem() instanceof ShieldItem;
     }
 
     /**
