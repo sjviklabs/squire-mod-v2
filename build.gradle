@@ -63,10 +63,19 @@ dependencies {
     // Uses api.modrinth.com/maven — Jade project slug on Modrinth is "jade"
     compileOnly "maven.modrinth:jade:15.10.4+neoforge"
 
-    // Phase 8: MineColonies soft-dep — coordinates need verification at Phase 8
-    // The ldtteam Jfrog repo only publishes 1.12.2-era artifacts.
-    // TODO Phase 8: verify correct Maven coordinates for MineColonies 1.21.1 API jar
-    // compileOnly "com.minecolonies:minecolonies:1.1.1231-1.21.1:api"
+    // v4.0.0: MineColonies is a HARD dependency (addon pivot).
+    // LDTTeam's Jfrog Maven doesn't publish 1.21.1 artifacts (confirmed via their
+    // artifact search API, 2026-04-19). MC is distributed only via CurseForge for
+    // this version. Resolved via local libs/ directory — seed with scripts/fetch-deps.sh
+    // before the first build. libs/ is gitignored. Transitive jars (structurize,
+    // blockui, domum-ornamentum) are also consumed from libs/ because MC's bytecode
+    // references them; compileOnly is fine because the player has them installed
+    // at runtime via MineColonies' own mod dependencies.
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    // Also on runtime so the NeoForge test harness can load MC as a mod (our
+    // mods.toml declares it required). Tests extend runtimeClasspath, so this
+    // covers both main and test without extra configuration plumbing.
+    localRuntime fileTree(dir: 'libs', include: ['*.jar'])
 }
 
 test {

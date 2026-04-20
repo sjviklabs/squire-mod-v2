@@ -43,9 +43,13 @@ license = "MIT"
     ordering = "NONE"
     side = "BOTH"
 
+# v4.0.0 — MineColonies is a HARD dependency. The squire's AI is built on MC's
+# TickRateStateMachine and ThreatTable primitives. Without MC loaded, SquireEntity's
+# AI controller cannot instantiate. Load-after ensures MC's registries are populated
+# before we reference them.
 [[dependencies.squire]]
     modId = "minecolonies"
-    type = "optional"
-    versionRange = "[1.1,)"
-    ordering = "NONE"
+    type = "required"
+    versionRange = "[1.1.1299,)"
+    ordering = "AFTER"
     side = "BOTH"

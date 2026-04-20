@@ -150,10 +150,12 @@ public class ProgressionHandler {
 
         applyModifiers();
 
-        // Fire LEVEL_UP event for ChatHandler
-        if (squire.getSquireBrain() != null) {
-            squire.getSquireBrain().getBus().publish(
-                    com.sjviklabs.squire.brain.SquireEvent.LEVEL_UP, squire);
+        // Chat personality on level up. Direct ChatHandler call — no event bus round trip.
+        var owner = squire.getOwner();
+        if (owner != null) {
+            com.sjviklabs.squire.entity.ChatHandler.sendLine(
+                    squire, owner,
+                    com.sjviklabs.squire.entity.ChatHandler.ChatEvent.LEVEL_UP);
         }
 
         // Level-up particle effect (small burst)
@@ -168,10 +170,12 @@ public class ProgressionHandler {
             // Refresh capability references held by pipes/hoppers — slot count expanded
             squire.invalidateCapabilities();
 
-            // Fire TIER_ADVANCE event for ChatHandler
-            if (squire.getSquireBrain() != null) {
-                squire.getSquireBrain().getBus().publish(
-                        com.sjviklabs.squire.brain.SquireEvent.TIER_ADVANCE, squire);
+            // Chat personality on tier advance.
+            var tierOwner = squire.getOwner();
+            if (tierOwner != null) {
+                com.sjviklabs.squire.entity.ChatHandler.sendLine(
+                        squire, tierOwner,
+                        com.sjviklabs.squire.entity.ChatHandler.ChatEvent.NEW_TIER);
             }
 
             // Tier advance: firework explosion effect + fanfare
