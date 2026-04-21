@@ -56,8 +56,8 @@ dependencies {
     // Patchouli — soft-dep via reflection (no compile dependency needed)
 
     // Phase 8: Curios soft-dep (declared now, used Phase 8)
-    compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1:api"
-    localRuntime "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
+    compileOnly "top.theillusivec4.curios:curios-neoforge:14.0.0+:api"
+    localRuntime "top.theillusivec4.curios:curios-neoforge:14.0.0+"
 
     // Phase 8: Jade soft-dep (declared now, used Phase 8)
     // Uses api.modrinth.com/maven — Jade project slug on Modrinth is "jade"
