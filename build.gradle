@@ -45,7 +45,7 @@ configurations {
 
 dependencies {
     // Phase 1: JUnit 5 for unit tests (TST-01)
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     // Phase 6: Mockito for FishingHandlerTest (mocks ServerLevel for loot roll)
     testImplementation 'org.mockito:mockito-core:5.23.0'
