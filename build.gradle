@@ -61,7 +61,7 @@ dependencies {
 
     // Phase 8: Jade soft-dep (declared now, used Phase 8)
     // Uses api.modrinth.com/maven — Jade project slug on Modrinth is "jade"
-    compileOnly "maven.modrinth:jade:15.10.4+neoforge"
+    compileOnly "maven.modrinth:jade:21.1.7+"
 
     // v4.0.0: MineColonies is a HARD dependency (addon pivot).
     // LDTTeam's Jfrog Maven doesn't publish 1.21.1 artifacts (confirmed via their
